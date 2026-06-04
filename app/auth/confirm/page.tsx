@@ -35,8 +35,16 @@ export default function AuthConfirmPage() {
   }, [router])
 
   return (
-    <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
-      Signing you in…
+    <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center gap-4">
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-mono tracking-[0.2em] text-zinc-500 uppercase">BTF</span>
+        <span className="w-px h-3 bg-zinc-800" />
+        <span className="text-xs tracking-wide text-zinc-600">Support</span>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="inline-block w-4 h-4 border-2 border-zinc-700 border-t-zinc-300 rounded-full animate-spin" />
+        <span className="text-sm text-zinc-400">Signing you in…</span>
+      </div>
     </div>
   )
 }

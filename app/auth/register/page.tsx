@@ -1,9 +1,7 @@
 import { redirect, notFound } from 'next/navigation'
+import Image from 'next/image'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
 
 export default async function RegisterPage({
   searchParams,
@@ -12,31 +10,18 @@ export default async function RegisterPage({
 }) {
   const params = await searchParams
   const token = params.token
-
   if (!token) notFound()
 
   const supabase = await createClient()
-
-  // Validate token
   const { data: invite } = await supabase
-    .from('invite_tokens')
-    .select('id, client_id, used, expires_at')
-    .eq('token', token)
-    .single()
+    .from('invite_tokens').select('id, client_id, used, expires_at')
+    .eq('token', token).single()
 
-  if (!invite || invite.used || new Date(invite.expires_at) < new Date()) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <Card className="w-full max-w-sm">
-          <CardContent className="pt-6">
-            <p className="text-sm text-destructive">
-              This invite link is invalid or has expired.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
+  const invalid = !invite || invite.used || new Date(invite.expires_at) < new Date()
+
+  const { data: client } = !invalid
+    ? await supabase.from('clients').select('name').eq('id', invite.client_id).single()
+    : { data: null }
 
   async function register(formData: FormData) {
     'use server'
@@ -44,49 +29,28 @@ export default async function RegisterPage({
     const fullName = formData.get('full_name') as string
     const password = formData.get('password') as string
 
-    // Re-validate token server-side
     const { data: inv } = await supabase
-      .from('invite_tokens')
-      .select('id, client_id, used, expires_at')
-      .eq('token', token as string)
-      .single()
+      .from('invite_tokens').select('id, client_id, used, expires_at')
+      .eq('token', token as string).single()
 
     if (!inv || inv.used || new Date(inv.expires_at) < new Date()) {
       redirect(`/auth/register?token=${token}&error=Token+invalid+or+expired`)
     }
 
-    // We need service role to create a user and bypass email confirmation.
-    // For now use signUp; the user will receive a confirmation email from Supabase.
-    const { data: signupData, error: signupError } = await supabase.auth.signUp({
-      email: '', // email comes from invite context — fetch from clients table
-      password,
-      options: { data: { full_name: fullName } },
-    })
-
-    // Fetch client email to use as signup email
-    const { data: client } = await supabase
-      .from('clients')
-      .select('email')
-      .eq('id', inv.client_id)
-      .single()
-
-    if (!client) {
-      redirect(`/auth/register?token=${token}&error=Client+not+found`)
-    }
+    const { data: clientData } = await supabase
+      .from('clients').select('email').eq('id', inv.client_id).single()
+    if (!clientData) redirect(`/auth/register?token=${token}&error=Client+not+found`)
 
     const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: client.email,
+      email: clientData.email,
       password,
       options: { data: { full_name: fullName } },
     })
 
     if (authError || !authData.user) {
-      redirect(
-        `/auth/register?token=${token}&error=${encodeURIComponent(authError?.message ?? 'Signup failed')}`
-      )
+      redirect(`/auth/register?token=${token}&error=${encodeURIComponent(authError?.message ?? 'Signup failed')}`)
     }
 
-    // Insert public.users row
     await supabase.from('users').insert({
       id: authData.user.id,
       role: 'client',
@@ -94,38 +58,119 @@ export default async function RegisterPage({
       full_name: fullName,
     })
 
-    // Mark token used
-    await supabase
-      .from('invite_tokens')
-      .update({ used: true })
-      .eq('id', inv.id)
-
+    await supabase.from('invite_tokens').update({ used: true }).eq('id', inv.id)
     redirect('/portal/tickets')
   }
 
+  const inputStyle = {
+    background: 'var(--surface-2)',
+    border: '1px solid var(--border-2)',
+    color: 'var(--text-1)',
+    fontFamily: 'var(--font-geist)',
+    fontSize: 16,
+    padding: '14px 16px',
+    outline: 'none',
+    borderRadius: 0,
+    width: '100%',
+    transition: 'border-color 150ms ease',
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/40 px-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-xl">Create your account</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form action={register} className="space-y-4">
-            <div className="space-y-1">
-              <Label htmlFor="full_name">Full name</Label>
-              <Input id="full_name" name="full_name" required />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required minLength={8} />
-            </div>
-            {params.error && (
-              <p className="text-sm text-destructive">{params.error}</p>
+    <div
+      className="min-h-[100dvh] grid-bg grid-bg-fade flex flex-col items-center justify-center px-4"
+      style={{ background: 'var(--bg)' }}
+    >
+      <div className="w-full max-w-[440px] flex flex-col gap-10">
+        <Link href="/" className="flex justify-center">
+          <Image src="/btf-wordmark.svg" alt="Below The Fold" width={130} height={18} style={{ height: 17, width: 'auto' }} priority />
+        </Link>
+
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border-2)' }}>
+          <div className="px-8 py-7" style={{ borderBottom: '1px solid var(--border)' }}>
+            {invalid ? (
+              <>
+                <h1 className="text-2xl font-medium" style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-1)', letterSpacing: '0.01em' }}>
+                  Invalid invite
+                </h1>
+                <p className="text-base mt-1.5" style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-2)' }}>
+                  This link has expired or already been used.
+                </p>
+              </>
+            ) : (
+              <>
+                <h1 className="text-2xl font-medium" style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-1)', letterSpacing: '0.01em' }}>
+                  Create account
+                </h1>
+                {client?.name && (
+                  <p className="text-base mt-1.5" style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-2)' }}>
+                    Invited to join{' '}
+                    <span style={{ color: 'var(--accent)', fontWeight: 500 }}>{client.name}</span>.
+                  </p>
+                )}
+              </>
             )}
-            <Button type="submit" className="w-full">Create account</Button>
-          </form>
-        </CardContent>
-      </Card>
+          </div>
+
+          <div className="px-8 py-8">
+            {invalid ? (
+              <div className="flex flex-col gap-5">
+                <p className="text-base" style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-2)' }}>
+                  Contact your BTF account manager to receive a new invite link.
+                </p>
+                <Link href="/" className="text-sm hover:opacity-70 transition-opacity" style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-3)' }}>
+                  ← Return home
+                </Link>
+              </div>
+            ) : (
+              <form action={register} className="flex flex-col gap-6">
+                <div className="flex flex-col gap-2.5">
+                  <label htmlFor="full_name" className="text-sm font-medium" style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-1)' }}>
+                    Full name
+                  </label>
+                  <input
+                    id="full_name"
+                    name="full_name"
+                    required
+                    placeholder="Maria Papadopoulou"
+                    style={inputStyle}
+                    className="placeholder-[#555] focus:[border-color:var(--accent)]"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2.5">
+                  <label htmlFor="password" className="text-sm font-medium" style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-1)' }}>
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    required
+                    minLength={8}
+                    placeholder="Min. 8 characters"
+                    style={inputStyle}
+                    className="placeholder-[#555] focus:[border-color:var(--accent)]"
+                  />
+                </div>
+
+                {params.error && (
+                  <div className="px-4 py-3" style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.3)', color: 'var(--danger)', fontFamily: 'var(--font-geist)', fontSize: 14 }}>
+                    {params.error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  className="btn-primary w-full py-4 text-sm tracking-[0.12em] uppercase cursor-pointer font-medium"
+                  style={{ fontFamily: 'var(--font-dm-mono)', background: 'var(--accent)', color: 'var(--bg)', border: 'none', borderRadius: 0 }}
+                >
+                  Create account →
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

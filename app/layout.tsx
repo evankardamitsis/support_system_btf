@@ -1,18 +1,29 @@
 import type { Metadata } from 'next'
-import { Geist } from 'next/font/google'
+import { DM_Mono, Geist } from 'next/font/google'
 import './globals.css'
 
-const geist = Geist({ subsets: ['latin'], variable: '--font-geist' })
+const dmMono = DM_Mono({
+  subsets: ['latin'],
+  weight: ['300', '400', '500'],
+  variable: '--font-dm-mono',
+  display: 'swap',
+})
+
+const geist = Geist({
+  subsets: ['latin'],
+  variable: '--font-geist',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
-  title: 'Support — Below The Fold',
-  description: 'Client retainer & support ticketing',
+  title: 'BTF Support',
+  description: 'Client retainer & ticketing — Below The Fold',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${geist.variable} h-full antialiased`}>
-      <body className="h-full bg-background text-foreground">{children}</body>
+    <html lang="en" className={`${dmMono.variable} ${geist.variable}`}>
+      <body>{children}</body>
     </html>
   )
 }

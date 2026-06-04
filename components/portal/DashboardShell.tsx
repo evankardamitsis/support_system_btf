@@ -1,0 +1,39 @@
+'use client'
+
+import { useState } from 'react'
+import { PortalSidebar } from './Sidebar'
+import { PortalTopBar } from './TopBar'
+
+interface PortalShellProps {
+  children: React.ReactNode
+  userName?: string
+  userEmail?: string
+}
+
+export function PortalDashboardShell({ children, userName, userEmail }: PortalShellProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  return (
+    <div className="flex flex-col h-screen overflow-hidden" style={{ background: '#f5f4f2' }}>
+      <PortalTopBar
+        userName={userName}
+        userEmail={userEmail}
+        onMenuClick={() => setSidebarOpen(true)}
+      />
+
+      <div className="flex flex-1 overflow-hidden">
+        {sidebarOpen && (
+          <div className="fixed inset-0 z-20 lg:hidden" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={() => setSidebarOpen(false)} />
+        )}
+        <div className={`fixed inset-y-0 left-0 z-30 lg:static lg:z-auto transform transition-transform duration-200 ease-out lg:transform-none ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+          <PortalSidebar userName={userName} userEmail={userEmail} onClose={() => setSidebarOpen(false)} />
+        </div>
+        <main className="flex-1 overflow-y-auto">
+          <div className="px-8 py-7 max-w-[1300px]">
+            {children}
+          </div>
+        </main>
+      </div>
+    </div>
+  )
+}
