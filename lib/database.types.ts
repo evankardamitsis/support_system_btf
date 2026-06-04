@@ -1,0 +1,245 @@
+// Auto-generated placeholder — replace by running:
+// npx supabase gen types typescript --linked > lib/database.types.ts
+
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export interface Database {
+  public: {
+    Tables: {
+      users: {
+        Row: {
+          id: string
+          role: 'admin' | 'agent' | 'client'
+          client_id: string | null
+          full_name: string | null
+          created_at: string
+        }
+        Insert: {
+          id: string
+          role: 'admin' | 'agent' | 'client'
+          client_id?: string | null
+          full_name?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          role?: 'admin' | 'agent' | 'client'
+          client_id?: string | null
+          full_name?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      clients: {
+        Row: {
+          id: string
+          name: string
+          email: string
+          contact_name: string | null
+          plan_name: string | null
+          billing_cycle_day: number
+          renewal_date: string | null
+          sla_response_hours: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          email: string
+          contact_name?: string | null
+          plan_name?: string | null
+          billing_cycle_day?: number
+          renewal_date?: string | null
+          sla_response_hours?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          email?: string
+          contact_name?: string | null
+          plan_name?: string | null
+          billing_cycle_day?: number
+          renewal_date?: string | null
+          sla_response_hours?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      retainers: {
+        Row: {
+          id: string
+          client_id: string
+          period_start: string
+          period_end: string
+          hours_total: number
+          hours_used: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          period_start: string
+          period_end: string
+          hours_total: number
+          hours_used?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          period_start?: string
+          period_end?: string
+          hours_total?: number
+          hours_used?: number
+          created_at?: string
+        }
+        Relationships: []
+      }
+      tickets: {
+        Row: {
+          id: string
+          client_id: string
+          created_by: string
+          assigned_to: string | null
+          title: string
+          description: string | null
+          status: 'open' | 'in_progress' | 'waiting_on_client' | 'resolved' | 'closed'
+          priority: 'low' | 'normal' | 'high' | 'critical'
+          type: 'bug' | 'task' | 'request' | 'question'
+          created_at: string
+          updated_at: string
+          resolved_at: string | null
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          created_by: string
+          assigned_to?: string | null
+          title: string
+          description?: string | null
+          status?: 'open' | 'in_progress' | 'waiting_on_client' | 'resolved' | 'closed'
+          priority?: 'low' | 'normal' | 'high' | 'critical'
+          type?: 'bug' | 'task' | 'request' | 'question'
+          created_at?: string
+          updated_at?: string
+          resolved_at?: string | null
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          created_by?: string
+          assigned_to?: string | null
+          title?: string
+          description?: string | null
+          status?: 'open' | 'in_progress' | 'waiting_on_client' | 'resolved' | 'closed'
+          priority?: 'low' | 'normal' | 'high' | 'critical'
+          type?: 'bug' | 'task' | 'request' | 'question'
+          created_at?: string
+          updated_at?: string
+          resolved_at?: string | null
+        }
+        Relationships: []
+      }
+      ticket_comments: {
+        Row: {
+          id: string
+          ticket_id: string
+          author_id: string
+          body: string
+          is_internal: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          ticket_id: string
+          author_id: string
+          body: string
+          is_internal?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          ticket_id?: string
+          author_id?: string
+          body?: string
+          is_internal?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      hours_log: {
+        Row: {
+          id: string
+          ticket_id: string
+          retainer_id: string
+          agent_id: string
+          minutes: number
+          note: string | null
+          logged_at: string
+        }
+        Insert: {
+          id?: string
+          ticket_id: string
+          retainer_id: string
+          agent_id: string
+          minutes: number
+          note?: string | null
+          logged_at?: string
+        }
+        Update: {
+          id?: string
+          ticket_id?: string
+          retainer_id?: string
+          agent_id?: string
+          minutes?: number
+          note?: string | null
+          logged_at?: string
+        }
+        Relationships: []
+      }
+      invite_tokens: {
+        Row: {
+          id: string
+          client_id: string
+          token: string
+          used: boolean
+          expires_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          token?: string
+          used?: boolean
+          expires_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          token?: string
+          used?: boolean
+          expires_at?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+  }
+}

@@ -1,0 +1,7 @@
+# Cursor Rules — support.belowthefold.gr
+
+- Always use Next.js App Router and React Server Components
+- Use Supabase SSR helpers (@supabase/ssr) for all auth — never the browser client in server components
+- Keep all RLS policies and migrations in /supabase/migrations
+- Use shadcn/ui components, never raw HTML for UI elements
+- All forms use server actions, not client-side fetch
