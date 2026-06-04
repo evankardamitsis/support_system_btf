@@ -1,17 +1,17 @@
-import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { StatusPill } from '@/components/ui/StatusPill'
+import { PageHeader } from '@/components/dashboard/PageHeader'
+import { DashButton } from '@/components/dashboard/DashButton'
+import { TicketsTable } from '@/components/tickets/TicketsTable'
+import { TicketsTableToolbar } from '@/components/tickets/TicketsTableToolbar'
 import { Plus } from 'lucide-react'
-import type { TicketStatus } from '@/lib/types'
+import type { TicketStatus, TicketPriority } from '@/lib/types'
 
-function ticketId(id: string) { return `TKT-${id.substring(0, 4).toUpperCase()}` }
-
-const priorityColors: Record<string, string> = {
-  critical: 'text-red-600 font-semibold',
-  high: 'text-orange-600 font-medium',
-  normal: 'text-gray-600',
-  low: 'text-gray-400',
-}
+const filterTabs = [
+  { label: 'All', value: '' },
+  { label: 'Open', value: 'open' },
+  { label: 'In progress', value: 'in_progress' },
+  { label: 'Resolved', value: 'resolved' },
+]
 
 export default async function PortalTicketsPage({
   searchParams,
@@ -20,120 +20,83 @@ export default async function PortalTicketsPage({
 }) {
   const filters = await searchParams
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   const { data: profile } = await supabase
-    .from('users').select('client_id').eq('id', user!.id).single()
+    .from('users')
+    .select('client_id')
+    .eq('id', user!.id)
+    .single()
 
-  let query = supabase
+  const { data: all } = await supabase
     .from('tickets')
     .select('id, title, status, priority, type, created_at, updated_at')
     .eq('client_id', profile!.client_id!)
-    .order('created_at', { ascending: false })
+    .order('updated_at', { ascending: false })
 
-  if (filters.status) query = query.eq('status', filters.status as TicketStatus)
+  const counts = {
+    '': all?.length ?? 0,
+    open: all?.filter(t => t.status === 'open').length ?? 0,
+    in_progress: all?.filter(t => t.status === 'in_progress').length ?? 0,
+    resolved: all?.filter(t => t.status === 'resolved').length ?? 0,
+  }
 
-  const { data: tickets } = await query
+  let tickets = all ?? []
+  if (filters.status) {
+    tickets = tickets.filter(t => t.status === filters.status)
+  }
 
-  const filterTabs = [
-    { label: 'All',         value: '' },
-    { label: 'Open',        value: 'open' },
-    { label: 'In Progress', value: 'in_progress' },
-    { label: 'Resolved',    value: 'resolved' },
-  ]
+  const activeStatus = filters.status ?? ''
+
+  const rows = tickets.map(t => ({
+    id: t.id,
+    title: t.title,
+    status: t.status as TicketStatus,
+    priority: t.priority as TicketPriority,
+    type: t.type,
+    updated_at: t.updated_at,
+  }))
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">My Tickets</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {tickets?.length ?? 0} {tickets?.length === 1 ? 'ticket' : 'tickets'}
-          </p>
-        </div>
-        <Link
-          href="/portal/tickets/new"
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
-        >
-          <Plus size={16} />
-          New ticket
-        </Link>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title="My tickets"
+        description="See where each request stands — click a row for the full thread."
+        action={
+          <DashButton href="/portal/tickets/new">
+            <Plus size={15} />
+            New request
+          </DashButton>
+        }
+      />
 
-      {/* Filter tabs */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
-        {filterTabs.map(({ label, value }) => {
-          const active = (filters.status ?? '') === value
-          return (
-            <Link
-              key={value}
-              href={value ? `/portal/tickets?status=${value}` : '/portal/tickets'}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
-                active
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              {label}
-            </Link>
-          )
-        })}
-      </div>
+      <section className="tickets-workspace anim-fade-up anim-fade-up-3">
+        <TicketsTableToolbar
+          basePath="/portal/tickets"
+          tabs={filterTabs.map(tab => ({
+            ...tab,
+            count: counts[tab.value as keyof typeof counts],
+          }))}
+          activeStatus={activeStatus}
+          totalShown={rows.length}
+        />
 
-      {/* Table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        {tickets && tickets.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Subject</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Type</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Priority</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Status</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wide">Opened</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {tickets.map((t) => (
-                  <tr key={t.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-5 py-4">
-                      <Link href={`/portal/tickets/${t.id}`} className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
-                        {t.title}
-                      </Link>
-                      <p className="text-xs text-gray-400 font-mono mt-0.5">{ticketId(t.id)}</p>
-                    </td>
-                    <td className="px-5 py-4 text-sm text-gray-500 capitalize">{t.type}</td>
-                    <td className="px-5 py-4">
-                      <span className={`text-sm ${priorityColors[t.priority] ?? 'text-gray-600'} capitalize`}>{t.priority}</span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <StatusPill status={t.status as TicketStatus} />
-                    </td>
-                    <td className="px-5 py-4 text-sm text-gray-400 tabular-nums">
-                      {new Date(t.created_at).toLocaleDateString('en-GB')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="py-20 text-center">
-            <p className="text-sm font-medium text-gray-900">
-              {(filters.status) ? 'No tickets match this filter' : 'No tickets yet'}
-            </p>
-            <p className="text-sm text-gray-400 mt-1">
-              {(filters.status) ? 'Try a different status' : 'Submit a request and we will get on it'}
-            </p>
-            {!(filters.status) && (
-              <Link href="/portal/tickets/new" className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors">
-                <Plus size={15} />New ticket
-              </Link>
-            )}
-          </div>
-        )}
-      </div>
+        <TicketsTable
+          tickets={rows}
+          hrefPrefix="/portal/tickets"
+          variant="portal"
+          emptyTitle={
+            filters.status ? 'No tickets match this filter' : 'No tickets yet'
+          }
+          emptyHint={
+            filters.status
+              ? 'Try another status tab'
+              : 'Submit a request and we will get on it'
+          }
+        />
+      </section>
     </div>
   )
 }

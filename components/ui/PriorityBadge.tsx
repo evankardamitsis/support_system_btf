@@ -1,15 +1,20 @@
 import type { TicketPriority } from '@/lib/types'
 
-const config: Record<TicketPriority, { label: string; className: string }> = {
-  critical: { label: 'Critical', className: 'text-red-600 font-semibold' },
-  high:     { label: 'High',     className: 'text-orange-600 font-medium' },
-  normal:   { label: 'Normal',   className: 'text-gray-600' },
-  low:      { label: 'Low',      className: 'text-gray-400' },
+const config: Record<TicketPriority, { label: string; color: string }> = {
+  critical: { label: 'Critical', color: '#f87171' },
+  high:     { label: 'High',     color: '#fb923c' },
+  normal:   { label: 'Normal',   color: '#888' },
+  low:      { label: 'Low',      color: '#555' },
 }
 
 export function PriorityBadge({ priority }: { priority: TicketPriority }) {
-  const { label, className } = config[priority] ?? config.normal
+  const { label, color } = config[priority] ?? config.normal
   return (
-    <span className={`text-sm ${className}`}>{label}</span>
+    <span
+      className="text-xs font-medium"
+      style={{ color, fontFamily: 'var(--font-dm-mono)' }}
+    >
+      {label}
+    </span>
   )
 }

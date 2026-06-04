@@ -3,10 +3,13 @@ import Link from 'next/link'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { StatusPill } from '@/components/ui/StatusPill'
+import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { CommentThread } from '@/components/tickets/CommentThread'
-import type { TicketStatus } from '@/lib/types'
+import type { TicketStatus, TicketPriority } from '@/lib/types'
 
-function ticketId(id: string) { return `TKT-${id.substring(0, 4).toUpperCase()}` }
+function ticketId(id: string) {
+  return `TKT-${id.substring(0, 4).toUpperCase()}`
+}
 
 function relativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -24,11 +27,12 @@ export default async function PortalTicketDetailPage({
 }) {
   const { id } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: ticket } = await supabase
-    .from('tickets').select('*').eq('id', id).single()
+  const { data: ticket } = await supabase.from('tickets').select('*').eq('id', id).single()
   if (!ticket) notFound()
 
   const { data: comments } = await supabase
@@ -41,7 +45,9 @@ export default async function PortalTicketDetailPage({
   async function addComment(formData: FormData) {
     'use server'
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user) redirect('/auth/login')
     await supabase.from('ticket_comments').insert({
       ticket_id: id,
@@ -54,32 +60,21 @@ export default async function PortalTicketDetailPage({
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/portal/tickets"
-        className="text-[10px] tracking-[0.1em] uppercase hover:opacity-70 transition-opacity"
-        style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-3)' }}
-      >
-        ← BACK
+      <Link href="/portal/tickets" className="dash-back">
+        ← Back to tickets
       </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6 items-start">
-        {/* Main */}
         <div className="space-y-5">
-          {/* Ticket header */}
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-            <div className="px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
+          <div className="dash-panel">
+            <div className="dash-card-section px-5 py-4">
               <div className="flex items-start justify-between gap-4 mb-2">
-                <span
-                  className="text-[11px]"
-                  style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--accent)' }}
-                >
-                  {ticketId(ticket.id)}
-                </span>
+                <span className="dash-ticket-id">{ticketId(ticket.id)}</span>
                 <StatusPill status={ticket.status as TicketStatus} />
               </div>
               <h1
                 className="text-lg font-medium leading-snug"
-                style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-1)' }}
+                style={{ color: 'var(--text-1)', fontFamily: 'var(--font-geist)' }}
               >
                 {ticket.title}
               </h1>
@@ -87,76 +82,67 @@ export default async function PortalTicketDetailPage({
             {ticket.description && (
               <div
                 className="px-5 py-4"
-                style={{ borderLeft: '2px solid var(--accent)', margin: '1px', background: 'var(--surface-2)' }}
+                style={{
+                  borderTop: '1px solid var(--border)',
+                  borderLeft: '2px solid var(--accent)',
+                  background: 'var(--surface)',
+                }}
               >
                 <p
                   className="text-sm leading-relaxed whitespace-pre-wrap"
-                  style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-2)' }}
+                  style={{ color: 'var(--text-2)', fontFamily: 'var(--font-geist)' }}
                 >
                   {ticket.description}
                 </p>
               </div>
             )}
+            <div className="px-5 py-3 flex flex-wrap gap-4 dash-meta">
+              <span className="capitalize">{ticket.type}</span>
+              <PriorityBadge priority={ticket.priority as TicketPriority} />
+            </div>
           </div>
 
-          {/* Thread */}
-          <div className="space-y-3">
-            <p
-              className="text-[10px] tracking-[0.15em] uppercase"
-              style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-3)' }}
-            >
-              ACTIVITY
-            </p>
-            <CommentThread comments={comments ?? []} showInternal={false} />
+          <div className="dash-panel">
+            <div className="dash-card-section px-5 py-3">
+              <h2 className="dash-section-title">Activity</h2>
+            </div>
+            <div className="px-5 py-4">
+              <CommentThread comments={comments ?? []} showInternal={false} />
+            </div>
+            {ticket.status !== 'closed' && (
+              <div className="px-5 pb-5 pt-0" style={{ borderTop: '1px solid var(--border)' }}>
+                <form action={addComment} className="flex flex-col gap-3 pt-4">
+                  <textarea
+                    name="body"
+                    required
+                    rows={4}
+                    placeholder="Write a reply…"
+                    className="btf-input w-full resize-y"
+                    style={{ minHeight: 96 }}
+                  />
+                  <button type="submit" className="dash-btn-primary btn-primary self-start cursor-pointer">
+                    Send reply
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
-
-          {/* Reply */}
-          {ticket.status !== 'closed' && (
-            <form action={addComment} className="flex flex-col gap-3">
-              <textarea
-                name="body"
-                required
-                rows={4}
-                placeholder="Write a reply…"
-                className="btf-input w-full px-3 py-2.5 text-sm resize-y"
-                style={{ minHeight: 96, fontFamily: 'var(--font-geist)' }}
-              />
-              <button
-                type="submit"
-                className="btn-primary self-start px-5 py-2.5 text-[11px] tracking-[0.15em] uppercase cursor-pointer"
-                style={{
-                  fontFamily: 'var(--font-dm-mono)',
-                  background: 'var(--accent)',
-                  color: 'var(--bg)',
-                  border: 'none',
-                  borderRadius: 0,
-                }}
-              >
-                SEND →
-              </button>
-            </form>
-          )}
         </div>
 
-        {/* Sidebar */}
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
-          <div className="px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
-            <p className="text-[9px] tracking-[0.15em] uppercase" style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-3)' }}>
-              DETAILS
-            </p>
+        <div className="dash-panel">
+          <div className="dash-card-section px-4 py-3">
+            <h3 className="dash-section-title">Details</h3>
           </div>
           <div className="px-4 py-4 flex flex-col gap-3">
             {[
-              { label: 'TYPE',     value: ticket.type.toUpperCase() },
-              { label: 'PRIORITY', value: ticket.priority.toUpperCase() },
-              { label: 'OPENED',   value: new Date(ticket.created_at).toLocaleDateString('en-GB') },
-              { label: 'UPDATED',  value: relativeTime(ticket.updated_at) },
+              { label: 'Type', value: ticket.type },
+              { label: 'Priority', value: ticket.priority },
+              { label: 'Opened', value: new Date(ticket.created_at).toLocaleDateString('en-GB') },
+              { label: 'Updated', value: relativeTime(ticket.updated_at) },
             ].map(({ label, value }) => (
-              <div key={label} className="flex justify-between items-center">
-                <span className="text-[9px] tracking-[0.12em] uppercase" style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-3)' }}>
-                  {label}
-                </span>
-                <span className="text-[11px]" style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-2)' }}>
+              <div key={label} className="flex justify-between items-center gap-4 text-sm">
+                <span className="dash-meta uppercase">{label}</span>
+                <span className="font-mono capitalize" style={{ color: 'var(--text-1)' }}>
                   {value}
                 </span>
               </div>

@@ -1,87 +1,90 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { PageHeader } from '@/components/dashboard/PageHeader'
+import { MetricStrip } from '@/components/dashboard/MetricStrip'
+import { UsageBar } from '@/components/dashboard/UsageBar'
+import { StatusFlag } from '@/components/dashboard/StatusFlag'
 
 export default async function RetainerPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: profile } = await supabase
-    .from('users').select('client_id').eq('id', user.id).single()
+  const { data: profile } = await supabase.from('users').select('client_id').eq('id', user.id).single()
 
   const { data: retainer } = await supabase
-    .from('retainers').select('*')
+    .from('retainers')
+    .select('*')
     .eq('client_id', profile!.client_id!)
     .order('period_start', { ascending: false })
-    .limit(1).single()
+    .limit(1)
+    .single()
 
-  const hoursUsed  = retainer ? Number(retainer.hours_used)  : 0
+  const hoursUsed = retainer ? Number(retainer.hours_used) : 0
   const hoursTotal = retainer ? Number(retainer.hours_total) : 0
-  const hoursLeft  = hoursTotal - hoursUsed
-  const pct        = hoursTotal > 0 ? Math.min(100, (hoursUsed / hoursTotal) * 100) : 0
-  const isOver     = hoursLeft < 0
-  const isDanger   = pct > 85
+  const hoursLeft = hoursTotal - hoursUsed
+  const pct = hoursTotal > 0 ? Math.min(100, (hoursUsed / hoursTotal) * 100) : 0
+  const isOver = hoursLeft < 0
+  const isDanger = pct > 85
+  const tone = isOver ? 'over' : isDanger ? 'warn' : 'ok'
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Retainer</h1>
-        {retainer && (
-          <p className="text-sm text-gray-500 mt-0.5">
-            {new Date(retainer.period_start).toLocaleDateString('en-GB')} - {new Date(retainer.period_end).toLocaleDateString('en-GB')}
-          </p>
-        )}
-      </div>
+    <div className="space-y-6 w-full max-w-4xl">
+      <PageHeader
+        title="Retainer"
+        description={
+          retainer
+            ? `Current period · ${new Date(retainer.period_start).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })} – ${new Date(retainer.period_end).toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' })}`
+            : 'Your billing period'
+        }
+      />
 
       {retainer ? (
-        <div className="space-y-4">
-          {/* Stats cards */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white border border-gray-200 rounded-lg p-5 text-center">
-              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Used</p>
-              <p className="text-3xl font-semibold text-gray-900 tabular-nums">{hoursUsed.toFixed(1)}</p>
-              <p className="text-sm text-gray-400 mt-0.5">hours</p>
-            </div>
-            <div className={`bg-white border rounded-lg p-5 text-center ${isDanger ? 'border-red-200 bg-red-50' : 'border-gray-200'}`}>
-              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Remaining</p>
-              <p className={`text-3xl font-semibold tabular-nums ${isOver ? 'text-red-600' : isDanger ? 'text-orange-600' : 'text-green-600'}`}>
-                {isOver ? '-' : ''}{Math.abs(hoursLeft).toFixed(1)}
-              </p>
-              <p className="text-sm text-gray-400 mt-0.5">hours</p>
-            </div>
-            <div className="bg-white border border-gray-200 rounded-lg p-5 text-center">
-              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Total</p>
-              <p className="text-3xl font-semibold text-gray-900 tabular-nums">{hoursTotal.toFixed(0)}</p>
-              <p className="text-sm text-gray-400 mt-0.5">hours</p>
-            </div>
-          </div>
+        <div className="space-y-5">
+          <MetricStrip
+            items={[
+              { label: 'Used', value: `${hoursUsed.toFixed(1)}h` },
+              {
+                label: 'Remaining',
+                value: `${isOver ? '−' : ''}${Math.abs(hoursLeft).toFixed(1)}h`,
+                accent: isOver ? '#f87171' : isDanger ? '#fb923c' : '#4ade80',
+                emphasis: isDanger || isOver,
+              },
+              { label: 'Total', value: `${hoursTotal.toFixed(0)}h` },
+            ]}
+          />
 
-          {/* Progress */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-500">Hours consumed</span>
-              <span className={`font-semibold ${isDanger ? 'text-red-600' : 'text-gray-900'}`}>{pct.toFixed(0)}%</span>
+          <section className="retainer-panel anim-fade-up anim-fade-up-3" data-alert={isDanger ? 'true' : undefined}>
+            <div className="retainer-panel-head">
+              <div>
+                <p className="retainer-panel-title">Usage this period</p>
+                {isDanger ? (
+                  <StatusFlag
+                    label={isOver ? 'Over capacity' : 'Running low'}
+                    tone={isOver ? 'danger' : 'warn'}
+                  />
+                ) : null}
+              </div>
+              <span className="retainer-panel-period tabular-nums">{Math.round(pct)}% used</span>
             </div>
-            <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-700 ${isOver ? 'bg-red-500' : isDanger ? 'bg-orange-500' : 'bg-green-500'}`}
-                style={{ width: `${Math.min(100, pct)}%` }}
-              />
-            </div>
-            {isDanger && (
-              <p className="text-sm text-orange-600">
-                {isOver
-                  ? `You have exceeded your retainer by ${Math.abs(hoursLeft).toFixed(1)} hours. Please contact BTF.`
-                  : `You have used ${pct.toFixed(0)}% of your retainer. ${hoursLeft.toFixed(1)} hours remaining.`
-                }
-              </p>
-            )}
-          </div>
+
+            <UsageBar percent={pct} tone={tone} height={10} />
+
+            <p className="dash-meta leading-relaxed mt-4">
+              {isOver
+                ? 'You have exceeded your retainer — your team will be in touch.'
+                : isDanger
+                  ? 'Running low on hours — consider planning ahead for new work.'
+                  : 'Plenty of hours remaining in this period.'}
+            </p>
+          </section>
         </div>
       ) : (
-        <div className="bg-white border border-gray-200 rounded-lg py-20 text-center">
-          <p className="text-sm font-medium text-gray-900">No active retainer</p>
-          <p className="text-sm text-gray-400 mt-1">Contact your BTF account manager</p>
+        <div className="retainer-panel dash-empty">
+          <p className="dash-empty-title">No active retainer</p>
+          <p className="dash-empty-hint">Contact your account manager if you expect retainer hours.</p>
         </div>
       )}
     </div>

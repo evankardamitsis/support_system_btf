@@ -1,0 +1,28 @@
+import type { TicketPriority } from '@/lib/types'
+
+export function formatTicketId(id: string) {
+  return `TKT-${id.substring(0, 4).toUpperCase()}`
+}
+
+export function formatRelativeTime(dateStr: string) {
+  const m = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000)
+  if (m < 1) return 'just now'
+  if (m < 60) return `${m}m ago`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h}h ago`
+  const d = Math.floor(h / 24)
+  if (d < 7) return `${d}d ago`
+  return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+}
+
+export const priorityAccent: Record<TicketPriority, string> = {
+  critical: '#f87171',
+  high: '#fb923c',
+  normal: 'var(--border-2)',
+  low: 'var(--border)',
+}
+
+export function isRecentlyUpdated(dateStr: string) {
+  const h = (Date.now() - new Date(dateStr).getTime()) / 3600000
+  return h < 2
+}
