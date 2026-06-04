@@ -3,13 +3,16 @@
 export function TicketsPriorityFilter({
   value,
   status,
+  client,
 }: {
   value: string
   status?: string
+  client?: string
 }) {
   return (
-    <form method="GET" className="flex items-center gap-2">
+    <form method="GET" className="tickets-filter-form">
       {status ? <input type="hidden" name="status" value={status} /> : null}
+      {client ? <input type="hidden" name="client" value={client} /> : null}
       <label htmlFor="priority-filter" className="tickets-filter-label">
         Priority
       </label>

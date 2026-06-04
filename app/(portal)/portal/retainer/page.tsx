@@ -4,6 +4,8 @@ import { PageHeader } from '@/components/dashboard/PageHeader'
 import { MetricStrip } from '@/components/dashboard/MetricStrip'
 import { UsageBar } from '@/components/dashboard/UsageBar'
 import { StatusFlag } from '@/components/dashboard/StatusFlag'
+import { PackageChip } from '@/components/retainers/PackageChip'
+import { getRetainerForClient } from '@/lib/retainers/active'
 
 export default async function RetainerPage() {
   const supabase = await createClient()
@@ -13,14 +15,11 @@ export default async function RetainerPage() {
   if (!user) redirect('/auth/login')
 
   const { data: profile } = await supabase.from('users').select('client_id').eq('id', user.id).single()
+  if (!profile?.client_id) redirect('/auth/login')
 
-  const { data: retainer } = await supabase
-    .from('retainers')
-    .select('*')
-    .eq('client_id', profile!.client_id!)
-    .order('period_start', { ascending: false })
-    .limit(1)
-    .single()
+  const retainer = await getRetainerForClient(supabase, profile.client_id, {
+    includePackage: true,
+  })
 
   const hoursUsed = retainer ? Number(retainer.hours_used) : 0
   const hoursTotal = retainer ? Number(retainer.hours_total) : 0
@@ -43,6 +42,10 @@ export default async function RetainerPage() {
 
       {retainer ? (
         <div className="space-y-5">
+          <div className="flex items-center gap-2">
+            <PackageChip packageName={retainer.package_name} />
+          </div>
+
           <MetricStrip
             items={[
               { label: 'Used', value: `${hoursUsed.toFixed(1)}h` },

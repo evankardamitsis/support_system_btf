@@ -24,16 +24,16 @@ BEGIN
   -- Clients
   INSERT INTO public.clients (id, name, email, contact_name, plan_name, billing_cycle_day, sla_response_hours, renewal_date)
   VALUES
-    (c1_id, 'Pappas & Associates', 'info@pappas-assoc.gr',  'Nikos Pappas',     'Growth',   1,  8, '2026-09-01'),
-    (c2_id, 'Thessaloniki Digital', 'hello@thesdig.gr',      'Maria Antoniadou', 'Standard', 15, 12, '2026-07-15'),
-    (c3_id, 'Kosmos Interiors',    'studio@kosmos-int.gr',   'Eleni Stavros',    'Pro',      1,  6, '2026-06-30');
+    (c1_id, 'Pappas & Associates', 'info@pappas-assoc.gr',  'Nikos Pappas',     'Grow', 1,  8, '2026-09-01'),
+    (c2_id, 'Thessaloniki Digital', 'hello@thesdig.gr',      'Maria Antoniadou', 'Care', 15, 12, '2026-07-15'),
+    (c3_id, 'Kosmos Interiors',    'studio@kosmos-int.gr',   'Eleni Stavros',    'Grow', 1,  6, '2026-06-30');
 
-  -- Retainers
-  INSERT INTO public.retainers (id, client_id, period_start, period_end, hours_total, hours_used)
+  -- Retainers (Care / Grow — hours and cost per client)
+  INSERT INTO public.retainers (id, client_id, package_name, period_start, period_end, hours_total, hours_used, period_cost)
   VALUES
-    (r1_id, c1_id, '2026-05-01', '2026-07-31', 20,   14.5),
-    (r2_id, c2_id, '2026-06-01', '2026-06-30', 12,   3.0),
-    (r3_id, c3_id, '2026-04-01', '2026-06-30', 30,   28.5);
+    (r1_id, c1_id, 'grow', '2026-05-01', '2026-07-31', 20, 14.5, 2400),
+    (r2_id, c2_id, 'care', '2026-06-01', '2026-06-30', 12, 3.0,  960),
+    (r3_id, c3_id, 'grow', '2026-04-01', '2026-06-30', 30, 28.5, 3600);
 
   -- Tickets
   INSERT INTO public.tickets (id, client_id, created_by, title, description, status, priority, type)

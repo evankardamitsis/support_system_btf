@@ -1,35 +1,24 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createTicket } from '@/app/actions/tickets'
 import { PageHeader } from '@/components/dashboard/PageHeader'
 import { FormPanel } from '@/components/dashboard/FormPanel'
 import { DashCancel } from '@/components/dashboard/DashCancel'
 import Link from 'next/link'
 
-export default async function AdminNewTicketPage() {
+export default async function AdminNewTicketPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ client?: string }>
+}) {
+  const { client: defaultClientId } = await searchParams
   const supabase = await createClient()
   const { data: clients } = await supabase.from('clients').select('id, name').order('name')
 
-  async function createTicket(formData: FormData) {
+  async function submit(formData: FormData) {
     'use server'
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) redirect('/auth/login')
-    const { data: ticket } = await supabase
-      .from('tickets')
-      .insert({
-        client_id: formData.get('client_id') as string,
-        created_by: user.id,
-        title: formData.get('title') as string,
-        description: formData.get('description') as string,
-        type: formData.get('type') as 'bug' | 'task' | 'request' | 'question',
-        priority: formData.get('priority') as 'low' | 'normal' | 'high' | 'critical',
-      })
-      .select('id')
-      .single()
-    if (ticket) redirect(`/admin/tickets/${ticket.id}`)
-    redirect('/admin/tickets')
+    const id = await createTicket(formData)
+    redirect(`/admin/tickets/${id}`)
   }
 
   return (
@@ -44,12 +33,17 @@ export default async function AdminNewTicketPage() {
       />
 
       <FormPanel title="Ticket details">
-        <form action={createTicket} className="flex flex-col gap-4">
+        <form action={submit} className="flex flex-col gap-4">
           <div>
             <label className="dash-label">
               Client <span className="dash-label-required">*</span>
             </label>
-            <select name="client_id" required className="dash-select w-full text-sm">
+            <select
+              name="client_id"
+              required
+              className="dash-select w-full text-sm"
+              defaultValue={defaultClientId ?? ''}
+            >
               <option value="">Select client…</option>
               {clients?.map(c => (
                 <option key={c.id} value={c.id}>
@@ -88,6 +82,17 @@ export default async function AdminNewTicketPage() {
                 <option value="critical">Critical</option>
               </select>
             </div>
+          </div>
+          <div>
+            <label className="dash-label">Estimated hours</label>
+            <input
+              name="estimated_hours"
+              type="number"
+              step="0.25"
+              min="0"
+              className="btf-input w-full tabular-nums"
+              placeholder="Optional plan / quote"
+            />
           </div>
           <div>
             <label className="dash-label">Description</label>

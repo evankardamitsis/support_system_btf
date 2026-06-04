@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { ticketsListHref } from '@/lib/tickets/query'
+import { TicketsClientFilter, type ClientOption } from './TicketsClientFilter'
 import { TicketsPriorityFilter } from './TicketsPriorityFilter'
 
 export type TicketTab = {
@@ -7,31 +9,34 @@ export type TicketTab = {
   count?: number
 }
 
-function tabHref(basePath: string, status: string, priority?: string) {
-  const params = new URLSearchParams()
-  if (status) params.set('status', status)
-  if (priority) params.set('priority', priority)
-  const q = params.toString()
-  return q ? `${basePath}?${q}` : basePath
-}
-
 export function TicketsTableToolbar({
   basePath,
   tabs,
   activeStatus,
   priority,
+  client,
+  clients = [],
   totalShown,
   totalLabel = 'tickets',
   showPriorityFilter = false,
+  showClientFilter = false,
 }: {
   basePath: string
   tabs: TicketTab[]
   activeStatus: string
   priority?: string
+  client?: string
+  clients?: ClientOption[]
   totalShown: number
   totalLabel?: string
   showPriorityFilter?: boolean
+  showClientFilter?: boolean
 }) {
+  const listFilters = {
+    status: activeStatus || undefined,
+    priority: priority || undefined,
+    client: client || undefined,
+  }
   return (
     <div className="tickets-toolbar">
       <div className="tickets-toolbar-tabs dash-tabs border-b-0">
@@ -40,7 +45,7 @@ export function TicketsTableToolbar({
           return (
             <Link
               key={value || 'all'}
-              href={tabHref(basePath, value, priority)}
+              href={ticketsListHref(basePath, { ...listFilters, status: value || undefined })}
               className={`dash-tab ${active ? 'is-active' : ''}`}
             >
               {label}
@@ -56,8 +61,20 @@ export function TicketsTableToolbar({
         <p className="tickets-result-count">
           <span className="tickets-result-count-num">{totalShown}</span> {totalLabel}
         </p>
+        {showClientFilter && clients.length > 0 ? (
+          <TicketsClientFilter
+            value={client ?? ''}
+            clients={clients}
+            status={activeStatus || undefined}
+            priority={priority || undefined}
+          />
+        ) : null}
         {showPriorityFilter ? (
-          <TicketsPriorityFilter value={priority ?? ''} status={activeStatus || undefined} />
+          <TicketsPriorityFilter
+            value={priority ?? ''}
+            status={activeStatus || undefined}
+            client={client || undefined}
+          />
         ) : null}
       </div>
     </div>

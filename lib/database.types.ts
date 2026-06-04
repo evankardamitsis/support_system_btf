@@ -76,28 +76,34 @@ export interface Database {
         Row: {
           id: string
           client_id: string
+          package_name: string
           period_start: string
           period_end: string
           hours_total: number
           hours_used: number
+          period_cost: number
           created_at: string
         }
         Insert: {
           id?: string
           client_id: string
+          package_name?: string
           period_start: string
           period_end: string
           hours_total: number
           hours_used?: number
+          period_cost?: number
           created_at?: string
         }
         Update: {
           id?: string
           client_id?: string
+          package_name?: string
           period_start?: string
           period_end?: string
           hours_total?: number
           hours_used?: number
+          period_cost?: number
           created_at?: string
         }
         Relationships: []
@@ -116,6 +122,8 @@ export interface Database {
           created_at: string
           updated_at: string
           resolved_at: string | null
+          estimated_hours: number | null
+          actual_hours: number | null
         }
         Insert: {
           id?: string
@@ -130,6 +138,8 @@ export interface Database {
           created_at?: string
           updated_at?: string
           resolved_at?: string | null
+          estimated_hours?: number | null
+          actual_hours?: number | null
         }
         Update: {
           id?: string
@@ -144,6 +154,8 @@ export interface Database {
           created_at?: string
           updated_at?: string
           resolved_at?: string | null
+          estimated_hours?: number | null
+          actual_hours?: number | null
         }
         Relationships: []
       }

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { ArrowUpRight } from 'lucide-react'
+import { AdminTicketRow } from './AdminTicketRow'
 import {
   formatTicketId,
   formatRelativeTime,
@@ -18,18 +19,22 @@ export type TicketTableRow = {
   type: string
   updated_at: string
   clientName?: string | null
+  estimated_hours?: number | null
+  actual_hours?: number | null
 }
 
 export function TicketsTable({
   tickets,
   hrefPrefix,
   variant = 'admin',
+  hoursLoggedByTicketId = {},
   emptyTitle = 'No tickets found',
   emptyHint = 'Try another filter or create a new ticket',
 }: {
   tickets: TicketTableRow[]
   hrefPrefix: string
   variant?: 'admin' | 'portal'
+  hoursLoggedByTicketId?: Record<string, boolean>
   emptyTitle?: string
   emptyHint?: string
 }) {
@@ -58,6 +63,17 @@ export function TicketsTable({
 
       <div className="tickets-table-body">
         {tickets.map(t => {
+          if (variant === 'admin') {
+            return (
+              <AdminTicketRow
+                key={t.id}
+                ticket={t}
+                hrefPrefix={hrefPrefix}
+                hoursLogged={hoursLoggedByTicketId[t.id] ?? (t.actual_hours != null && t.actual_hours > 0)}
+              />
+            )
+          }
+
           const accent = priorityAccent[t.priority] ?? priorityAccent.normal
           const recent = isRecentlyUpdated(t.updated_at)
           const href = `${hrefPrefix}/${t.id}`
@@ -85,24 +101,8 @@ export function TicketsTable({
                     ·
                   </span>
                   <span className="capitalize">{t.type}</span>
-                  {variant === 'admin' && t.clientName ? (
-                    <>
-                      <span className="tickets-subject-dot" aria-hidden>
-                        ·
-                      </span>
-                      <span className="tickets-subject-client">{t.clientName}</span>
-                    </>
-                  ) : null}
                 </span>
               </div>
-
-              {variant === 'admin' ? (
-                <div className="tickets-cell tickets-cell-client min-w-0">
-                  <span className="tickets-client-name">
-                    {t.clientName ?? '—'}
-                  </span>
-                </div>
-              ) : null}
 
               <div className="tickets-cell tickets-cell-updated">
                 <time
@@ -130,7 +130,13 @@ function HeaderCells({ variant }: { variant: 'admin' | 'portal' }) {
       <span>Status</span>
       <span>Priority</span>
       <span>Subject</span>
-      {variant === 'admin' ? <span>Client</span> : null}
+      {variant === 'admin' ? (
+        <>
+          <span>Client</span>
+          <span>Est</span>
+          <span>Actual</span>
+        </>
+      ) : null}
       <span>Updated</span>
       <span className="tickets-header-action" aria-hidden />
     </>

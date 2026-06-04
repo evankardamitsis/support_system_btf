@@ -1,15 +1,20 @@
 import Link from 'next/link'
 import { UsageBar } from '@/components/dashboard/UsageBar'
 import { StatusFlag } from '@/components/dashboard/StatusFlag'
+import { PackageChip } from '@/components/retainers/PackageChip'
+import { formatPeriodCost } from '@/lib/retainers/packages'
 
 export type RetainerListItem = {
   id: string
   client_id: string
   clientName: string | null
+  package_name: string
   period_start: string
   period_end: string
   hours_total: number
   hours_used: number
+  period_cost: number
+  isActive: boolean
 }
 
 function retainerTone(pct: number, isOver: boolean): 'ok' | 'warn' | 'danger' | 'over' {
@@ -33,8 +38,10 @@ export function RetainersList({ retainers }: { retainers: RetainerListItem[] }) 
     <div className="retainers-table">
       <div className="retainers-col-grid retainers-grid-head">
         <span>Client</span>
+        <span>Package</span>
         <span>Period</span>
         <span>Hours</span>
+        <span>Cost</span>
         <span>Remaining</span>
         <span>Usage</span>
         <span />
@@ -64,7 +71,13 @@ export function RetainersList({ retainers }: { retainers: RetainerListItem[] }) 
                     label={isOver ? 'Over capacity' : `${Math.round(pct)}% used`}
                     tone={isOver ? 'danger' : 'warn'}
                   />
+                ) : r.isActive ? (
+                  <span className="retainers-active-badge">Active</span>
                 ) : null}
+              </div>
+
+              <div className="retainers-cell">
+                <PackageChip packageName={r.package_name} />
               </div>
 
               <div className="retainers-cell">
@@ -86,6 +99,10 @@ export function RetainersList({ retainers }: { retainers: RetainerListItem[] }) 
                 <span className="tabular-nums">{used.toFixed(1)}</span>
                 <span className="retainers-hours-sep">/</span>
                 <span className="tabular-nums">{total.toFixed(0)}h</span>
+              </div>
+
+              <div className="retainers-cell retainers-cell-cost tabular-nums">
+                {formatPeriodCost(r.period_cost)}
               </div>
 
               <div className="retainers-cell">

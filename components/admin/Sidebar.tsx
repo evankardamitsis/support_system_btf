@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Ticket, Users, Clock, X } from 'lucide-react'
 
 interface AdminSidebarProps {
   userName?: string
@@ -12,9 +11,9 @@ interface AdminSidebarProps {
 }
 
 const nav = [
-  { label: 'Tickets', href: '/admin/tickets', icon: Ticket },
-  { label: 'Clients', href: '/admin/clients', icon: Users },
-  { label: 'Retainers', href: '/admin/retainers', icon: Clock },
+  { label: 'Tickets', href: '/admin/tickets' },
+  { label: 'Clients', href: '/admin/clients' },
+  { label: 'Retainers', href: '/admin/retainers' },
 ]
 
 function initials(n?: string, e?: string) {
@@ -31,19 +30,20 @@ export function AdminSidebar({ userName, userEmail, userRole, onClose }: AdminSi
 
   return (
     <aside className="dash-sidebar flex flex-col h-full select-none relative">
-      {onClose && (
+      {onClose ? (
         <button
+          type="button"
           onClick={onClose}
-          className="lg:hidden absolute top-3 right-3 p-1 dash-meta hover:opacity-80"
+          className="dash-sidebar-close lg:hidden"
           aria-label="Close menu"
         >
-          <X size={15} />
+          ×
         </button>
-      )}
+      ) : null}
 
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         <p className="dash-nav-label">Navigation</p>
-        {nav.map(({ label, href, icon: Icon }) => {
+        {nav.map(({ label, href }) => {
           const active = pathname === href || pathname.startsWith(href + '/')
           return (
             <Link
@@ -52,8 +52,7 @@ export function AdminSidebar({ userName, userEmail, userRole, onClose }: AdminSi
               onClick={onClose}
               className={`dash-nav-link ${active ? 'is-active' : ''}`}
             >
-              <Icon size={15} className="dash-nav-icon" />
-              <span>{label}</span>
+              <span className="dash-nav-text">{label}</span>
             </Link>
           )
         })}
@@ -66,9 +65,9 @@ export function AdminSidebar({ userName, userEmail, userRole, onClose }: AdminSi
             <p className="text-xs font-medium truncate leading-none" style={{ color: 'var(--text-1)' }}>
               {userName ?? userEmail}
             </p>
-            {userRole && (
+            {userRole ? (
               <p className="dash-meta mt-0.5 uppercase tracking-wider">{userRole}</p>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

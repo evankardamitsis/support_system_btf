@@ -2,11 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Ticket, BarChart2, X } from 'lucide-react'
 
 const nav = [
-  { label: 'My Tickets', href: '/portal/tickets', icon: Ticket },
-  { label: 'Retainer', href: '/portal/retainer', icon: BarChart2 },
+  { label: 'My Tickets', href: '/portal/tickets' },
+  { label: 'Retainer', href: '/portal/retainer' },
 ]
 
 function initials(name?: string, email?: string) {
@@ -31,20 +30,21 @@ export function PortalSidebar({
 
   return (
     <aside className="dash-sidebar flex flex-col h-full relative">
-      {onClose && (
+      {onClose ? (
         <button
+          type="button"
           onClick={onClose}
-          className="lg:hidden absolute top-3 right-3 p-1 dash-meta hover:opacity-80"
+          className="dash-sidebar-close lg:hidden"
           aria-label="Close menu"
         >
-          <X size={16} />
+          ×
         </button>
-      )}
+      ) : null}
 
       <nav className="flex-1 px-3 py-4 overflow-y-auto">
         <p className="dash-nav-label">My portal</p>
         <div className="space-y-0.5">
-          {nav.map(({ label, href, icon: Icon }) => {
+          {nav.map(({ label, href }) => {
             const active = pathname === href || pathname.startsWith(href + '/')
             return (
               <Link
@@ -53,8 +53,7 @@ export function PortalSidebar({
                 onClick={onClose}
                 className={`dash-nav-link ${active ? 'is-active' : ''}`}
               >
-                <Icon size={16} className="dash-nav-icon" />
-                <span>{label}</span>
+                <span className="dash-nav-text">{label}</span>
               </Link>
             )
           })}

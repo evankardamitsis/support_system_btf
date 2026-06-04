@@ -29,52 +29,30 @@ export function CommentThread({ comments, showInternal = false }: CommentThreadP
 
   if (visible.length === 0) {
     return (
-      <div className="py-8 text-center">
-        <p className="text-sm dash-meta">No activity yet.</p>
+      <div className="ticket-detail-thread-empty">
+        <p className="dash-meta">No messages yet — start the conversation below.</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
+    <div className="ticket-detail-thread">
       {visible.map(c => (
-        <div key={c.id} className="flex gap-3">
-          <div
-            className="w-8 h-8 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 font-mono"
-            style={{ background: 'var(--accent)', color: 'var(--bg)' }}
-          >
+        <article
+          key={c.id}
+          className={`ticket-detail-comment ${c.is_internal ? 'ticket-detail-comment--internal' : ''}`}
+        >
+          <div className="ticket-detail-comment-avatar" aria-hidden>
             {initials(c.author_id)}
           </div>
-
-          <div
-            className="flex-1 px-4 py-3"
-            style={{
-              background: c.is_internal ? 'rgba(255, 170, 0, 0.06)' : 'var(--bg)',
-              border: `1px solid ${c.is_internal ? 'rgba(255, 170, 0, 0.2)' : 'var(--border)'}`,
-            }}
-          >
-            <div className="flex items-center gap-2 mb-1.5">
-              {c.is_internal && (
-                <span
-                  className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium font-mono uppercase tracking-wide"
-                  style={{
-                    background: 'rgba(255, 170, 0, 0.12)',
-                    color: 'var(--warning)',
-                  }}
-                >
-                  Internal
-                </span>
-              )}
-              <span className="dash-meta">{relativeTime(c.created_at)}</span>
+          <div className="ticket-detail-comment-body">
+            <div className="ticket-detail-comment-meta">
+              {c.is_internal ? <span className="ticket-detail-comment-badge">Internal</span> : null}
+              <time className="dash-meta">{relativeTime(c.created_at)}</time>
             </div>
-            <p
-              className="text-sm leading-relaxed whitespace-pre-wrap"
-              style={{ color: 'var(--text-1)', fontFamily: 'var(--font-geist)' }}
-            >
-              {c.body}
-            </p>
+            <p className="ticket-detail-comment-text">{c.body}</p>
           </div>
-        </div>
+        </article>
       ))}
     </div>
   )

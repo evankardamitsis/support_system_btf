@@ -48,7 +48,7 @@ export default async function AdminClientsPage() {
       <MetricStrip
         items={[
           { label: 'Total accounts', value: String(list.length) },
-          { label: 'On a plan', value: String(withPlan), hint: 'Named plan set' },
+          { label: 'Care / Grow', value: String(withPlan), hint: 'Package set' },
           {
             label: 'Renewing soon',
             value: String(renewingSoon),

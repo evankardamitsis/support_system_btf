@@ -24,5 +24,7 @@ export async function logHours(
 
   if (error) throw new Error(error.message)
   revalidatePath(`/admin/tickets/${ticketId}`)
+  revalidatePath('/admin/tickets')
   revalidatePath('/admin/retainers')
+  revalidatePath('/admin/clients')
 }

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { PackageChip } from '@/components/retainers/PackageChip'
 
 export type ClientListItem = {
   id: string
@@ -47,7 +48,14 @@ export function ClientsList({ clients }: { clients: ClientListItem[] }) {
           </div>
 
           <div className="entity-card-aside">
-            <span className="entity-chip">{c.plan_name ?? 'No plan'}</span>
+            {c.plan_name === 'Care' || c.plan_name === 'Grow' ? (
+              <PackageChip
+                packageName={c.plan_name === 'Grow' ? 'grow' : 'care'}
+                className="entity-chip-package"
+              />
+            ) : (
+              <span className="entity-chip">{c.plan_name ?? 'No package'}</span>
+            )}
             <span className="entity-stat">
               <span className="entity-stat-label">Renewal</span>
               <span className="entity-stat-value tabular-nums">
