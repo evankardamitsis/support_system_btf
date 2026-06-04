@@ -243,6 +243,42 @@ export interface Database {
         }
         Relationships: []
       }
+      staff_invite_tokens: {
+        Row: {
+          id: string
+          email: string
+          full_name: string
+          role: 'admin' | 'agent'
+          token: string
+          used: boolean
+          expires_at: string
+          invited_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          email: string
+          full_name: string
+          role: 'admin' | 'agent'
+          token?: string
+          used?: boolean
+          expires_at?: string
+          invited_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string
+          full_name?: string
+          role?: 'admin' | 'agent'
+          token?: string
+          used?: boolean
+          expires_at?: string
+          invited_by?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

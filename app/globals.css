@@ -1551,6 +1551,81 @@
   padding-left: 1.5rem;
 }
 
+[data-theme="dashboard"] .entity-card--static {
+  cursor: default;
+  text-decoration: none;
+  color: inherit;
+}
+
+[data-theme="dashboard"] .entity-card--static:hover {
+  background: transparent;
+  padding-left: 1.25rem;
+}
+
+[data-theme="dashboard"] .entity-avatar--pending {
+  opacity: 0.65;
+  border: 1px dashed var(--border-2);
+  background: transparent;
+  color: var(--text-2);
+}
+
+[data-theme="dashboard"] .team-section-label {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-family: var(--font-dm-mono);
+  border-bottom: 1px solid var(--border);
+}
+
+[data-theme="dashboard"] .team-role-badge {
+  display: inline-flex;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  font-family: var(--font-dm-mono);
+  color: var(--text-2);
+}
+
+[data-theme="dashboard"] .team-role-badge--admin {
+  border-color: rgba(232, 255, 71, 0.35);
+  color: var(--accent);
+}
+
+[data-theme="dashboard"] .team-role-badge--agent {
+  border-color: rgba(96, 165, 250, 0.35);
+  color: #93c5fd;
+}
+
+[data-theme="dashboard"] .team-pending-panel {
+  opacity: 0.92;
+}
+
+[data-theme="dashboard"] .team-pending-aside {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+[data-theme="dashboard"] .team-pending-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 280px;
+}
+
+[data-theme="dashboard"] .team-pending-revoke:hover {
+  color: var(--danger);
+  border-color: rgba(255, 68, 68, 0.35);
+}
+
 [data-theme="dashboard"] .entity-card-main {
   display: flex;
   align-items: center;

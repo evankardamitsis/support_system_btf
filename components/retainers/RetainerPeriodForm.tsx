@@ -27,9 +27,10 @@ export function RetainerPeriodForm({
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    const form = e.currentTarget
     setError(null)
     setPending(true)
-    const formData = new FormData(e.currentTarget)
+    const formData = new FormData(form)
     formData.set('client_id', clientId)
     formData.set('package_name', packageName)
     formData.set('billing_cycle_day', String(billingCycleDay))
@@ -37,10 +38,10 @@ export function RetainerPeriodForm({
 
     try {
       await createRetainerPeriod(formData)
-      router.refresh()
-      e.currentTarget.reset()
       setPackageName('care')
       setCustomDates(false)
+      form.reset()
+      router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save retainer')
     } finally {

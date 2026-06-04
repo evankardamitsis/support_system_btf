@@ -14,6 +14,7 @@ const nav = [
   { label: 'Tickets', href: '/admin/tickets' },
   { label: 'Clients', href: '/admin/clients' },
   { label: 'Retainers', href: '/admin/retainers' },
+  { label: 'Team', href: '/admin/team' },
 ]
 
 function initials(n?: string, e?: string) {

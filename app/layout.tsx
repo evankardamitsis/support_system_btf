@@ -16,8 +16,18 @@ const geist = Geist({
 })
 
 export const metadata: Metadata = {
-  title: 'BTF Support',
-  description: 'Client retainer & ticketing — Below The Fold',
+  title: {
+    default: 'BTF Support',
+    template: '%s · BTF Support',
+  },
+  description:
+    'Submit requests to Below The Fold, follow ticket progress, and stay aligned with your BTF team — one client portal and support hub.',
+  openGraph: {
+    title: 'BTF Support',
+    description:
+      'Submit requests to Below The Fold, follow ticket progress, and stay aligned with your BTF team — one client portal and support hub.',
+    siteName: 'BTF Support',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

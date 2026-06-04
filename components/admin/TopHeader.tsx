@@ -9,6 +9,7 @@ const sections: Record<string, string[]> = {
   '/admin/tickets':   ['BTF Support', 'Tickets'],
   '/admin/clients':   ['BTF Support', 'Clients'],
   '/admin/retainers': ['BTF Support', 'Retainers'],
+  '/admin/team': ['BTF Support', 'Team'],
 }
 
 function initials(name?: string, email?: string) {
