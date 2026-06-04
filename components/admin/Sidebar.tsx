@@ -34,7 +34,7 @@ export function AdminSidebar({ userName, userEmail, userRole, onClose }: AdminSi
         <button
           type="button"
           onClick={onClose}
-          className="dash-sidebar-close lg:hidden"
+          className="dash-sidebar-close"
           aria-label="Close menu"
         >
           ×
