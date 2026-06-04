@@ -139,6 +139,38 @@
   mask-image: radial-gradient(ellipse 110% 90% at 50% 0%, black 18%, transparent 78%);
 }
 
+/* ─── Auth password visibility toggle ───────────────────────────────────────── */
+.auth-password-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.auth-password-toggle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+
+.auth-password-toggle:hover {
+  color: var(--text-2);
+}
+
+.auth-password-toggle:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* ─── Hero word stagger ──────────────────────────────────────────────────────── */
 @keyframes wordReveal {
   from { opacity: 0; transform: translateY(16px); }

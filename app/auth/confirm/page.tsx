@@ -28,7 +28,7 @@ export default function AuthConfirmPage() {
         if (type === 'recovery') {
           router.replace('/auth/update-password')
         } else {
-          router.replace('/')
+          router.replace('/auth/login')
         }
       })
     }

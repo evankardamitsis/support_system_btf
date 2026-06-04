@@ -34,11 +34,15 @@ export function GenerateInviteSection({ clientId }: { clientId: string }) {
       >
         {loading ? '...' : 'GENERATE INVITE LINK'}
       </button>
-      {link && (
-        <div className="w-72">
+      {link ? (
+        <div className="w-full max-w-sm space-y-2 text-right">
           <CopyInput value={link} />
+          <p className="dash-meta leading-relaxed">
+            Open in a private window to register a real portal user. Login uses this client&apos;s
+            account email. Link expires in 7 days, one use.
+          </p>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }

@@ -2,6 +2,22 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
+import { getPostLoginPath } from '@/lib/auth/post-login'
+import { PasswordField } from '@/components/auth/PasswordField'
+import { AuthError } from '@/components/auth/AuthMessage'
+
+const inputStyle = {
+  background: 'var(--surface-2)',
+  border: '1px solid var(--border-2)',
+  color: 'var(--text-1)',
+  fontFamily: 'var(--font-geist)',
+  fontSize: 16,
+  padding: '14px 16px',
+  outline: 'none',
+  borderRadius: 0,
+  width: '100%',
+  transition: 'border-color 150ms ease',
+} as const
 
 export default async function LoginPage({
   searchParams,
@@ -17,20 +33,7 @@ export default async function LoginPage({
     const password = formData.get('password') as string
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) redirect(`/auth/login?error=${encodeURIComponent(error.message)}`)
-    redirect('/')
-  }
-
-  const inputStyle = {
-    background: 'var(--surface-2)',
-    border: '1px solid var(--border-2)',
-    color: 'var(--text-1)',
-    fontFamily: 'var(--font-geist)',
-    fontSize: 16,
-    padding: '14px 16px',
-    outline: 'none',
-    borderRadius: 0,
-    width: '100%',
-    transition: 'border-color 150ms ease',
+    redirect(await getPostLoginPath(supabase))
   }
 
   return (
@@ -39,8 +42,6 @@ export default async function LoginPage({
       style={{ background: 'var(--bg)' }}
     >
       <div className="w-full max-w-[440px] flex flex-col gap-10">
-
-        {/* Logo */}
         <Link href="/" className="flex justify-center">
           <Image
             src="/btf-wordmark.svg"
@@ -52,16 +53,22 @@ export default async function LoginPage({
           />
         </Link>
 
-        {/* Form card */}
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border-2)' }}>
           <div className="px-8 py-7" style={{ borderBottom: '1px solid var(--border)' }}>
             <h1
               className="text-2xl font-medium"
-              style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-1)', letterSpacing: '0.01em' }}
+              style={{
+                fontFamily: 'var(--font-dm-mono)',
+                color: 'var(--text-1)',
+                letterSpacing: '0.01em',
+              }}
             >
               Sign in
             </h1>
-            <p className="text-base mt-1.5" style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-2)' }}>
+            <p
+              className="text-base mt-1.5"
+              style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-2)' }}
+            >
               Access your BTF Support portal.
             </p>
           </div>
@@ -88,38 +95,33 @@ export default async function LoginPage({
             </div>
 
             <div className="flex flex-col gap-2.5">
-              <label
-                htmlFor="password"
-                className="text-sm font-medium"
-                style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-1)' }}
-              >
-                Password
-              </label>
-              <input
+              <div className="flex items-center justify-between gap-3">
+                <label
+                  htmlFor="password"
+                  className="text-sm font-medium"
+                  style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-1)' }}
+                >
+                  Password
+                </label>
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-xs hover:opacity-70 transition-opacity shrink-0"
+                  style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-3)' }}
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <PasswordField
                 id="password"
                 name="password"
-                type="password"
-                required
+                showLabel={false}
                 autoComplete="current-password"
-                style={inputStyle}
-                className="focus:[border-color:var(--accent)]"
+                placeholder="Your password"
+                minLength={1}
               />
             </div>
 
-            {params.error && (
-              <div
-                className="px-4 py-3"
-                style={{
-                  background: 'rgba(255,68,68,0.08)',
-                  border: '1px solid rgba(255,68,68,0.3)',
-                  color: 'var(--danger)',
-                  fontFamily: 'var(--font-geist)',
-                  fontSize: 14,
-                }}
-              >
-                {params.error}
-              </div>
-            )}
+            {params.error ? <AuthError message={params.error} /> : null}
 
             <button
               type="submit"

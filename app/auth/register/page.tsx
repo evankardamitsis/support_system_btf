@@ -2,6 +2,8 @@ import { redirect, notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { PasswordField } from '@/components/auth/PasswordField'
+import { AuthError } from '@/components/auth/AuthMessage'
 
 export default async function RegisterPage({
   searchParams,
@@ -137,27 +139,14 @@ export default async function RegisterPage({
                   />
                 </div>
 
-                <div className="flex flex-col gap-2.5">
-                  <label htmlFor="password" className="text-sm font-medium" style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-1)' }}>
-                    Password
-                  </label>
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    required
-                    minLength={8}
-                    placeholder="Min. 8 characters"
-                    style={inputStyle}
-                    className="placeholder-[#555] focus:[border-color:var(--accent)]"
-                  />
-                </div>
+                <PasswordField
+                  id="password"
+                  name="password"
+                  label="Password"
+                  autoComplete="new-password"
+                />
 
-                {params.error && (
-                  <div className="px-4 py-3" style={{ background: 'rgba(255,68,68,0.08)', border: '1px solid rgba(255,68,68,0.3)', color: 'var(--danger)', fontFamily: 'var(--font-geist)', fontSize: 14 }}>
-                    {params.error}
-                  </div>
-                )}
+                {params.error ? <AuthError message={params.error} /> : null}
 
                 <button
                   type="submit"
