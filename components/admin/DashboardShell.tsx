@@ -41,7 +41,7 @@ export function DashboardShell({ children, userName, userEmail, userRole }: Dash
         </div>
 
         <main className="flex-1 overflow-y-auto dash-main">
-          <div className="dash-main-inner w-full px-5 py-6 lg:px-6 lg:py-7 min-h-full">
+          <div className="dash-main-inner">
             {children}
           </div>
         </main>
