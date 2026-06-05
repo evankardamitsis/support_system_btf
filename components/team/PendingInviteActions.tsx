@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { revokeStaffInvite } from '@/app/actions/team'
 import { CopyInput } from '@/components/ui/CopyInput'
+import { notifyError, notifySuccess } from '@/lib/notify'
 
 export function PendingInviteActions({
   inviteId,
@@ -29,8 +30,10 @@ export function PendingInviteActions({
       const result = await revokeStaffInvite(inviteId)
       if (!result.ok) {
         setError(result.error)
+        notifyError(result.error)
         return
       }
+      notifySuccess('Invite revoked')
       router.refresh()
     })
   }

@@ -1,8 +1,13 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { tryCreateAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/auth/require-admin'
 import { currentBillingPeriod } from '@/lib/retainers/period'
 import type { RetainerPackage } from '@/lib/retainers/packages'
+
+export type DeleteClientResult = { ok: true } | { ok: false; error: string }
 
 function parsePackage(raw: string | null): RetainerPackage {
   return raw === 'grow' ? 'grow' : 'care'
@@ -70,4 +75,44 @@ export async function generateInviteLink(clientId: string): Promise<string> {
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
   return `${baseUrl}/auth/register?token=${token.token}`
+}
+
+export async function deleteClient(clientId: string): Promise<DeleteClientResult> {
+  const { isAdmin } = await requireAdmin()
+  if (!isAdmin) {
+    return { ok: false, error: 'Only admins can delete clients' }
+  }
+
+  const adminResult = tryCreateAdminClient()
+  if ('error' in adminResult) {
+    return { ok: false, error: adminResult.error }
+  }
+  const admin = adminResult.client
+
+  const { data: portalUsers, error: usersError } = await admin
+    .from('users')
+    .select('id')
+    .eq('client_id', clientId)
+    .eq('role', 'client')
+
+  if (usersError) {
+    return { ok: false, error: usersError.message }
+  }
+
+  for (const portalUser of portalUsers ?? []) {
+    const { error: authDeleteError } = await admin.auth.admin.deleteUser(portalUser.id)
+    if (authDeleteError) {
+      return { ok: false, error: authDeleteError.message }
+    }
+  }
+
+  const { error } = await admin.from('clients').delete().eq('id', clientId)
+  if (error) {
+    return { ok: false, error: error.message }
+  }
+
+  revalidatePath('/admin/clients')
+  revalidatePath('/admin/tickets')
+  revalidatePath('/admin/retainers')
+  return { ok: true }
 }

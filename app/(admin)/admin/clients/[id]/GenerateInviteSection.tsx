@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { generateInviteLink } from '@/app/actions/clients'
 import { CopyInput } from '@/components/ui/CopyInput'
+import { notifyError, notifySuccess } from '@/lib/notify'
 
 export function GenerateInviteSection({ clientId }: { clientId: string }) {
   const [link, setLink] = useState<string | null>(null)
@@ -13,6 +14,9 @@ export function GenerateInviteSection({ clientId }: { clientId: string }) {
     try {
       const url = await generateInviteLink(clientId)
       setLink(url)
+      notifySuccess('Portal invite link generated')
+    } catch (err) {
+      notifyError(err instanceof Error ? err.message : 'Could not generate invite link')
     } finally {
       setLoading(false)
     }

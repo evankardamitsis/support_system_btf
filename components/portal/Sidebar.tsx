@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 
 const nav = [
   { label: 'My Tickets', href: '/portal/tickets' },
-  { label: 'Retainer', href: '/portal/retainer' },
+  { label: 'My Plan', href: '/portal/retainer' },
 ]
 
 function initials(name?: string, email?: string) {

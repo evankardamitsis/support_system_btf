@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { GenerateInviteSection } from './GenerateInviteSection'
+import { DeleteClientButton } from '@/components/clients/DeleteClientButton'
+import { requireAdmin } from '@/lib/auth/require-admin'
 import { MetricStrip } from '@/components/dashboard/MetricStrip'
 import { TicketsTable } from '@/components/tickets/TicketsTable'
 import { ClientRetainerSection } from '@/components/retainers/ClientRetainerSection'
@@ -15,18 +17,20 @@ export default async function AdminClientDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
+  const { isAdmin } = await requireAdmin()
   const supabase = await createClient()
 
   const { data: client } = await supabase.from('clients').select('*').eq('id', id).single()
   if (!client) notFound()
 
-  const [{ data: tickets }, activeRetainer] = await Promise.all([
+  const [{ data: tickets }, { count: ticketCount }, activeRetainer] = await Promise.all([
     supabase
       .from('tickets')
       .select('id, title, status, priority, type, updated_at')
       .eq('client_id', id)
       .order('updated_at', { ascending: false })
       .limit(20),
+    supabase.from('tickets').select('*', { count: 'exact', head: true }).eq('client_id', id),
     getRetainerForClient(supabase, id, { includePackage: true }),
   ])
 
@@ -115,6 +119,14 @@ export default async function AdminClientDetailPage({
           emptyHint="Create a ticket for this client"
         />
       </section>
+
+      {isAdmin ? (
+        <DeleteClientButton
+          clientId={id}
+          clientName={client.name}
+          ticketCount={ticketCount ?? 0}
+        />
+      ) : null}
     </div>
   )
 }

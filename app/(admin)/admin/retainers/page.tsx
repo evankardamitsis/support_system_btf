@@ -1,10 +1,15 @@
+import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/lib/auth/require-admin'
 import { PageHeader } from '@/components/dashboard/PageHeader'
 import { MetricStrip } from '@/components/dashboard/MetricStrip'
 import { RetainersList } from '@/components/retainers/RetainersList'
 import { isActivePeriod } from '@/lib/retainers/packages'
 
 export default async function AdminRetainersPage() {
+  const { isAdmin } = await requireAdmin()
+  if (!isAdmin) redirect('/admin/tickets')
+
   const supabase = await createClient()
   const { data: retainers, error } = await supabase
     .from('retainers')

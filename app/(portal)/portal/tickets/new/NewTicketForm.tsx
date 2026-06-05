@@ -1,8 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { createPortalTicket } from '@/app/actions/tickets'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { DashCancel } from '@/components/dashboard/DashCancel'
+import { runWithToast } from '@/lib/notify'
 
 const typeOptions = ['BUG', 'TASK', 'REQUEST', 'QUESTION']
 const typeMap: Record<string, string> = {
@@ -12,22 +15,30 @@ const typeMap: Record<string, string> = {
   QUESTION: 'question',
 }
 
-export function NewTicketForm({
-  createTicket,
-}: {
-  createTicket: (formData: FormData) => Promise<void>
-}) {
+export function NewTicketForm() {
+  const router = useRouter()
   const [type, setType] = useState('TASK')
+  const [pending, startTransition] = useTransition()
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+    formData.set('type', typeMap[type] ?? 'task')
+
+    startTransition(async () => {
+      const id = await runWithToast(() => createPortalTicket(formData), {
+        loading: 'Submitting request…',
+        success: 'Request submitted — BTF will pick it up shortly',
+      })
+      if (!id) return
+      router.push(`/portal/tickets/${id}`)
+      router.refresh()
+    })
+  }
 
   return (
     <div className="dash-panel">
-      <form
-        action={async formData => {
-          formData.set('type', typeMap[type] ?? 'task')
-          await createTicket(formData)
-        }}
-        className="dash-form-body"
-      >
+      <form onSubmit={handleSubmit} className="dash-form-body">
         <div>
           <label className="dash-label">
             Subject <span className="dash-label-required">*</span>
@@ -37,6 +48,7 @@ export function NewTicketForm({
             required
             className="btf-input w-full"
             placeholder="Brief description of the issue"
+            disabled={pending}
           />
         </div>
 
@@ -53,12 +65,13 @@ export function NewTicketForm({
             className="btf-input w-full resize-y"
             placeholder="Provide as much detail as possible…"
             style={{ minHeight: 120 }}
+            disabled={pending}
           />
         </div>
 
         <div className="flex flex-wrap gap-3 pt-1">
-          <button type="submit" className="dash-btn-primary btn-primary cursor-pointer">
-            Submit ticket
+          <button type="submit" className="dash-btn-primary btn-primary cursor-pointer" disabled={pending}>
+            {pending ? 'Submitting…' : 'Submit ticket'}
           </button>
           <DashCancel href="/portal/tickets" />
         </div>

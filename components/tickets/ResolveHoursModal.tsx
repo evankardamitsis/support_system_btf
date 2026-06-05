@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { resolveTicketWithHours } from '@/app/actions/tickets'
+import { runWithToast } from '@/lib/notify'
 
 function ResolveHoursForm({
   ticketId,
@@ -28,12 +29,16 @@ function ResolveHoursForm({
       return
     }
     startTransition(async () => {
-      try {
-        await resolveTicketWithHours(ticketId, value)
-        onClose()
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Could not resolve ticket')
+      const ok = await runWithToast(() => resolveTicketWithHours(ticketId, value), {
+        loading: 'Resolving ticket…',
+        success: `Ticket resolved — ${value}h logged to retainer`,
+      })
+      if (ok === null) {
+        setError('Could not resolve ticket')
+        return
       }
+      setError(null)
+      onClose()
     })
   }
 

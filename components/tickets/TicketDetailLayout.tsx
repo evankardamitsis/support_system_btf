@@ -11,7 +11,9 @@ import { EditableStatusPill } from './EditableStatusPill'
 import { EditablePriorityPill } from './EditablePriorityPill'
 import { ResolveHoursModal } from './ResolveHoursModal'
 import { TicketDetailSidebar } from './TicketDetailSidebar'
+import { DeleteTicketButton } from './DeleteTicketButton'
 import { formatTicketId } from '@/lib/tickets/display'
+import { formatTicketPriority, formatTicketStatus, runWithToast } from '@/lib/notify'
 import type { TicketPriority, TicketStatus } from '@/lib/types'
 
 type RetainerOption = {
@@ -40,6 +42,7 @@ export function TicketDetailLayout({
   activeRetainer,
   retainers,
   defaultRetainerId,
+  isAdmin = false,
 }: {
   children: ReactNode
   ticketId: string
@@ -58,6 +61,7 @@ export function TicketDetailLayout({
   activeRetainer: RetainerOption | null
   retainers: RetainerOption[]
   defaultRetainerId?: string | null
+  isAdmin?: boolean
 }) {
   const router = useRouter()
   const [resolveOpen, setResolveOpen] = useState(false)
@@ -73,8 +77,11 @@ export function TicketDetailLayout({
       return
     }
     startTransition(async () => {
-      await updateTicketStatus(ticketId, next)
-      refresh()
+      const ok = await runWithToast(() => updateTicketStatus(ticketId, next), {
+        loading: 'Updating status…',
+        success: `Status set to ${formatTicketStatus(next)}`,
+      })
+      if (ok !== null) refresh()
     })
   }
 
@@ -140,8 +147,11 @@ export function TicketDetailLayout({
                 value={priority}
                 onChange={next =>
                   startTransition(async () => {
-                    await updateTicketPriority(ticketId, next)
-                    refresh()
+                    const ok = await runWithToast(() => updateTicketPriority(ticketId, next), {
+                      loading: 'Updating priority…',
+                      success: `Priority set to ${formatTicketPriority(next)}`,
+                    })
+                    if (ok !== null) refresh()
                   })
                 }
                 disabled={pending}
@@ -174,6 +184,8 @@ export function TicketDetailLayout({
           onResolve={() => setResolveOpen(true)}
         />
       </div>
+
+      {isAdmin ? <DeleteTicketButton ticketId={ticketId} ticketTitle={title} /> : null}
 
       <ResolveHoursModal
         ticketId={ticketId}

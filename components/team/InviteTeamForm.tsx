@@ -6,6 +6,7 @@ import { inviteTeamMember } from '@/app/actions/team'
 import { ROLE_LABELS, STAFF_ROLES, type StaffRole } from '@/lib/team/roles'
 import { CopyInput } from '@/components/ui/CopyInput'
 import { FormPanel } from '@/components/dashboard/FormPanel'
+import { notifyError, notifySuccess } from '@/lib/notify'
 
 export function InviteTeamForm() {
   const router = useRouter()
@@ -28,9 +29,11 @@ export function InviteTeamForm() {
 
     if (!result.ok) {
       setError(result.error)
+      notifyError(result.error)
       return
     }
 
+    notifySuccess('Invite link ready — copy and send it privately')
     setLink(result.url)
     setRole('agent')
     form.reset()

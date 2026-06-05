@@ -11,10 +11,10 @@ interface AdminSidebarProps {
 }
 
 const nav = [
-  { label: 'Tickets', href: '/admin/tickets' },
-  { label: 'Clients', href: '/admin/clients' },
-  { label: 'Retainers', href: '/admin/retainers' },
-  { label: 'Team', href: '/admin/team' },
+  { label: 'Tickets', href: '/admin/tickets', adminOnly: false },
+  { label: 'Clients', href: '/admin/clients', adminOnly: false },
+  { label: 'Retainers', href: '/admin/retainers', adminOnly: true },
+  { label: 'Team', href: '/admin/team', adminOnly: false },
 ]
 
 function initials(n?: string, e?: string) {
@@ -44,7 +44,9 @@ export function AdminSidebar({ userName, userEmail, userRole, onClose }: AdminSi
 
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         <p className="dash-nav-label">Navigation</p>
-        {nav.map(({ label, href }) => {
+        {nav
+          .filter(item => !item.adminOnly || userRole === 'admin')
+          .map(({ label, href }) => {
           const active = pathname === href || pathname.startsWith(href + '/')
           return (
             <Link

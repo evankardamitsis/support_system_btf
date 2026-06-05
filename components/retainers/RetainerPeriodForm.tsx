@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createRetainerPeriod } from '@/app/actions/retainers'
 import { PACKAGE_LABELS, RETAINER_PACKAGES, type RetainerPackage } from '@/lib/retainers/packages'
+import { runWithToast } from '@/lib/notify'
 
 export function RetainerPeriodForm({
   clientId,
@@ -36,17 +37,20 @@ export function RetainerPeriodForm({
     formData.set('billing_cycle_day', String(billingCycleDay))
     formData.set('use_custom_dates', customDates ? 'true' : 'false')
 
-    try {
-      await createRetainerPeriod(formData)
-      setPackageName('care')
-      setCustomDates(false)
-      form.reset()
-      router.refresh()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save retainer')
-    } finally {
-      setPending(false)
+    const ok = await runWithToast(() => createRetainerPeriod(formData), {
+      loading: 'Saving retainer…',
+      success: 'Retainer period saved',
+    })
+    setPending(false)
+    if (ok === null) {
+      setError('Could not save retainer')
+      return
     }
+    setError(null)
+    setPackageName('care')
+    setCustomDates(false)
+    form.reset()
+    router.refresh()
   }
 
   return (

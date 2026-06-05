@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 
 const sections: Record<string, string[]> = {
   '/portal/tickets':  ['My Portal', 'Tickets'],
-  '/portal/retainer': ['My Portal', 'Retainer'],
+  '/portal/retainer': ['My Portal', 'My Plan'],
 }
 
 function initials(name?: string, email?: string) {

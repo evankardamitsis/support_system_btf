@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react'
 import { updateTicketEstimatedHours } from '@/app/actions/tickets'
 import { logHours } from '@/app/actions/hours'
 import { UsageBar } from '@/components/dashboard/UsageBar'
+import { runWithToast } from '@/lib/notify'
 import type { TicketStatus } from '@/lib/types'
 
 type RetainerOption = {
@@ -79,11 +80,15 @@ export function TicketDetailSidebar({
                 const raw = e.target.value
                 const next = raw.trim() === '' ? null : parseFloat(raw)
                 startTransition(async () => {
-                  await updateTicketEstimatedHours(
-                    ticketId,
-                    next == null || Number.isNaN(next) ? null : next
+                  const value = next == null || Number.isNaN(next) ? null : next
+                  const ok = await runWithToast(
+                    () => updateTicketEstimatedHours(ticketId, value),
+                    {
+                      success:
+                        value != null ? `Estimate set to ${value}h` : 'Estimate cleared',
+                    }
                   )
-                  refresh()
+                  if (ok !== null) refresh()
                 })
               }}
             />
@@ -161,17 +166,31 @@ export function TicketDetailSidebar({
           {showMoreLog ? (
             <form
               className="ticket-detail-more-form"
-              action={async formData => {
+              onSubmit={e => {
+                e.preventDefault()
+                const formData = new FormData(e.currentTarget)
                 const retainerId = formData.get('retainer_id') as string
                 const hours = parseFloat(formData.get('hours') as string)
                 if (!retainerId || !hours) return
-                await logHours(
-                  ticketId,
-                  retainerId,
-                  Math.round(hours * 60),
-                  (formData.get('note') as string) || undefined
-                )
-                refresh()
+                startTransition(async () => {
+                  const ok = await runWithToast(
+                    () =>
+                      logHours(
+                        ticketId,
+                        retainerId,
+                        Math.round(hours * 60),
+                        (formData.get('note') as string) || undefined
+                      ),
+                    {
+                      loading: 'Logging time…',
+                      success: `${hours}h added to this ticket`,
+                    }
+                  )
+                  if (ok !== null) {
+                    e.currentTarget.reset()
+                    refresh()
+                  }
+                })
               }}
             >
               <p className="dash-meta leading-relaxed">

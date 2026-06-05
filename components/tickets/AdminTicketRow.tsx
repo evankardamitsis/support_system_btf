@@ -19,6 +19,7 @@ import { EditableStatusPill } from './EditableStatusPill'
 import { EditablePriorityPill } from './EditablePriorityPill'
 import { ResolveHoursModal } from './ResolveHoursModal'
 import type { TicketTableRow } from './TicketsTable'
+import { formatTicketPriority, formatTicketStatus, runWithToast } from '@/lib/notify'
 import type { TicketPriority, TicketStatus } from '@/lib/types'
 
 export function AdminTicketRow({
@@ -43,8 +44,10 @@ export function AdminTicketRow({
 
   function onPriorityChange(priority: TicketPriority) {
     startTransition(async () => {
-      await updateTicketPriority(ticket.id, priority)
-      refresh()
+      const ok = await runWithToast(() => updateTicketPriority(ticket.id, priority), {
+        success: `Priority set to ${formatTicketPriority(priority)}`,
+      })
+      if (ok !== null) refresh()
     })
   }
 
@@ -55,8 +58,10 @@ export function AdminTicketRow({
     const current = ticket.estimated_hours ?? null
     if (next === current || (next != null && current != null && next === current)) return
     startTransition(async () => {
-      await updateTicketEstimatedHours(ticket.id, next)
-      refresh()
+      const ok = await runWithToast(() => updateTicketEstimatedHours(ticket.id, next), {
+        success: next != null ? `Estimate set to ${next}h` : 'Estimate cleared',
+      })
+      if (ok !== null) refresh()
     })
   }
 
@@ -66,8 +71,10 @@ export function AdminTicketRow({
       return
     }
     startTransition(async () => {
-      await updateTicketStatus(ticket.id, next)
-      refresh()
+      const ok = await runWithToast(() => updateTicketStatus(ticket.id, next), {
+        success: `Status set to ${formatTicketStatus(next)}`,
+      })
+      if (ok !== null) refresh()
     })
   }
 

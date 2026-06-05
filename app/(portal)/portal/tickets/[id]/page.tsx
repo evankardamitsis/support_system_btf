@@ -1,10 +1,10 @@
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { CommentThread } from '@/components/tickets/CommentThread'
+import { TicketCommentForm } from '@/components/tickets/TicketCommentForm'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
 function ticketId(id: string) {
@@ -41,22 +41,6 @@ export default async function PortalTicketDetailPage({
     .eq('ticket_id', id)
     .eq('is_internal', false)
     .order('created_at', { ascending: true })
-
-  async function addComment(formData: FormData) {
-    'use server'
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) redirect('/auth/login')
-    await supabase.from('ticket_comments').insert({
-      ticket_id: id,
-      author_id: user.id,
-      body: formData.get('body') as string,
-      is_internal: false,
-    })
-    revalidatePath(`/portal/tickets/${id}`)
-  }
 
   return (
     <div className="space-y-6">
@@ -111,19 +95,7 @@ export default async function PortalTicketDetailPage({
             </div>
             {ticket.status !== 'closed' && (
               <div className="px-5 pb-5 pt-0" style={{ borderTop: '1px solid var(--border)' }}>
-                <form action={addComment} className="flex flex-col gap-3 pt-4">
-                  <textarea
-                    name="body"
-                    required
-                    rows={4}
-                    placeholder="Write a reply…"
-                    className="btf-input w-full resize-y"
-                    style={{ minHeight: 96 }}
-                  />
-                  <button type="submit" className="dash-btn-primary btn-primary self-start cursor-pointer">
-                    Send reply
-                  </button>
-                </form>
+                <TicketCommentForm ticketId={ticket.id} variant="portal" />
               </div>
             )}
           </div>

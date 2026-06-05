@@ -4,6 +4,7 @@ import Image from 'next/image'
 export default function LandingPage() {
   return (
     <div
+      data-theme="landing"
       className="min-h-dvh flex flex-col"
       style={{ background: 'var(--bg)', color: 'var(--text-1)' }}
     >
@@ -34,8 +35,12 @@ export default function LandingPage() {
       </header>
 
       {/* ── Hero ────────────────────────────────────────────────────────────── */}
-      <main className="flex-1 grid-bg grid-bg-fade flex flex-col justify-center px-8 md:px-16 py-16 md:py-20">
-        <div className="grid grid-cols-1 md:grid-cols-[3fr_2fr] gap-12 md:gap-20 items-end max-w-6xl">
+      <main className="relative flex-1 flex flex-col justify-center px-8 md:px-16 py-16 md:py-20 overflow-hidden">
+        <div
+          className="landing-hero-bg grid-bg grid-bg-fade absolute inset-0 pointer-events-none"
+          aria-hidden
+        />
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-[3fr_2fr] gap-12 md:gap-20 items-end max-w-6xl">
           {/* Left: headline + subtext + CTA */}
           <div>
             <h1
@@ -73,16 +78,12 @@ export default function LandingPage() {
               One place to submit work to BTF, see what is happening, and know when it is done.
             </p>
 
-            <div
-              className="word-reveal pt-4"
-              style={{ animationDelay: '300ms', borderTop: '1px solid var(--border)' }}
-            >
+            <div className="pt-4" style={{ borderTop: '1px solid var(--border)' }}>
               <Link
                 href="/auth/login"
-                className="btn-primary group flex items-center justify-between gap-6 px-8 py-5 w-full md:w-auto md:min-w-[340px] cursor-pointer"
+                className="landing-cta group flex items-center justify-between gap-6 px-8 py-5 w-full md:w-auto md:min-w-[340px] cursor-pointer"
                 style={{
                   fontFamily: 'var(--font-dm-mono)',
-                  background: 'var(--accent)',
                   color: 'var(--bg)',
                   border: 'none',
                   borderRadius: 0,
@@ -96,7 +97,9 @@ export default function LandingPage() {
                     Access your portal
                   </span>
                 </div>
-                <span className="text-2xl" aria-hidden>→</span>
+                <span className="landing-cta-arrow text-2xl" aria-hidden>
+                  →
+                </span>
               </Link>
             </div>
           </div>
@@ -138,7 +141,7 @@ export default function LandingPage() {
             </p>
             <p
               className="text-xs tracking-[0.12em] uppercase"
-              style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-3)' }}
+              style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-2)' }}
             >
               Submit requests
             </p>
@@ -153,7 +156,7 @@ export default function LandingPage() {
             </p>
             <p
               className="text-xs tracking-[0.12em] uppercase"
-              style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-3)' }}
+              style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-2)' }}
             >
               Track progress
             </p>
@@ -168,7 +171,7 @@ export default function LandingPage() {
             </p>
             <p
               className="text-xs tracking-[0.12em] uppercase"
-              style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-3)' }}
+              style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-2)' }}
             >
               Stay informed
             </p>
@@ -183,7 +186,7 @@ export default function LandingPage() {
       >
         <span
           className="text-[10px] tracking-[0.15em] uppercase"
-          style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-3)' }}
+          style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-2)' }}
         >
           support.belowthefold.gr
         </span>
@@ -200,7 +203,7 @@ export default function LandingPage() {
             alt="belowthefold.gr"
             width={80}
             height={11}
-            style={{ height: 10, width: 'auto', opacity: 0.3 }}
+            style={{ height: 10, width: 'auto', opacity: 0.45 }}
           />
         </a>
       </footer>

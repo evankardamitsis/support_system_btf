@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/dashboard/PageHeader'
 import { FormPanel } from '@/components/dashboard/FormPanel'
 import { DashCancel } from '@/components/dashboard/DashCancel'
 import { PACKAGE_LABELS, RETAINER_PACKAGES, type RetainerPackage } from '@/lib/retainers/packages'
+import { runWithToast } from '@/lib/notify'
 
 export function NewClientForm() {
   const router = useRouter()
@@ -27,13 +28,16 @@ export function NewClientForm() {
     formData.set('package_name', packageName)
     formData.set('use_custom_dates', customDates ? 'true' : 'false')
 
-    try {
-      const id = await createClientAction(formData)
-      router.push(`/admin/clients/${id}`)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not create client')
-      setPending(false)
+    const id = await runWithToast(() => createClientAction(formData), {
+      loading: 'Creating client…',
+      success: 'Client created',
+    })
+    setPending(false)
+    if (!id) {
+      setError('Could not create client')
+      return
     }
+    router.push(`/admin/clients/${id}`)
   }
 
   return (

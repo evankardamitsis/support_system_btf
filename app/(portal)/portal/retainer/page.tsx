@@ -32,11 +32,11 @@ export default async function RetainerPage() {
   return (
     <div className="space-y-6 w-full max-w-4xl">
       <PageHeader
-        title="Retainer"
+        title="My Plan"
         description={
           retainer
             ? `Current period · ${new Date(retainer.period_start).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })} – ${new Date(retainer.period_end).toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' })}`
-            : 'Your billing period'
+            : 'Your support plan and included hours'
         }
       />
 
@@ -77,7 +77,7 @@ export default async function RetainerPage() {
 
             <p className="dash-meta leading-relaxed mt-4">
               {isOver
-                ? 'You have exceeded your retainer — your team will be in touch.'
+                ? 'You have used all included hours for this period — your team will be in touch.'
                 : isDanger
                   ? 'Running low on hours — consider planning ahead for new work.'
                   : 'Plenty of hours remaining in this period.'}
@@ -86,8 +86,8 @@ export default async function RetainerPage() {
         </div>
       ) : (
         <div className="retainer-panel dash-empty">
-          <p className="dash-empty-title">No active retainer</p>
-          <p className="dash-empty-hint">Contact your account manager if you expect retainer hours.</p>
+          <p className="dash-empty-title">No active plan</p>
+          <p className="dash-empty-hint">Contact your account manager if you expect plan hours.</p>
         </div>
       )}
     </div>

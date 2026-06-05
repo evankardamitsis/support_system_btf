@@ -3,8 +3,12 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { tryCreateAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/auth/require-admin'
 import { getRetainerForClient } from '@/lib/retainers/active'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
+
+export type DeleteTicketResult = { ok: true } | { ok: false; error: string }
 
 async function requireStaff() {
   const supabase = await createClient()
@@ -48,6 +52,41 @@ export async function createTicket(formData: FormData): Promise<string> {
     .single()
 
   if (error || !ticket) throw new Error(error?.message ?? 'Failed to create ticket')
+  return ticket.id
+}
+
+export async function createPortalTicket(formData: FormData): Promise<string> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/auth/login')
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('client_id')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile?.client_id) {
+    throw new Error('No client account linked')
+  }
+
+  const { data: ticket, error } = await supabase
+    .from('tickets')
+    .insert({
+      client_id: profile.client_id,
+      created_by: user.id,
+      title: formData.get('title') as string,
+      description: (formData.get('description') as string) || null,
+      type: formData.get('type') as 'bug' | 'task' | 'request' | 'question',
+    })
+    .select('id')
+    .single()
+
+  if (error || !ticket) throw new Error(error?.message ?? 'Failed to create ticket')
+
+  revalidatePath('/portal/tickets')
   return ticket.id
 }
 
@@ -157,4 +196,26 @@ export async function updateTicketAssignee(ticketId: string, agentId: string | n
     .eq('id', ticketId)
   if (error) throw new Error(error.message)
   revalidateTicketPaths(ticketId)
+}
+
+export async function deleteTicket(ticketId: string): Promise<DeleteTicketResult> {
+  const { isAdmin } = await requireAdmin()
+  if (!isAdmin) {
+    return { ok: false, error: 'Only admins can delete tickets' }
+  }
+
+  const adminResult = tryCreateAdminClient()
+  if ('error' in adminResult) {
+    return { ok: false, error: adminResult.error }
+  }
+
+  const { error } = await adminResult.client.from('tickets').delete().eq('id', ticketId)
+  if (error) {
+    return { ok: false, error: error.message }
+  }
+
+  revalidatePath('/admin/tickets')
+  revalidatePath(`/admin/clients`)
+  revalidatePath('/admin/retainers')
+  return { ok: true }
 }

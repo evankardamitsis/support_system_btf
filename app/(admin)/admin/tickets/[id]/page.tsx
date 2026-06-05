@@ -1,8 +1,8 @@
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { CommentThread } from '@/components/tickets/CommentThread'
+import { TicketCommentForm } from '@/components/tickets/TicketCommentForm'
 import { TicketDetailLayout } from '@/components/tickets/TicketDetailLayout'
 import { getRetainerForClient } from '@/lib/retainers/active'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
@@ -14,6 +14,13 @@ export default async function AdminTicketDetailPage({
 }) {
   const { id } = await params
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { data: profile } = user
+    ? await supabase.from('users').select('role').eq('id', user.id).maybeSingle()
+    : { data: null }
+  const isAdmin = profile?.role === 'admin'
 
   const { data: ticket } = await supabase
     .from('tickets')
@@ -44,22 +51,6 @@ export default async function AdminTicketDetailPage({
   const actualHours = ticket.actual_hours != null ? Number(ticket.actual_hours) : null
   const clientName = (ticket.clients as unknown as { name: string } | null)?.name ?? null
 
-  async function addComment(formData: FormData) {
-    'use server'
-    const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) redirect('/auth/login')
-    await supabase.from('ticket_comments').insert({
-      ticket_id: id,
-      author_id: user.id,
-      body: formData.get('body') as string,
-      is_internal: formData.get('is_internal') === 'true',
-    })
-    revalidatePath(`/admin/tickets/${id}`)
-  }
-
   const messageCount = (comments ?? []).length
 
   return (
@@ -85,6 +76,7 @@ export default async function AdminTicketDetailPage({
         activeRetainer={activeRetainer}
         retainers={retainers ?? []}
         defaultRetainerId={activeRetainer?.id}
+        isAdmin={isAdmin}
       >
         <section className="ticket-detail-activity dash-panel">
           <div className="ticket-detail-activity-head">
@@ -100,33 +92,7 @@ export default async function AdminTicketDetailPage({
 
           <div className="ticket-detail-reply">
             <p className="ticket-detail-reply-label">Add to thread</p>
-            <form action={addComment} className="ticket-detail-reply-form">
-              <textarea
-                name="body"
-                required
-                rows={4}
-                placeholder="Write a reply or internal note…"
-                className="btf-input w-full resize-y"
-              />
-              <div className="ticket-detail-reply-actions">
-                <button
-                  type="submit"
-                  name="is_internal"
-                  value="false"
-                  className="dash-btn-primary btn-primary cursor-pointer"
-                >
-                  Reply to client
-                </button>
-                <button
-                  type="submit"
-                  name="is_internal"
-                  value="true"
-                  className="dash-btn-secondary cursor-pointer"
-                >
-                  Internal note
-                </button>
-              </div>
-            </form>
+            <TicketCommentForm ticketId={ticket.id} variant="admin" />
           </div>
         </section>
       </TicketDetailLayout>

@@ -125,7 +125,22 @@
   background-size: 60px 60px;
 }
 .grid-bg-fade {
-  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%);
+  mask-image: radial-gradient(
+    ellipse 100% 92% at 50% 42%,
+    black 68%,
+    rgba(0, 0, 0, 0.45) 82%,
+    transparent 100%
+  );
+}
+
+/* Landing hero — grid vignette only (content sits above, unmasked) */
+.landing-hero-bg {
+  mask-image: radial-gradient(
+    ellipse 115% 95% at 50% 38%,
+    black 55%,
+    rgba(0, 0, 0, 0.35) 78%,
+    transparent 100%
+  );
 }
 
 /* Lighter grid for dashboard content (same 60px rhythm as landing) */
@@ -171,6 +186,14 @@
   outline-offset: 2px;
 }
 
+/* ─── Landing — lifted secondary contrast on dark surfaces ──────────────────── */
+[data-theme="landing"] {
+  --text-2: #b0b0ba;
+  --text-3: #9494a0;
+  --muted-foreground: #b0b0ba;
+  color: var(--text-1);
+}
+
 /* ─── Auth pages — lifted secondary contrast on dark surfaces ───────────────── */
 [data-theme="auth"] {
   --text-2: #b0b0ba;
@@ -199,6 +222,186 @@
 .word-reveal {
   opacity: 0;
   animation: wordReveal 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+@keyframes landingCtaReveal {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes landingCtaGlowMove {
+  0%,
+  100% {
+    transform: translate(-30%, 4%) scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate(35%, -6%) scale(1.08);
+    opacity: 1;
+  }
+}
+
+@keyframes landingCtaShimmerLoop {
+  0% {
+    transform: translateX(-170%);
+  }
+  100% {
+    transform: translateX(370%);
+  }
+}
+
+@keyframes landingCtaArrow {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.landing-cta {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  opacity: 0;
+  background: linear-gradient(
+    128deg,
+    #9eb82e 0%,
+    var(--accent-dim) 38%,
+    var(--accent) 72%,
+    #dce85a 100%
+  );
+  animation: landingCtaReveal 0.85s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  animation-delay: 420ms;
+  transition:
+    transform 220ms ease,
+    box-shadow 280ms ease,
+    background 320ms ease,
+    filter 320ms ease;
+}
+
+.landing-cta > * {
+  position: relative;
+  z-index: 1;
+}
+
+.landing-cta::before {
+  content: '';
+  position: absolute;
+  inset: -35% -10%;
+  background: radial-gradient(
+    ellipse 42% 55% at 50% 50%,
+    rgba(14, 14, 14, 0.28) 0%,
+    rgba(14, 14, 14, 0.12) 42%,
+    transparent 72%
+  );
+  animation: landingCtaGlowMove 5.5s ease-in-out infinite;
+  animation-delay: 1.2s;
+  transition: background 320ms ease, opacity 320ms ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.landing-cta::after {
+  content: '';
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  left: 0;
+  width: 42%;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(14, 14, 14, 0.1) 40%,
+    rgba(14, 14, 14, 0.26) 50%,
+    rgba(14, 14, 14, 0.1) 60%,
+    transparent 100%
+  );
+  animation: landingCtaShimmerLoop 4.8s ease-in-out infinite;
+  animation-delay: 1.2s;
+  transition: background 320ms ease, opacity 320ms ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.landing-cta:hover,
+.landing-cta:focus-visible {
+  transform: translateY(-2px);
+  background: linear-gradient(
+    128deg,
+    var(--accent-dim) 0%,
+    var(--accent) 40%,
+    #eaff5a 76%,
+    #f2ff85 100%
+  );
+  box-shadow:
+    0 14px 42px rgba(232, 255, 71, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+  filter: brightness(1.08) saturate(1.1);
+}
+
+.landing-cta:hover::before,
+.landing-cta:focus-visible::before {
+  background: radial-gradient(
+    ellipse 42% 55% at 50% 50%,
+    rgba(255, 255, 255, 0.26) 0%,
+    rgba(255, 255, 255, 0.09) 42%,
+    transparent 72%
+  );
+  opacity: 0.9;
+}
+
+.landing-cta:hover::after,
+.landing-cta:focus-visible::after {
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.12) 40%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.12) 60%,
+    transparent 100%
+  );
+  opacity: 0.95;
+}
+
+.landing-cta:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.landing-cta-arrow {
+  display: inline-block;
+  opacity: 0;
+  animation: landingCtaArrow 0.55s cubic-bezier(0.23, 1, 0.32, 1) 1.05s forwards;
+  transition: transform 220ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.landing-cta:hover .landing-cta-arrow,
+.landing-cta:focus-visible .landing-cta-arrow {
+  transform: translateX(6px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-cta,
+  .landing-cta::before,
+  .landing-cta::after,
+  .landing-cta-arrow {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .landing-cta::before,
+  .landing-cta::after {
+    display: none;
+  }
 }
 
 /* ─── Arc gauge animation ────────────────────────────────────────────────────── */
@@ -991,6 +1194,50 @@
 
 [data-theme="dashboard"] .dash-btn-secondary:active {
   transform: scale(0.98);
+}
+
+[data-theme="dashboard"] .dash-btn-danger {
+  padding: 0.5rem 1rem;
+  font-size: 0.6875rem;
+  font-family: var(--font-dm-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fca5a5;
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  transition: background 150ms ease, transform 100ms ease;
+}
+
+[data-theme="dashboard"] .dash-btn-danger:hover {
+  background: rgba(248, 113, 113, 0.16);
+}
+
+[data-theme="dashboard"] .dash-btn-danger:active {
+  transform: scale(0.98);
+}
+
+[data-theme="dashboard"] .admin-danger-zone {
+  padding: 1.25rem 1.5rem;
+  border: 1px solid rgba(248, 113, 113, 0.22);
+  background: rgba(248, 113, 113, 0.04);
+}
+
+[data-theme="dashboard"] .admin-danger-zone-title {
+  font-size: 0.6875rem;
+  font-family: var(--font-dm-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #fca5a5;
+  margin-bottom: 0.5rem;
+}
+
+[data-theme="dashboard"] .admin-danger-zone-copy {
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--text-2);
+  font-family: var(--font-geist);
+  max-width: 42rem;
+  margin-bottom: 1rem;
 }
 
 [data-theme="dashboard"] .dash-label {
@@ -2583,4 +2830,46 @@
   [data-theme="dashboard"] .ticket-detail-aside {
     position: static;
   }
+}
+
+/* ─── Toast notifications (Sonner) ──────────────────────────────────────────── */
+.btf-toast {
+  background: var(--surface) !important;
+  border: 1px solid var(--border-2) !important;
+  color: var(--text-1) !important;
+  font-family: var(--font-geist), ui-sans-serif, system-ui, sans-serif !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45) !important;
+}
+
+.btf-toast-title {
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  color: var(--text-1) !important;
+}
+
+.btf-toast-description {
+  font-size: 0.8125rem !important;
+  color: var(--text-2) !important;
+}
+
+.btf-toast--success {
+  border-color: rgba(74, 222, 128, 0.35) !important;
+}
+
+.btf-toast--error {
+  border-color: rgba(248, 113, 113, 0.4) !important;
+}
+
+.btf-toast--loading {
+  border-color: rgba(232, 255, 71, 0.25) !important;
+}
+
+.btf-toast-close {
+  color: var(--text-3) !important;
+  border-color: var(--border) !important;
+  background: transparent !important;
+}
+
+.btf-toast-close:hover {
+  color: var(--text-1) !important;
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { DM_Mono, Geist } from 'next/font/google'
+import { AppToaster } from '@/components/ui/AppToaster'
 import './globals.css'
 
 const dmMono = DM_Mono({
@@ -33,7 +34,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${dmMono.variable} ${geist.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <AppToaster />
+      </body>
     </html>
   )
 }
