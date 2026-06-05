@@ -10,17 +10,20 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 import {
-  fireResolveConfetti,
+  RESOLVE_CELEBRATION_EVENT,
   RESOLVE_CELEBRATION_GIF,
+  clearPendingCelebration,
+  shouldShowPendingCelebration,
+  triggerResolveCelebration,
 } from '@/lib/celebration/resolve'
 
-const CELEBRATION_MS = 2800
+const CELEBRATION_MS = 3200
 
 const ResolveCelebrationContext = createContext<(() => void) | null>(null)
 
 export function useResolveCelebration(): () => void {
   const celebrate = useContext(ResolveCelebrationContext)
-  return celebrate ?? (() => {})
+  return celebrate ?? triggerResolveCelebration
 }
 
 export function ResolveCelebrationProvider({ children }: { children: ReactNode }) {
@@ -28,15 +31,30 @@ export function ResolveCelebrationProvider({ children }: { children: ReactNode }
   const [mounted, setMounted] = useState(false)
   const [gifFailed, setGifFailed] = useState(false)
 
-  useEffect(() => setMounted(true), [])
+  const show = useCallback(() => {
+    setGifFailed(false)
+    setActive(true)
+    clearPendingCelebration()
+  }, [])
 
   const dismiss = useCallback(() => setActive(false), [])
 
-  const celebrate = useCallback(() => {
-    setGifFailed(false)
-    setActive(true)
-    void fireResolveConfetti()
-  }, [])
+  useEffect(() => setMounted(true), [])
+
+  useEffect(() => {
+    if (!mounted) return
+
+    if (shouldShowPendingCelebration()) {
+      show()
+    }
+
+    function onCelebrate() {
+      show()
+    }
+
+    window.addEventListener(RESOLVE_CELEBRATION_EVENT, onCelebrate)
+    return () => window.removeEventListener(RESOLVE_CELEBRATION_EVENT, onCelebrate)
+  }, [mounted, show])
 
   useEffect(() => {
     if (!active) return
@@ -54,11 +72,16 @@ export function ResolveCelebrationProvider({ children }: { children: ReactNode }
   }, [active, dismiss])
 
   return (
-    <ResolveCelebrationContext.Provider value={celebrate}>
+    <ResolveCelebrationContext.Provider value={triggerResolveCelebration}>
       {children}
       {mounted && active
         ? createPortal(
-            <div className="resolve-celebration" role="presentation" onClick={dismiss}>
+            <div
+              className="resolve-celebration"
+              data-theme="dashboard"
+              role="presentation"
+              onClick={dismiss}
+            >
               <div className="resolve-celebration-backdrop" aria-hidden />
               <div className="resolve-celebration-content">
                 {!gifFailed ? (
@@ -67,6 +90,7 @@ export function ResolveCelebrationProvider({ children }: { children: ReactNode }
                     src={RESOLVE_CELEBRATION_GIF}
                     alt=""
                     className="resolve-celebration-gif"
+                    referrerPolicy="no-referrer"
                     onError={() => setGifFailed(true)}
                   />
                 ) : (
