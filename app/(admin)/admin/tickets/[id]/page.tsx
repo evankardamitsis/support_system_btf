@@ -112,6 +112,7 @@ export default async function AdminTicketDetailPage({
         estimateStatus={ticket.estimate_status ?? null}
         completionStatus={ticket.completion_status ?? null}
         completionDisputeNote={ticket.completion_dispute_note ?? null}
+        hoursOverageNote={ticket.hours_overage_note ?? null}
         estimatedHours={estimatedHours}
         actualHours={actualHours}
         hoursLogged={hoursLogged}

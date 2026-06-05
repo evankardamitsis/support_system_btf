@@ -25,6 +25,7 @@ import {
 } from '@/lib/tickets/closed'
 import { isEstimateLocked } from '@/lib/tickets/estimate'
 import { billApprovedExtraHoursForTicket } from '@/lib/tickets/extra-hours-billing'
+import { resolveHoursOverageNote } from '@/lib/tickets/hours-overage'
 import type { Database } from '@/lib/database.types'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
@@ -581,7 +582,11 @@ export async function updateTicketStatus(ticketId: string, status: TicketStatus)
   revalidateTicketPaths(ticketId)
 }
 
-export async function resolveTicketWithHours(ticketId: string, actualHours: number) {
+export async function resolveTicketWithHours(
+  ticketId: string,
+  actualHours: number,
+  overageNote?: string
+) {
   const { supabase, user } = await requireStaff()
 
   if (!actualHours || actualHours <= 0 || Number.isNaN(actualHours)) {
@@ -621,6 +626,9 @@ export async function resolveTicketWithHours(ticketId: string, actualHours: numb
 
   const minutes = Math.round(actualHours * 60)
   const now = new Date().toISOString()
+  const estimatedHours =
+    ticket.estimated_hours != null ? Number(ticket.estimated_hours) : null
+  const hoursOverageNote = resolveHoursOverageNote(estimatedHours, actualHours, overageNote)
 
   if (!existingLog) {
     const { error: logErr } = await supabase.from('hours_log').insert({
@@ -637,6 +645,7 @@ export async function resolveTicketWithHours(ticketId: string, actualHours: numb
     status: 'resolved',
     resolved_at: now,
     actual_hours: Math.round(actualHours * 100) / 100,
+    hours_overage_note: hoursOverageNote,
   })
 
   const roundedActual = Math.round(actualHours * 100) / 100
@@ -655,7 +664,11 @@ export async function resolveTicketWithHours(ticketId: string, actualHours: numb
   revalidateTicketPaths(ticketId)
 }
 
-export async function resolveTicketOffline(ticketId: string, actualHours: number) {
+export async function resolveTicketOffline(
+  ticketId: string,
+  actualHours: number,
+  overageNote?: string
+) {
   const { isAdmin, user } = await requireAdmin()
   if (!isAdmin || !user) {
     throw new Error('Only admins can resolve tickets offline')
@@ -703,7 +716,10 @@ export async function resolveTicketOffline(ticketId: string, actualHours: number
   const minutes = Math.round(actualHours * 60)
   const now = new Date().toISOString()
   const roundedActual = Math.round(actualHours * 100) / 100
-  const hasEstimate = ticket.estimated_hours != null && Number(ticket.estimated_hours) > 0
+  const estimatedHours =
+    ticket.estimated_hours != null ? Number(ticket.estimated_hours) : null
+  const hasEstimate = estimatedHours != null && estimatedHours > 0
+  const hoursOverageNote = resolveHoursOverageNote(estimatedHours, actualHours, overageNote)
 
   if (!existingLog) {
     const { error: logErr } = await admin.from('hours_log').insert({
@@ -739,13 +755,14 @@ export async function resolveTicketOffline(ticketId: string, actualHours: number
     completion_dispute_note: null,
     completion_disputed_at: null,
     extra_hours_active_at: null,
+    hours_overage_note: hoursOverageNote,
   })
 
   const clientNotify = await notifyClientTicketResolved({
     ticketId,
     ticketTitle: ticket.title,
     clientId: ticket.client_id,
-    estimatedHours: hasEstimate ? Number(ticket.estimated_hours) : null,
+    estimatedHours: hasEstimate ? estimatedHours : null,
     actualHours: roundedActual,
   })
   if (!clientNotify.sent) {

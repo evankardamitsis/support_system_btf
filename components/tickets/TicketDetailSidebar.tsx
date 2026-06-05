@@ -63,6 +63,7 @@ export function TicketDetailSidebar({
   extraHours = [],
   extraHoursActiveAt = null,
   completionDisputeNote = null,
+  hoursOverageNote = null,
   isAdmin = false,
   onResolve,
   onResolveOffline,
@@ -79,6 +80,7 @@ export function TicketDetailSidebar({
   extraHours?: ExtraHoursItem[]
   extraHoursActiveAt?: string | null
   completionDisputeNote?: string | null
+  hoursOverageNote?: string | null
   isAdmin?: boolean
   onResolve: () => void
   onResolveOffline: () => void
@@ -184,6 +186,13 @@ export function TicketDetailSidebar({
             </div>
           ) : null}
         </div>
+
+        {closed && hoursOverageNote ? (
+          <div className="ticket-hours-overage-note" role="note">
+            <span className="ticket-detail-control-label">Client note (over estimate)</span>
+            <p className="ticket-hours-overage-note-body">{hoursOverageNote}</p>
+          </div>
+        ) : null}
 
         {showSubmit ? (
           <button

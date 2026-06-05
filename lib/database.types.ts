@@ -145,6 +145,7 @@ export interface Database {
           completion_dispute_note: string | null
           completion_disputed_at: string | null
           extra_hours_active_at: string | null
+          hours_overage_note: string | null
         }
         Insert: {
           id?: string
@@ -170,6 +171,7 @@ export interface Database {
           completion_dispute_note?: string | null
           completion_disputed_at?: string | null
           extra_hours_active_at?: string | null
+          hours_overage_note?: string | null
         }
         Update: {
           id?: string
@@ -195,6 +197,7 @@ export interface Database {
           completion_dispute_note?: string | null
           completion_disputed_at?: string | null
           extra_hours_active_at?: string | null
+          hours_overage_note?: string | null
         }
         Relationships: []
       }

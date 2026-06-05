@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { resolveTicketOffline } from '@/app/actions/tickets'
 import { runWithToast } from '@/lib/notify'
+import { requiresHoursOverageNote } from '@/lib/tickets/hours-overage'
+import { ResolveOverageNoteField } from './ResolveOverageNoteField'
 
 function ResolveOfflineForm({
   ticketId,
@@ -18,6 +20,7 @@ function ResolveOfflineForm({
   const [hours, setHours] = useState(
     () => (estimatedHours != null ? String(estimatedHours) : '')
   )
+  const [overageNote, setOverageNote] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -28,11 +31,18 @@ function ResolveOfflineForm({
       setError('Enter hours spent (e.g. 1.5)')
       return
     }
+    if (requiresHoursOverageNote(estimatedHours, value) && !overageNote.trim()) {
+      setError('Explain why more hours were needed — the client will see this note')
+      return
+    }
     startTransition(async () => {
-      const ok = await runWithToast(() => resolveTicketOffline(ticketId, value), {
-        loading: 'Resolving offline…',
-        success: `Ticket resolved offline — ${value}h logged`,
-      })
+      const ok = await runWithToast(
+        () => resolveTicketOffline(ticketId, value, overageNote.trim() || undefined),
+        {
+          loading: 'Resolving offline…',
+          success: `Ticket resolved offline — ${value}h logged`,
+        }
+      )
       if (ok === null) {
         setError('Could not resolve ticket')
         return
@@ -68,6 +78,13 @@ function ResolveOfflineForm({
       {estimatedHours != null ? (
         <p className="dash-meta mt-2">Estimated: {estimatedHours.toFixed(2)}h</p>
       ) : null}
+      <ResolveOverageNoteField
+        id={`resolve-offline-overage-${ticketId}`}
+        estimatedHours={estimatedHours}
+        actualHoursInput={hours}
+        value={overageNote}
+        onChange={setOverageNote}
+      />
       {error ? <p className="ticket-modal-error">{error}</p> : null}
       <div className="ticket-modal-actions">
         <button

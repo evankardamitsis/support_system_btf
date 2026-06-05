@@ -57,6 +57,7 @@ export function TicketDetailLayout({
   extraHours = [],
   extraHoursActiveAt = null,
   completionDisputeNote = null,
+  hoursOverageNote = null,
   isAdmin = false,
 }: {
   children: ReactNode
@@ -80,6 +81,7 @@ export function TicketDetailLayout({
   extraHours?: ExtraHoursItem[]
   extraHoursActiveAt?: string | null
   completionDisputeNote?: string | null
+  hoursOverageNote?: string | null
   isAdmin?: boolean
 }) {
   const router = useRouter()
@@ -256,6 +258,7 @@ export function TicketDetailLayout({
           extraHours={extraHours}
           extraHoursActiveAt={extraHoursActiveAt}
           completionDisputeNote={completionDisputeNote}
+          hoursOverageNote={hoursOverageNote}
           isAdmin={isAdmin}
           onResolve={() => setResolveOpen(true)}
           onResolveOffline={() => setResolveOfflineOpen(true)}

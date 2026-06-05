@@ -3607,11 +3607,120 @@
   font-family: var(--font-dm-mono);
 }
 
-[data-theme="dashboard"] .portal-ticket-hours-meta {
-  margin-top: 0.75rem;
-  font-size: 0.8125rem;
+[data-theme="dashboard"] .portal-ticket-hours-hero-value--est {
+  font-size: 1.75rem;
+}
+
+[data-theme="dashboard"] .portal-ticket-hours-hero--estimate-only {
+  background: var(--surface);
+  border-left-color: var(--border-2);
+}
+
+[data-theme="dashboard"] .portal-ticket-hours-hero-hint {
+  margin-top: 0.625rem;
+  line-height: 1.45;
+}
+
+[data-theme="dashboard"] .portal-ticket-hours-secondary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-top: 0.875rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
+}
+
+[data-theme="dashboard"] .portal-ticket-hours-est,
+[data-theme="dashboard"] .portal-ticket-hours-extra {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.875rem;
   color: var(--text-2);
   font-family: var(--font-dm-mono);
+}
+
+[data-theme="dashboard"] .portal-ticket-hours-est-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+[data-theme="dashboard"] .portal-ticket-hours-discrepancy {
+  font-size: 0.8125rem;
+  font-family: var(--font-dm-mono);
+}
+
+[data-theme="dashboard"] .portal-ticket-hours-discrepancy[data-tone='over'] {
+  color: #fb923c;
+}
+
+[data-theme="dashboard"] .portal-ticket-hours-discrepancy[data-tone='under'] {
+  color: #4ade80;
+}
+
+[data-theme="dashboard"] .portal-ticket-hours-aside-row dd[data-tone='over'] {
+  color: #fb923c;
+}
+
+[data-theme="dashboard"] .portal-ticket-hours-aside-row dd[data-tone='under'] {
+  color: #4ade80;
+}
+
+[data-theme="dashboard"] .portal-ticket-hours-aside-row--discrepancy dd {
+  font-size: 0.75rem;
+  text-align: right;
+  max-width: 9rem;
+}
+
+[data-theme="dashboard"] .portal-ticket-hours-overage-note,
+[data-theme="dashboard"] .portal-ticket-hours-aside-overage {
+  margin-top: 0.25rem;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid color-mix(in srgb, #fb923c 25%, var(--border));
+  background: color-mix(in srgb, #fb923c 6%, var(--surface));
+}
+
+[data-theme="dashboard"] .portal-ticket-hours-overage-label,
+[data-theme="dashboard"] .portal-ticket-hours-aside-overage-label {
+  display: block;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fb923c;
+  font-family: var(--font-dm-mono);
+}
+
+[data-theme="dashboard"] .portal-ticket-hours-overage-body,
+[data-theme="dashboard"] .portal-ticket-hours-aside-overage-body {
+  margin-top: 0.375rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--text-1);
+  font-family: var(--font-geist);
+  white-space: pre-wrap;
+}
+
+[data-theme="dashboard"] .resolve-overage-note {
+  margin-top: 1rem;
+}
+
+[data-theme="dashboard"] .ticket-hours-overage-note {
+  margin-top: 0.875rem;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+[data-theme="dashboard"] .ticket-hours-overage-note-body {
+  margin-top: 0.375rem;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--text-2);
+  white-space: pre-wrap;
 }
 
 [data-theme="dashboard"] .portal-ticket-request {

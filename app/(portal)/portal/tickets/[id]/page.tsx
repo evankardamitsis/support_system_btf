@@ -10,7 +10,7 @@ import { WorkApprovalModal } from '@/components/tickets/WorkApprovalModal'
 import { ExtraHoursApprovalModal } from '@/components/tickets/ExtraHoursApprovalModal'
 import { TicketCommentForm } from '@/components/tickets/TicketCommentForm'
 import { PortalTicketHoursSummary } from '@/components/portal/PortalTicketHoursSummary'
-import { formatDateTimeHuman, formatHoursShort } from '@/lib/tickets/display'
+import { formatDateTimeHuman } from '@/lib/tickets/display'
 import { isTicketClosed } from '@/lib/tickets/closed'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
@@ -126,6 +126,7 @@ export default async function PortalTicketDetailPage({
               estimatedHours={estimatedHours}
               actualHours={actualHours}
               approvedExtraMinutes={approvedExtraMinutes}
+              hoursOverageNote={ticket.hours_overage_note}
             />
             {ticket.description ? (
               <section className="portal-ticket-request">
@@ -165,13 +166,11 @@ export default async function PortalTicketDetailPage({
               estimatedHours={estimatedHours}
               actualHours={actualHours}
               approvedExtraMinutes={approvedExtraMinutes}
+              hoursOverageNote={ticket.hours_overage_note}
             />
             {[
               { label: 'Type', value: ticket.type },
               { label: 'Priority', value: ticket.priority },
-              ...(!closed && estimatedHours != null
-                ? [{ label: 'Estimate', value: formatHoursShort(estimatedHours) }]
-                : []),
               { label: 'Opened', value: new Date(ticket.created_at).toLocaleDateString('en-GB') },
               { label: 'Updated', value: relativeTime(ticket.updated_at) },
               ...(ticket.resolved_at &&
