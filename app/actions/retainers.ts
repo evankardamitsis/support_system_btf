@@ -2,12 +2,55 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { notifyClientNewRetainer } from '@/lib/email/ticket-notifications'
-import { currentBillingPeriod, renewalDateFromPeriodEnd } from '@/lib/retainers/period'
+import { requireAdmin } from '@/lib/auth/require-admin'
+import { insertRetainerPeriod } from '@/lib/retainers/insert-period'
+import { currentBillingPeriod } from '@/lib/retainers/period'
 import type { RetainerPackage } from '@/lib/retainers/packages'
+import type { RetainerLifecycleStatus } from '@/lib/retainers/status'
 
 function parsePackage(raw: string | null): RetainerPackage {
   return raw === 'grow' ? 'grow' : 'care'
+}
+
+function revalidateClientRetainerPaths(clientId: string) {
+  revalidatePath(`/admin/clients/${clientId}`)
+  revalidatePath('/admin/retainers')
+  revalidatePath('/admin/clients')
+  revalidatePath('/portal/retainer')
+  revalidatePath('/portal/tickets/new')
+}
+
+async function requireAdminClient() {
+  const { isAdmin } = await requireAdmin()
+  if (!isAdmin) throw new Error('Only admins can manage retainer lifecycle')
+  return createClient()
+}
+
+async function setRetainerStatus(
+  clientId: string,
+  status: RetainerLifecycleStatus
+): Promise<void> {
+  const supabase = await requireAdminClient()
+  const now = new Date().toISOString()
+
+  const patch: {
+    retainer_status: RetainerLifecycleStatus
+    retainer_frozen_at: string | null
+    retainer_canceled_at: string | null
+  } = {
+    retainer_status: status,
+    retainer_frozen_at: status === 'frozen' ? now : null,
+    retainer_canceled_at: status === 'canceled' ? now : null,
+  }
+
+  if (status === 'active') {
+    patch.retainer_frozen_at = null
+    patch.retainer_canceled_at = null
+  }
+
+  const { error } = await supabase.from('clients').update(patch).eq('id', clientId)
+  if (error) throw new Error(error.message)
+  revalidateClientRetainerPaths(clientId)
 }
 
 export async function createRetainerPeriod(formData: FormData): Promise<string> {
@@ -26,6 +69,20 @@ export async function createRetainerPeriod(formData: FormData): Promise<string> 
     throw new Error('Contract value must be zero or greater')
   }
 
+  const { data: client } = await supabase
+    .from('clients')
+    .select('retainer_status')
+    .eq('id', clientId)
+    .single()
+
+  const status = (client?.retainer_status ?? 'active') as RetainerLifecycleStatus
+  if (status === 'frozen') {
+    throw new Error('Unfreeze the retainer before starting a new period')
+  }
+  if (status === 'canceled') {
+    throw new Error('Resume the retainer before starting a new period')
+  }
+
   const useCustomDates = formData.get('use_custom_dates') === 'true'
   const { period_start, period_end } = useCustomDates
     ? {
@@ -38,44 +95,54 @@ export async function createRetainerPeriod(formData: FormData): Promise<string> 
     throw new Error('Billing period dates are required')
   }
 
-  const packageLabel = packageName === 'grow' ? 'Grow' : 'Care'
-
-  const { data: retainer, error } = await supabase
-    .from('retainers')
-    .insert({
-      client_id: clientId,
-      package_name: packageName,
-      period_start,
-      period_end,
-      hours_total: hoursTotal,
-      period_cost: Math.round(periodCost * 100) / 100,
-    })
-    .select('id')
-    .single()
-
-  if (error || !retainer) throw new Error(error?.message ?? 'Failed to create retainer period')
-
-  await supabase
-    .from('clients')
-    .update({
-      plan_name: packageLabel,
-      renewal_date: renewalDateFromPeriodEnd(period_end),
-    })
-    .eq('id', clientId)
-
-  const clientNotify = await notifyClientNewRetainer({
+  const { id } = await insertRetainerPeriod(supabase, {
     clientId,
     packageName,
     hoursTotal,
+    periodCost,
     periodStart: period_start,
     periodEnd: period_end,
+    sendClientEmail: true,
   })
-  if (!clientNotify.sent) {
-    console.error('[email] client new-retainer notification failed:', clientNotify.error)
+
+  revalidateClientRetainerPaths(clientId)
+  return id
+}
+
+export async function freezeRetainer(clientId: string): Promise<void> {
+  await setRetainerStatus(clientId, 'frozen')
+}
+
+export async function unfreezeRetainer(clientId: string): Promise<void> {
+  const supabase = await requireAdminClient()
+  const { data: client } = await supabase
+    .from('clients')
+    .select('retainer_status')
+    .eq('id', clientId)
+    .single()
+
+  if (client?.retainer_status !== 'frozen') {
+    throw new Error('Retainer is not frozen')
   }
 
-  revalidatePath(`/admin/clients/${clientId}`)
-  revalidatePath('/admin/retainers')
-  revalidatePath('/admin/clients')
-  return retainer.id
+  await setRetainerStatus(clientId, 'active')
+}
+
+export async function cancelRetainer(clientId: string): Promise<void> {
+  await setRetainerStatus(clientId, 'canceled')
+}
+
+export async function resumeRetainer(clientId: string): Promise<void> {
+  const supabase = await requireAdminClient()
+  const { data: client } = await supabase
+    .from('clients')
+    .select('retainer_status')
+    .eq('id', clientId)
+    .single()
+
+  if (client?.retainer_status !== 'canceled') {
+    throw new Error('Retainer is not canceled')
+  }
+
+  await setRetainerStatus(clientId, 'active')
 }

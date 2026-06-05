@@ -45,6 +45,9 @@ export interface Database {
           plan_name: string | null
           billing_cycle_day: number
           renewal_date: string | null
+          retainer_status: 'active' | 'frozen' | 'canceled'
+          retainer_frozen_at: string | null
+          retainer_canceled_at: string | null
           sla_response_hours: number
           created_at: string
         }
@@ -56,6 +59,9 @@ export interface Database {
           plan_name?: string | null
           billing_cycle_day?: number
           renewal_date?: string | null
+          retainer_status?: 'active' | 'frozen' | 'canceled'
+          retainer_frozen_at?: string | null
+          retainer_canceled_at?: string | null
           sla_response_hours?: number
           created_at?: string
         }
@@ -67,6 +73,9 @@ export interface Database {
           plan_name?: string | null
           billing_cycle_day?: number
           renewal_date?: string | null
+          retainer_status?: 'active' | 'frozen' | 'canceled'
+          retainer_frozen_at?: string | null
+          retainer_canceled_at?: string | null
           sla_response_hours?: number
           created_at?: string
         }

@@ -2,12 +2,20 @@
 
 import { useEffect, useRef } from 'react'
 
+const confirmButtonClass = {
+  danger: 'dash-btn-danger',
+  primary: 'dash-btn-primary',
+  secondary: 'dash-btn-secondary',
+} as const
+
 export function ConfirmDeleteModal({
   open,
   onClose,
   title,
   description,
   confirmLabel = 'Delete',
+  confirmVariant = 'danger',
+  pendingLabel = 'Working…',
   pending = false,
   error = null,
   onConfirm,
@@ -17,6 +25,8 @@ export function ConfirmDeleteModal({
   title: string
   description: React.ReactNode
   confirmLabel?: string
+  confirmVariant?: keyof typeof confirmButtonClass
+  pendingLabel?: string
   pending?: boolean
   error?: string | null
   onConfirm: () => void
@@ -44,15 +54,15 @@ export function ConfirmDeleteModal({
               onClick={onClose}
               disabled={pending}
             >
-              Cancel
+              Go back
             </button>
             <button
               type="button"
-              className="dash-btn-danger cursor-pointer"
+              className={`${confirmButtonClass[confirmVariant]} cursor-pointer`}
               onClick={onConfirm}
               disabled={pending}
             >
-              {pending ? 'Deleting…' : confirmLabel}
+              {pending ? pendingLabel : confirmLabel}
             </button>
           </div>
         </div>

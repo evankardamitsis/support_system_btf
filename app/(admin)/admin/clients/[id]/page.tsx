@@ -9,6 +9,7 @@ import { TicketsTable } from '@/components/tickets/TicketsTable'
 import { ClientRetainerSection } from '@/components/retainers/ClientRetainerSection'
 import { getRetainerForClient } from '@/lib/retainers/active'
 import { formatPackageName } from '@/lib/retainers/packages'
+import { RETAINER_STATUS_LABELS, type RetainerLifecycleStatus } from '@/lib/retainers/status'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
 export default async function AdminClientDetailPage({
@@ -89,6 +90,16 @@ export default async function AdminClientDetailPage({
               : '—',
           },
           {
+            label: 'Retainer',
+            value: RETAINER_STATUS_LABELS[(client.retainer_status ?? 'active') as RetainerLifecycleStatus],
+            accent:
+              client.retainer_status === 'frozen'
+                ? '#fb923c'
+                : client.retainer_status === 'canceled'
+                  ? '#f87171'
+                  : '#4ade80',
+          },
+          {
             label: 'Active tickets',
             value: String(openTickets),
             accent: openTickets > 0 ? '#60a5fa' : undefined,
@@ -96,7 +107,7 @@ export default async function AdminClientDetailPage({
         ]}
       />
 
-      <ClientRetainerSection clientId={id} />
+      <ClientRetainerSection clientId={id} canManageLifecycle={isAdmin} />
 
       <section className="space-y-3 anim-fade-up anim-fade-up-5">
         <div className="flex flex-wrap items-center justify-between gap-3">

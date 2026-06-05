@@ -6,6 +6,12 @@ import { UsageBar } from '@/components/dashboard/UsageBar'
 import { StatusFlag } from '@/components/dashboard/StatusFlag'
 import { PackageChip } from '@/components/retainers/PackageChip'
 import { getRetainerForClient } from '@/lib/retainers/active'
+import { getClientRetainerStatus } from '@/lib/retainers/guards'
+import {
+  RETAINER_STATUS_LABELS,
+  canUseRetainerHours,
+  retainerStatusMessage,
+} from '@/lib/retainers/status'
 
 export default async function RetainerPage() {
   const supabase = await createClient()
@@ -17,9 +23,12 @@ export default async function RetainerPage() {
   const { data: profile } = await supabase.from('users').select('client_id').eq('id', user.id).single()
   if (!profile?.client_id) redirect('/auth/login')
 
-  const retainer = await getRetainerForClient(supabase, profile.client_id, {
-    includePackage: true,
-  })
+  const [retainer, retainerStatus] = await Promise.all([
+    getRetainerForClient(supabase, profile.client_id, { includePackage: true }),
+    getClientRetainerStatus(supabase, profile.client_id),
+  ])
+
+  const lifecycleBlocked = !canUseRetainerHours(retainerStatus)
 
   const hoursUsed = retainer ? Number(retainer.hours_used) : 0
   const hoursTotal = retainer ? Number(retainer.hours_total) : 0
@@ -39,6 +48,15 @@ export default async function RetainerPage() {
             : 'Your support plan and included hours'
         }
       />
+
+      {lifecycleBlocked ? (
+        <div className="retainer-lifecycle-banner" data-tone="blocked">
+          <p className="retainer-lifecycle-banner-title">
+            {RETAINER_STATUS_LABELS[retainerStatus]}
+          </p>
+          <p className="dash-meta leading-relaxed mt-2">{retainerStatusMessage(retainerStatus)}</p>
+        </div>
+      ) : null}
 
       {retainer ? (
         <div className="space-y-5">

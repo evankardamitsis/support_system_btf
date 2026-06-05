@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { assertClientCanUseRetainer } from '@/lib/retainers/guards'
 
 export async function logHours(
   ticketId: string,
@@ -13,6 +14,15 @@ export async function logHours(
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
+
+  const { data: ticket } = await supabase
+    .from('tickets')
+    .select('client_id')
+    .eq('id', ticketId)
+    .single()
+
+  if (!ticket?.client_id) throw new Error('Ticket not found')
+  await assertClientCanUseRetainer(supabase, ticket.client_id)
 
   const { error } = await supabase.from('hours_log').insert({
     ticket_id: ticketId,

@@ -6,14 +6,25 @@ import { StatusFlag } from '@/components/dashboard/StatusFlag'
 import { FormPanel } from '@/components/dashboard/FormPanel'
 import { PackageChip } from '@/components/retainers/PackageChip'
 import { RetainerPeriodForm } from '@/components/retainers/RetainerPeriodForm'
+import { RetainerStatusControls } from '@/components/retainers/RetainerStatusControls'
+import type { RetainerLifecycleStatus } from '@/lib/retainers/status'
 
-export async function ClientRetainerSection({ clientId }: { clientId: string }) {
+export async function ClientRetainerSection({
+  clientId,
+  canManageLifecycle = false,
+}: {
+  clientId: string
+  canManageLifecycle?: boolean
+}) {
   const supabase = await createClient()
   const { data: client } = await supabase
     .from('clients')
-    .select('billing_cycle_day')
+    .select('billing_cycle_day, retainer_status')
     .eq('id', clientId)
     .single()
+
+  const retainerStatus = (client?.retainer_status ?? 'active') as RetainerLifecycleStatus
+  const lifecycleBlocked = retainerStatus !== 'active'
 
   const r = await getRetainerForClient(supabase, clientId, {
     includeCost: true,
@@ -31,6 +42,12 @@ export async function ClientRetainerSection({ clientId }: { clientId: string }) 
 
   return (
     <div className="space-y-5 anim-fade-up anim-fade-up-4">
+      <RetainerStatusControls
+        clientId={clientId}
+        status={retainerStatus}
+        canManage={canManageLifecycle}
+      />
+
       {r ? (
         <section className="retainer-panel" data-alert={isDanger ? 'true' : undefined}>
           <div className="retainer-panel-head">
@@ -101,12 +118,20 @@ export async function ClientRetainerSection({ clientId }: { clientId: string }) 
       )}
 
       <FormPanel title={r ? 'New billing period' : 'Set up retainer'}>
-        <RetainerPeriodForm
-          clientId={clientId}
-          billingCycleDay={billingDay}
-          submitLabel={r ? 'Start new period' : 'Create retainer'}
-          showCustomDates
-        />
+        {lifecycleBlocked ? (
+          <p className="dash-meta leading-relaxed">
+            {retainerStatus === 'frozen'
+              ? 'Unfreeze the retainer to start a new billing period manually.'
+              : 'Resume the retainer to start a new billing period manually.'}
+          </p>
+        ) : (
+          <RetainerPeriodForm
+            clientId={clientId}
+            billingCycleDay={billingDay}
+            submitLabel={r ? 'Start new period' : 'Create retainer'}
+            showCustomDates
+          />
+        )}
       </FormPanel>
     </div>
   )

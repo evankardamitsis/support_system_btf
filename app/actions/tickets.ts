@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { tryCreateAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth/require-admin'
 import { getRetainerForClient } from '@/lib/retainers/active'
+import { assertClientCanUseRetainer } from '@/lib/retainers/guards'
 import {
   getClientNotificationEmails,
   notifyClientEstimatePending,
@@ -81,6 +82,8 @@ export async function createPortalTicket(formData: FormData): Promise<string> {
   if (!profile?.client_id) {
     throw new Error('No client account linked')
   }
+
+  await assertClientCanUseRetainer(supabase, profile.client_id)
 
   const title = formData.get('title') as string
   const type = formData.get('type') as 'bug' | 'task' | 'request' | 'question'
@@ -282,6 +285,9 @@ export async function updateTicketStatus(ticketId: string, status: TicketStatus)
     if (ticket?.estimate_status !== 'approved') {
       throw new Error('Client must approve the estimate before resolving')
     }
+    if (ticket?.client_id) {
+      await assertClientCanUseRetainer(supabase, ticket.client_id)
+    }
     const { data: existingLog } = await supabase
       .from('hours_log')
       .select('id')
@@ -354,6 +360,8 @@ export async function resolveTicketWithHours(ticketId: string, actualHours: numb
     .eq('ticket_id', ticketId)
     .limit(1)
     .maybeSingle()
+
+  await assertClientCanUseRetainer(supabase, ticket.client_id)
 
   const retainer = await getRetainerForClient(supabase, ticket.client_id)
   if (!retainer) {
