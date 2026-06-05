@@ -10,6 +10,7 @@ import {
   getClientNotificationEmails,
   notifyClientEstimatePending,
   notifyStaffEstimateApproved,
+  notifyStaffNewTicket,
 } from '@/lib/email/ticket-notifications'
 import { isEstimateLocked } from '@/lib/tickets/estimate'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
@@ -80,21 +81,34 @@ export async function createPortalTicket(formData: FormData): Promise<string> {
     throw new Error('No client account linked')
   }
 
+  const title = formData.get('title') as string
+  const type = formData.get('type') as 'bug' | 'task' | 'request' | 'question'
+
   const { data: ticket, error } = await supabase
     .from('tickets')
     .insert({
       client_id: profile.client_id,
       created_by: user.id,
-      title: formData.get('title') as string,
+      title,
       description: (formData.get('description') as string) || null,
-      type: formData.get('type') as 'bug' | 'task' | 'request' | 'question',
+      type,
     })
     .select('id')
     .single()
 
   if (error || !ticket) throw new Error(error?.message ?? 'Failed to create ticket')
 
-  revalidatePath('/portal/tickets')
+  const staffNotify = await notifyStaffNewTicket({
+    ticketId: ticket.id,
+    ticketTitle: title,
+    ticketType: type,
+    clientId: profile.client_id,
+  })
+  if (!staffNotify.sent) {
+    console.error('[email] staff new-ticket notification failed:', staffNotify.error)
+  }
+
+  revalidateTicketPaths(ticket.id)
   return ticket.id
 }
 
@@ -271,9 +285,9 @@ export async function updateTicketStatus(ticketId: string, status: TicketStatus)
     }
   }
   const patch: { status: TicketStatus; resolved_at?: string | null } = { status }
-  if (status === 'closed') {
+  if (status === 'resolved' || status === 'closed') {
     patch.resolved_at = new Date().toISOString()
-  } else if (status !== 'resolved') {
+  } else {
     patch.resolved_at = null
   }
   const { error } = await supabase.from('tickets').update(patch).eq('id', ticketId)

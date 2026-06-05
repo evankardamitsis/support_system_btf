@@ -4,6 +4,16 @@ export function formatTicketId(id: string) {
   return `TKT-${id.substring(0, 4).toUpperCase()}`
 }
 
+export function formatDateTimeHuman(dateStr: string): string {
+  return new Date(dateStr).toLocaleString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 export function formatRelativeTime(dateStr: string) {
   const m = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000)
   if (m < 1) return 'just now'

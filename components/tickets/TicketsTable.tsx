@@ -4,6 +4,7 @@ import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { ArrowUpRight } from 'lucide-react'
 import { AdminTicketRow } from './AdminTicketRow'
 import {
+  formatDateTimeHuman,
   formatTicketId,
   formatRelativeTime,
   priorityAccent,
@@ -18,6 +19,7 @@ export type TicketTableRow = {
   priority: TicketPriority
   type: string
   updated_at: string
+  resolved_at?: string | null
   clientName?: string | null
   estimated_hours?: number | null
   actual_hours?: number | null
@@ -110,12 +112,21 @@ export function TicketsTable({
               </div>
 
               <div className="tickets-cell tickets-cell-updated">
-                <time
-                  dateTime={t.updated_at}
-                  className={recent ? 'tickets-updated-recent' : 'tickets-updated'}
-                >
-                  {formatRelativeTime(t.updated_at)}
-                </time>
+                {t.resolved_at && (t.status === 'resolved' || t.status === 'closed') ? (
+                  <time dateTime={t.resolved_at} className="tickets-resolved-at">
+                    <span className="tickets-resolved-label">Resolved</span>
+                    <span className="tickets-resolved-time">
+                      {formatDateTimeHuman(t.resolved_at)}
+                    </span>
+                  </time>
+                ) : (
+                  <time
+                    dateTime={t.updated_at}
+                    className={recent ? 'tickets-updated-recent' : 'tickets-updated'}
+                  >
+                    {formatRelativeTime(t.updated_at)}
+                  </time>
+                )}
               </div>
 
               <div className="tickets-cell tickets-cell-action" aria-hidden>

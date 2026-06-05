@@ -108,7 +108,58 @@ export async function notifyClientEstimatePending(input: {
     return {
       sent: false,
       error:
-        'Estimate is waiting on the client, but the notification email could not be sent. Check ZEPTOMAIL_API_KEY and EMAIL_FROM, or ask the client to open the portal.',
+        'Estimate is waiting on the client, but the notification email could not be sent. Check ZEPTOMAIL_API_KEY (Send Mail Token), ZEPTOMAIL_API_URL (.eu for EU accounts), and EMAIL_FROM.',
+    }
+  }
+
+  return { sent: true }
+}
+
+export async function notifyStaffNewTicket(input: {
+  ticketId: string
+  ticketTitle: string
+  ticketType: string
+  clientId: string
+}): Promise<NotifyResult> {
+  const recipients = await getStaffNotificationEmails()
+  if (!recipients.length) {
+    return {
+      sent: false,
+      error: 'No admin or agent emails found — ensure staff users have signed up with email',
+    }
+  }
+
+  const adminResult = tryCreateAdminClient()
+  let clientName = 'Client'
+  if (!('error' in adminResult)) {
+    const { data: client } = await adminResult.client
+      .from('clients')
+      .select('name')
+      .eq('id', input.clientId)
+      .maybeSingle()
+    if (client?.name) clientName = client.name
+  }
+
+  const url = `${appOrigin()}/admin/tickets/${input.ticketId}`
+  const ticketRef = formatTicketId(input.ticketId)
+  const typeLabel = input.ticketType.charAt(0).toUpperCase() + input.ticketType.slice(1)
+
+  const sent = await sendEmail({
+    to: recipients,
+    subject: `New ticket from ${clientName} — ${ticketRef}`,
+    html: emailShell(
+      'New client request',
+      `<strong>${clientName}</strong> submitted a new <strong>${typeLabel}</strong> ticket: <strong>${input.ticketTitle}</strong> (${ticketRef}). Review it in the admin queue and add an estimate when ready.`,
+      'Open ticket',
+      url
+    ),
+  })
+
+  if (!sent) {
+    return {
+      sent: false,
+      error:
+        'Ticket was created but the team notification email could not be sent. Check ZEPTOMAIL_API_KEY, ZEPTOMAIL_API_URL, and EMAIL_FROM.',
     }
   }
 

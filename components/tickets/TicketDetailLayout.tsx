@@ -12,7 +12,7 @@ import { EditablePriorityPill } from './EditablePriorityPill'
 import { ResolveHoursModal } from './ResolveHoursModal'
 import { TicketDetailSidebar } from './TicketDetailSidebar'
 import { DeleteTicketButton } from './DeleteTicketButton'
-import { formatTicketId } from '@/lib/tickets/display'
+import { formatDateTimeHuman, formatTicketId } from '@/lib/tickets/display'
 import {
   canResolveWithEstimate,
   isEstimateLocked,
@@ -40,6 +40,7 @@ export function TicketDetailLayout({
   clientName,
   createdAt,
   updatedAt,
+  resolvedAt,
   description,
   estimateStatus,
   estimatedHours,
@@ -60,6 +61,7 @@ export function TicketDetailLayout({
   clientName: string | null
   createdAt: string
   updatedAt: string
+  resolvedAt: string | null
   description: string | null
   estimateStatus: EstimateStatus
   estimatedHours: number | null
@@ -138,6 +140,17 @@ export function TicketDetailLayout({
                 ·{' '}
               </span>
               Updated {updated}
+              {resolvedAt && (status === 'resolved' || status === 'closed') ? (
+                <>
+                  <span className="ticket-detail-sep" aria-hidden>
+                    {' '}
+                    ·{' '}
+                  </span>
+                  <span className="ticket-detail-resolved-at">
+                    Resolved {formatDateTimeHuman(resolvedAt)}
+                  </span>
+                </>
+              ) : null}
             </p>
           </div>
 
@@ -188,6 +201,7 @@ export function TicketDetailLayout({
         <TicketDetailSidebar
           ticketId={ticketId}
           status={status}
+          resolvedAt={resolvedAt}
           estimateStatus={estimateStatus}
           estimatedHours={estimatedHours}
           actualHours={actualHours}

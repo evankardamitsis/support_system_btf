@@ -1,8 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/dashboard/PageHeader'
 import { DashButton } from '@/components/dashboard/DashButton'
+import { TicketAnalyticsStrip } from '@/components/tickets/TicketAnalyticsStrip'
 import { TicketsTable } from '@/components/tickets/TicketsTable'
 import { TicketsTableToolbar } from '@/components/tickets/TicketsTableToolbar'
+import { computeTicketAnalytics } from '@/lib/tickets/analytics'
 import { Plus } from 'lucide-react'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
@@ -26,7 +28,7 @@ export default async function AdminTicketsPage({
     supabase
       .from('tickets')
       .select(
-        'id, client_id, status, priority, title, type, created_at, updated_at, estimated_hours, actual_hours, estimate_status, clients(name)'
+        'id, client_id, status, priority, title, type, created_at, updated_at, resolved_at, estimated_hours, actual_hours, estimate_status, clients(name)'
       )
       .order('updated_at', { ascending: false }),
     supabase.from('clients').select('id, name').order('name'),
@@ -64,6 +66,15 @@ export default async function AdminTicketsPage({
   const activeStatus = filters.status ?? ''
   const hasFilters = Boolean(filters.status || filters.priority || activeClient)
 
+  const analytics = computeTicketAnalytics(
+    scoped.map(t => ({
+      status: t.status,
+      created_at: t.created_at,
+      resolved_at: t.resolved_at,
+      actual_hours: t.actual_hours != null ? Number(t.actual_hours) : null,
+    }))
+  )
+
   const rows = tickets.map(t => ({
     id: t.id,
     title: t.title,
@@ -71,6 +82,7 @@ export default async function AdminTicketsPage({
     priority: t.priority as TicketPriority,
     type: t.type,
     updated_at: t.updated_at,
+    resolved_at: t.resolved_at,
     estimated_hours: t.estimated_hours != null ? Number(t.estimated_hours) : null,
     actual_hours: t.actual_hours != null ? Number(t.actual_hours) : null,
     estimate_status: t.estimate_status ?? null,
@@ -99,6 +111,8 @@ export default async function AdminTicketsPage({
           </DashButton>
         }
       />
+
+      <TicketAnalyticsStrip analytics={analytics} />
 
       <section className="tickets-workspace anim-fade-up anim-fade-up-3">
         <TicketsTableToolbar

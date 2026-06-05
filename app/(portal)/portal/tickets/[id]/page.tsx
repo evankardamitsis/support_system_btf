@@ -6,6 +6,7 @@ import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { CommentThread } from '@/components/tickets/CommentThread'
 import { EstimateApprovalModal } from '@/components/tickets/EstimateApprovalModal'
 import { TicketCommentForm } from '@/components/tickets/TicketCommentForm'
+import { formatDateTimeHuman } from '@/lib/tickets/display'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
 function ticketId(id: string) {
@@ -128,6 +129,10 @@ export default async function PortalTicketDetailPage({
                 : []),
               { label: 'Opened', value: new Date(ticket.created_at).toLocaleDateString('en-GB') },
               { label: 'Updated', value: relativeTime(ticket.updated_at) },
+              ...(ticket.resolved_at &&
+              (ticket.status === 'resolved' || ticket.status === 'closed')
+                ? [{ label: 'Resolved', value: formatDateTimeHuman(ticket.resolved_at) }]
+                : []),
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between items-center gap-4 text-sm">
                 <span className="dash-meta uppercase">{label}</span>

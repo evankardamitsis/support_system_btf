@@ -69,6 +69,7 @@ export default async function AdminTicketDetailPage({
         clientName={clientName}
         createdAt={ticket.created_at}
         updatedAt={ticket.updated_at}
+        resolvedAt={ticket.resolved_at}
         description={ticket.description}
         estimateStatus={ticket.estimate_status ?? null}
         estimatedHours={estimatedHours}

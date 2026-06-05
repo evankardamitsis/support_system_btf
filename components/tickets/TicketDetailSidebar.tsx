@@ -12,6 +12,7 @@ import {
   isEstimateLocked,
   type EstimateStatus,
 } from '@/lib/tickets/estimate'
+import { formatDateTimeHuman } from '@/lib/tickets/display'
 import type { TicketStatus } from '@/lib/types'
 
 type RetainerOption = {
@@ -25,6 +26,7 @@ type RetainerOption = {
 export function TicketDetailSidebar({
   ticketId,
   status,
+  resolvedAt,
   estimateStatus,
   estimatedHours,
   actualHours,
@@ -36,6 +38,7 @@ export function TicketDetailSidebar({
 }: {
   ticketId: string
   status: TicketStatus
+  resolvedAt: string | null
   estimateStatus: EstimateStatus
   estimatedHours: number | null
   actualHours: number | null
@@ -149,6 +152,13 @@ export function TicketDetailSidebar({
           </button>
         ) : hoursLogged ? (
           <p className="ticket-detail-aside-note dash-meta">Hours recorded for this ticket.</p>
+        ) : null}
+
+        {resolvedAt && (status === 'resolved' || status === 'closed') ? (
+          <p className="ticket-detail-resolved-readout">
+            <span className="ticket-detail-control-label">Resolved</span>
+            <time dateTime={resolvedAt}>{formatDateTimeHuman(resolvedAt)}</time>
+          </p>
         ) : null}
       </section>
 
