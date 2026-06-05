@@ -442,8 +442,14 @@ export async function disputeTicketWork(ticketId: string, concerns: string) {
     throw new Error('No completed work is waiting for your approval')
   }
 
+  const adminResult = tryCreateAdminClient()
+  if ('error' in adminResult) {
+    throw new Error(adminResult.error)
+  }
+  const admin = adminResult.client
+
   const now = new Date().toISOString()
-  const { error: updateErr } = await supabase
+  const { error: updateErr } = await admin
     .from('tickets')
     .update({
       completion_status: null,
@@ -452,6 +458,7 @@ export async function disputeTicketWork(ticketId: string, concerns: string) {
       status: 'in_progress',
     })
     .eq('id', ticketId)
+    .eq('client_id', profile.client_id)
     .eq('completion_status', 'pending_approval')
 
   if (updateErr) throw new Error(updateErr.message)
