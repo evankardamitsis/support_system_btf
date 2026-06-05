@@ -25,6 +25,16 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string }>
 }) {
   const params = await searchParams
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (user && !params.error) {
+    const path = await getPostLoginPath(supabase)
+    if (!path.startsWith('/auth/login')) {
+      redirect(path)
+    }
+  }
 
   async function login(formData: FormData) {
     'use server'
@@ -38,7 +48,8 @@ export default async function LoginPage({
 
   return (
     <div
-      className="min-h-[100dvh] grid-bg grid-bg-fade flex flex-col items-center justify-center px-4"
+      data-theme="auth"
+      className="min-h-dvh grid-bg grid-bg-fade flex flex-col items-center justify-center px-4"
       style={{ background: 'var(--bg)' }}
     >
       <div className="w-full max-w-[440px] flex flex-col gap-10">
@@ -90,7 +101,7 @@ export default async function LoginPage({
                 autoComplete="email"
                 placeholder="you@example.com"
                 style={inputStyle}
-                className="placeholder-[#555] focus:[border-color:var(--accent)]"
+                className="focus:border-(--accent)"
               />
             </div>
 
@@ -106,7 +117,7 @@ export default async function LoginPage({
                 <Link
                   href="/auth/forgot-password"
                   className="text-xs hover:opacity-70 transition-opacity shrink-0"
-                  style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-3)' }}
+                  style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-2)' }}
                 >
                   Forgot password?
                 </Link>
@@ -141,7 +152,7 @@ export default async function LoginPage({
 
         <p
           className="text-center text-sm"
-          style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-3)' }}
+          style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-2)' }}
         >
           Need access? Contact your BTF account manager.
         </p>

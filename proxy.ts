@@ -17,7 +17,7 @@ export async function proxy(request: NextRequest) {
     .from('users')
     .select('role')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
 
   const role = profile?.role
 
@@ -28,6 +28,10 @@ export async function proxy(request: NextRequest) {
     }
     if (role === 'admin' || role === 'agent') {
       return NextResponse.redirect(new URL('/admin/tickets', request.url))
+    }
+    // Signed in without a profile row — portal layout repairs client accounts
+    if (user.email) {
+      return NextResponse.redirect(new URL('/portal/tickets', request.url))
     }
   }
 

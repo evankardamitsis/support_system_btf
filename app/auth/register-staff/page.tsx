@@ -102,6 +102,7 @@ export default async function RegisterStaffPage({
 
   return (
     <div
+      data-theme="auth"
       className="min-h-dvh grid-bg grid-bg-fade flex flex-col items-center justify-center px-4"
       style={{ background: 'var(--bg)' }}
     >
@@ -186,7 +187,7 @@ export default async function RegisterStaffPage({
               <Link
                 href="/auth/login"
                 className="text-sm hover:opacity-70 transition-opacity"
-                style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-3)' }}
+                style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-2)' }}
               >
                 ← Sign in
               </Link>

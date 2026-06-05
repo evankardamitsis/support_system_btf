@@ -63,7 +63,7 @@ export function PasswordField({
           placeholder={placeholder}
           autoFocus={autoFocus}
           style={inputStyle}
-          className="placeholder-[#555] focus:[border-color:var(--accent)]"
+          className="focus:[border-color:var(--accent)]"
         />
         <button
           type="button"

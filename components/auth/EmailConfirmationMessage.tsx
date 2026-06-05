@@ -62,7 +62,7 @@ export function EmailConfirmationMessage({
       </p>
       <p
         className="text-sm"
-        style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-3)' }}
+        style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-2)' }}
       >
         Already confirmed?{' '}
         <Link

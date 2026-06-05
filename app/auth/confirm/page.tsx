@@ -39,15 +39,31 @@ export default function AuthConfirmPage() {
   }, [router])
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center gap-4">
+    <div
+      data-theme="auth"
+      className="min-h-dvh flex flex-col items-center justify-center gap-4"
+      style={{ background: 'var(--bg)' }}
+    >
       <div className="flex items-center gap-2">
-        <span className="text-xs font-mono tracking-[0.2em] text-zinc-500 uppercase">BTF</span>
-        <span className="w-px h-3 bg-zinc-800" />
-        <span className="text-xs tracking-wide text-zinc-600">Support</span>
+        <span
+          className="text-xs tracking-[0.2em] uppercase"
+          style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-2)' }}
+        >
+          BTF
+        </span>
+        <span className="w-px h-3" style={{ background: 'var(--border-2)' }} />
+        <span className="text-xs tracking-wide" style={{ color: 'var(--text-2)' }}>
+          Support
+        </span>
       </div>
       <div className="flex items-center gap-3">
-        <span className="inline-block w-4 h-4 border-2 border-zinc-700 border-t-zinc-300 rounded-full animate-spin" />
-        <span className="text-sm text-zinc-400">Signing you in…</span>
+        <span
+          className="inline-block w-4 h-4 border-2 rounded-full animate-spin"
+          style={{ borderColor: 'var(--border-2)', borderTopColor: 'var(--text-2)' }}
+        />
+        <span className="text-sm" style={{ color: 'var(--text-2)' }}>
+          Signing you in…
+        </span>
       </div>
     </div>
   )

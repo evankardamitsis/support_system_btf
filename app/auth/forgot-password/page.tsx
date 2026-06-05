@@ -47,7 +47,8 @@ export default async function ForgotPasswordPage({
 
   return (
     <div
-      className="min-h-[100dvh] grid-bg grid-bg-fade flex flex-col items-center justify-center px-4"
+      data-theme="auth"
+      className="min-h-dvh grid-bg grid-bg-fade flex flex-col items-center justify-center px-4"
       style={{ background: 'var(--bg)' }}
     >
       <div className="w-full max-w-[440px] flex flex-col gap-10">
@@ -114,7 +115,7 @@ export default async function ForgotPasswordPage({
                     autoComplete="email"
                     placeholder="you@example.com"
                     style={inputStyle}
-                    className="placeholder-[#555] focus:[border-color:var(--accent)]"
+                    className="focus:[border-color:var(--accent)]"
                   />
                 </div>
 
@@ -137,7 +138,7 @@ export default async function ForgotPasswordPage({
                 <Link
                   href="/auth/login"
                   className="text-center text-sm hover:opacity-70 transition-opacity"
-                  style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-3)' }}
+                  style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-2)' }}
                 >
                   ← Back to sign in
                 </Link>

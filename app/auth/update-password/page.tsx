@@ -32,7 +32,8 @@ export default async function UpdatePasswordPage({
 
   return (
     <div
-      className="min-h-[100dvh] grid-bg grid-bg-fade flex flex-col items-center justify-center px-4"
+      data-theme="auth"
+      className="min-h-dvh grid-bg grid-bg-fade flex flex-col items-center justify-center px-4"
       style={{ background: 'var(--bg)' }}
     >
       <div className="w-full max-w-[440px] flex flex-col gap-10">
