@@ -53,6 +53,7 @@ export function AdminTicketRow({
   }
 
   function onPriorityChange(priority: TicketPriority) {
+    if (closed) return
     startTransition(async () => {
       const ok = await runWithToast(() => updateTicketPriority(ticket.id, priority), {
         success: `Priority set to ${formatTicketPriority(priority)}`,
@@ -91,6 +92,7 @@ export function AdminTicketRow({
         className={`tickets-grid tickets-grid--admin tickets-row tickets-row--static tickets-row--${ticket.priority}${statusRowClass}`}
         style={{ ['--row-accent' as string]: accent }}
         data-pending={pending ? 'true' : undefined}
+        data-closed={closed ? 'true' : undefined}
       >
         <div className="tickets-cell tickets-cell-status tickets-cell--control" data-label="Status">
           <div className="tickets-cell-value tickets-cell-value--stack">

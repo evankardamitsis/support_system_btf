@@ -120,7 +120,10 @@ export function TicketDetailLayout({
 
   return (
     <>
-      <header className="ticket-detail-head anim-fade-up anim-fade-up-1">
+      <header
+        className="ticket-detail-head anim-fade-up anim-fade-up-1"
+        data-ticket-closed={closed ? 'true' : undefined}
+      >
         <div className="ticket-detail-head-grid">
           <div className="ticket-detail-head-copy min-w-0">
             <p className="ticket-detail-eyebrow">
@@ -162,28 +165,27 @@ export function TicketDetailLayout({
             </p>
           </div>
 
-          <div
-            className="ticket-detail-controls"
-            data-pending={pending ? 'true' : undefined}
-          >
-            <div className="ticket-detail-control">
-              <span className="ticket-detail-control-label">Status</span>
-              {closed ? (
-                <StatusPill status={status} />
-              ) : (
+          {closed ? (
+            <div className="ticket-detail-controls ticket-detail-controls--readonly">
+              <StatusPill status={status} />
+              <PriorityBadge priority={priority} />
+            </div>
+          ) : (
+            <div
+              className="ticket-detail-controls"
+              data-pending={pending ? 'true' : undefined}
+            >
+              <div className="ticket-detail-control">
+                <span className="ticket-detail-control-label">Status</span>
                 <EditableStatusPill
                   value={status}
                   onChange={onStatusChange}
                   disabled={pending}
                   ariaLabel="Change ticket status"
                 />
-              )}
-            </div>
-            <div className="ticket-detail-control">
-              <span className="ticket-detail-control-label">Priority</span>
-              {closed ? (
-                <PriorityBadge priority={priority} />
-              ) : (
+              </div>
+              <div className="ticket-detail-control">
+                <span className="ticket-detail-control-label">Priority</span>
                 <EditablePriorityPill
                   value={priority}
                   onChange={next =>
@@ -198,9 +200,9 @@ export function TicketDetailLayout({
                   disabled={pending || priorityLocked}
                   ariaLabel="Change ticket priority"
                 />
-              )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </header>
 
@@ -230,7 +232,9 @@ export function TicketDetailLayout({
         />
       </div>
 
-      {isAdmin ? <DeleteTicketButton ticketId={ticketId} ticketTitle={title} /> : null}
+      {isAdmin && !closed ? (
+        <DeleteTicketButton ticketId={ticketId} ticketTitle={title} />
+      ) : null}
 
       <ResolveHoursModal
         ticketId={ticketId}

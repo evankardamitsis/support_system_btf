@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { getStaffForMentions } from '@/app/actions/comments'
+import { enrichCommentsWithAuthors } from '@/lib/comments/authors'
 import { CommentThread } from '@/components/tickets/CommentThread'
 import { TicketCommentForm } from '@/components/tickets/TicketCommentForm'
 import { TicketDetailLayout } from '@/components/tickets/TicketDetailLayout'
@@ -44,7 +46,11 @@ export default async function AdminTicketDetailPage({
     supabase.from('hours_log').select('id').eq('ticket_id', id).limit(1).maybeSingle(),
   ])
 
-  const activeRetainer = await getRetainerForClient(supabase, ticket.client_id)
+  const [activeRetainer, enrichedComments, staffForMentions] = await Promise.all([
+    getRetainerForClient(supabase, ticket.client_id),
+    enrichCommentsWithAuthors(supabase, comments ?? []),
+    getStaffForMentions(),
+  ])
 
   const hoursLogged = Boolean(hourLog)
   const estimatedHours =
@@ -52,7 +58,8 @@ export default async function AdminTicketDetailPage({
   const actualHours = ticket.actual_hours != null ? Number(ticket.actual_hours) : null
   const clientName = (ticket.clients as unknown as { name: string } | null)?.name ?? null
 
-  const messageCount = (comments ?? []).length
+  const messageCount = enrichedComments.length
+  const staffNames = staffForMentions.map(s => s.name)
   const closed = isTicketClosed(ticket.status as TicketStatus)
 
   return (
@@ -92,15 +99,23 @@ export default async function AdminTicketDetailPage({
           </div>
 
           <div className="ticket-detail-activity-thread">
-            <CommentThread comments={comments ?? []} showInternal />
+            <CommentThread
+              comments={enrichedComments}
+              showInternal
+              staffNames={staffNames}
+            />
           </div>
 
           {closed ? (
-            <p className="ticket-detail-reply dash-meta px-5 pb-5">This ticket is closed.</p>
+            <p className="ticket-detail-reply dash-meta px-5 pb-5">This ticket is resolved.</p>
           ) : (
             <div className="ticket-detail-reply">
               <p className="ticket-detail-reply-label">Add to thread</p>
-              <TicketCommentForm ticketId={ticket.id} variant="admin" />
+              <TicketCommentForm
+                ticketId={ticket.id}
+                variant="admin"
+                staffForMentions={staffForMentions}
+              />
             </div>
           )}
         </section>

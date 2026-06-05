@@ -1,13 +1,14 @@
-interface Comment {
+import { authorInitials, authorRoleLabel } from '@/lib/comments/authors'
+import { splitCommentBody } from '@/lib/comments/mentions'
+
+export type CommentItem = {
   id: string
   body: string
   author_id: string
+  authorName: string
+  authorRole: string | null
   is_internal: boolean
   created_at: string
-}
-
-function initials(id: string): string {
-  return id.substring(0, 2).toUpperCase()
 }
 
 function relativeTime(dateStr: string): string {
@@ -19,12 +20,41 @@ function relativeTime(dateStr: string): string {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
-interface CommentThreadProps {
-  comments: Comment[]
-  showInternal?: boolean
+function CommentBody({
+  body,
+  staffNames,
+}: {
+  body: string
+  staffNames: string[]
+}) {
+  const parts = splitCommentBody(body, staffNames)
+
+  return (
+    <p className="ticket-detail-comment-text">
+      {parts.map((part, index) =>
+        part.type === 'mention' ? (
+          <span key={index} className="ticket-detail-comment-mention">
+            {part.value}
+          </span>
+        ) : (
+          <span key={index}>{part.value}</span>
+        )
+      )}
+    </p>
+  )
 }
 
-export function CommentThread({ comments, showInternal = false }: CommentThreadProps) {
+interface CommentThreadProps {
+  comments: CommentItem[]
+  showInternal?: boolean
+  staffNames?: string[]
+}
+
+export function CommentThread({
+  comments,
+  showInternal = false,
+  staffNames = [],
+}: CommentThreadProps) {
   const visible = showInternal ? comments : comments.filter(c => !c.is_internal)
 
   if (visible.length === 0) {
@@ -37,23 +67,33 @@ export function CommentThread({ comments, showInternal = false }: CommentThreadP
 
   return (
     <div className="ticket-detail-thread">
-      {visible.map(c => (
-        <article
-          key={c.id}
-          className={`ticket-detail-comment ${c.is_internal ? 'ticket-detail-comment--internal' : ''}`}
-        >
-          <div className="ticket-detail-comment-avatar" aria-hidden>
-            {initials(c.author_id)}
-          </div>
-          <div className="ticket-detail-comment-body">
-            <div className="ticket-detail-comment-meta">
-              {c.is_internal ? <span className="ticket-detail-comment-badge">Internal</span> : null}
-              <time className="dash-meta">{relativeTime(c.created_at)}</time>
+      {visible.map(c => {
+        const roleLabel = authorRoleLabel(c.authorRole)
+
+        return (
+          <article
+            key={c.id}
+            className={`ticket-detail-comment ${c.is_internal ? 'ticket-detail-comment--internal' : ''}`}
+          >
+            <div className="ticket-detail-comment-avatar" aria-hidden>
+              {authorInitials(c.authorName)}
             </div>
-            <p className="ticket-detail-comment-text">{c.body}</p>
-          </div>
-        </article>
-      ))}
+            <div className="ticket-detail-comment-body">
+              <div className="ticket-detail-comment-meta">
+                <span className="ticket-detail-comment-author">{c.authorName}</span>
+                {roleLabel ? (
+                  <span className="ticket-detail-comment-role">{roleLabel}</span>
+                ) : null}
+                {c.is_internal ? (
+                  <span className="ticket-detail-comment-badge">Internal</span>
+                ) : null}
+                <time className="dash-meta">{relativeTime(c.created_at)}</time>
+              </div>
+              <CommentBody body={c.body} staffNames={staffNames} />
+            </div>
+          </article>
+        )
+      })}
     </div>
   )
 }

@@ -1,20 +1,24 @@
 'use client'
 
-import { useRef, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { addComment } from '@/app/actions/comments'
+import { MentionTextarea } from '@/components/tickets/MentionTextarea'
 import { runWithToast } from '@/lib/notify'
 
 export function TicketCommentForm({
   ticketId,
   variant,
+  staffForMentions = [],
 }: {
   ticketId: string
   variant: 'admin' | 'portal'
+  staffForMentions?: { id: string; name: string }[]
 }) {
   const router = useRouter()
   const formRef = useRef<HTMLFormElement>(null)
   const [pending, startTransition] = useTransition()
+  const [composerKey, setComposerKey] = useState(0)
 
   function submit(isInternal: boolean) {
     const form = formRef.current
@@ -36,6 +40,7 @@ export function TicketCommentForm({
       )
       if (ok === null) return
       form.reset()
+      setComposerKey(k => k + 1)
       router.refresh()
     })
   }
@@ -72,13 +77,11 @@ export function TicketCommentForm({
 
   return (
     <form ref={formRef} className="ticket-detail-reply-form" onSubmit={e => e.preventDefault()}>
-      <textarea
-        name="body"
-        required
-        rows={4}
-        placeholder="Write a reply or internal note…"
-        className="btf-input w-full resize-y"
+      <MentionTextarea
+        resetKey={composerKey}
+        staff={staffForMentions}
         disabled={pending}
+        placeholder="Write a reply or internal note… Use @name to tag teammates in internal notes."
       />
       <div className="ticket-detail-reply-actions">
         <button

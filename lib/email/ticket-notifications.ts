@@ -2,6 +2,7 @@ import { getRetainerForClient } from '@/lib/retainers/active'
 import { renewalDateFromPeriodEnd } from '@/lib/retainers/period'
 import { formatPackageName } from '@/lib/retainers/packages'
 import { tryCreateAdminClient } from '@/lib/supabase/admin'
+import { getAuthEmailById } from '@/lib/team/auth-users'
 import { formatTicketId } from '@/lib/tickets/display'
 import { formatTicketPriority } from '@/lib/notify'
 import { sendEmail } from '@/lib/email/send'
@@ -402,6 +403,60 @@ export async function notifyStaffWorkApproved(input: {
   return { sent: true }
 }
 
+export async function notifyStaffInternalMention(input: {
+  ticketId: string
+  ticketTitle: string
+  mentionedUserIds: string[]
+  authorName: string
+  excerpt: string
+}): Promise<NotifyResult> {
+  const adminResult = tryCreateAdminClient()
+  if ('error' in adminResult) {
+    return { sent: false, error: adminResult.error }
+  }
+
+  const emails: string[] = []
+  for (const userId of input.mentionedUserIds) {
+    const email = await getAuthEmailById(adminResult.client, userId)
+    if (email) emails.push(email)
+  }
+
+  const recipients = [...new Set(emails)]
+  if (!recipients.length) {
+    return {
+      sent: false,
+      error: 'Tagged teammates have no email on file',
+    }
+  }
+
+  const url = `${appOrigin()}/admin/tickets/${input.ticketId}`
+  const ticketRef = formatTicketId(input.ticketId)
+  const preview =
+    input.excerpt.length > 220 ? `${input.excerpt.slice(0, 217).trim()}…` : input.excerpt
+
+  const sent = await sendEmail({
+    to: recipients,
+    subject: `${input.authorName} tagged you on ${ticketRef}`,
+    html: emailShell(
+      'You were mentioned in an internal note',
+      `<strong>${input.authorName}</strong> tagged you on <strong>${input.ticketTitle}</strong> (${ticketRef}):<br><br><em>“${preview.replace(/\n/g, '<br>')}”</em>`,
+      'View ticket',
+      url
+    ),
+  })
+
+  if (!sent) {
+    return {
+      sent: false,
+      error:
+        'Mention was saved but notification email could not be sent. Check ZEPTOMAIL_API_KEY and EMAIL_FROM.',
+    }
+  }
+
+  return { sent: true }
+}
+
+  
 export async function notifyStaffEstimateApproved(input: {
   ticketId: string
   ticketTitle: string

@@ -200,7 +200,7 @@ export function TicketDetailSidebar({
         ) : null}
 
         {closed ? (
-          <p className="ticket-detail-aside-note dash-meta">This ticket is closed — no further edits.</p>
+          <p className="ticket-detail-aside-note dash-meta">This ticket is resolved — no further edits.</p>
         ) : null}
 
         {resolvedAt && closed ? (

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { PriorityBadge } from '@/components/ui/PriorityBadge'
+import { enrichCommentsWithAuthors } from '@/lib/comments/authors'
 import { CommentThread } from '@/components/tickets/CommentThread'
 import { EstimateApprovalModal } from '@/components/tickets/EstimateApprovalModal'
 import { WorkApprovalModal } from '@/components/tickets/WorkApprovalModal'
@@ -51,6 +52,8 @@ export default async function PortalTicketDetailPage({
     .eq('ticket_id', id)
     .eq('is_internal', false)
     .order('created_at', { ascending: true })
+
+  const enrichedComments = await enrichCommentsWithAuthors(supabase, comments ?? [])
 
   return (
     <div className="space-y-6">
@@ -116,7 +119,7 @@ export default async function PortalTicketDetailPage({
               <h2 className="dash-section-title">Activity</h2>
             </div>
             <div className="px-5 py-4">
-              <CommentThread comments={comments ?? []} showInternal={false} />
+              <CommentThread comments={enrichedComments} showInternal={false} />
             </div>
             {!closed ? (
               <div className="px-5 pb-5 pt-0" style={{ borderTop: '1px solid var(--border)' }}>
@@ -124,7 +127,7 @@ export default async function PortalTicketDetailPage({
               </div>
             ) : (
               <p className="px-5 pb-5 pt-3 dash-meta" style={{ borderTop: '1px solid var(--border)' }}>
-                This ticket is closed.
+                This ticket is resolved.
               </p>
             )}
           </div>

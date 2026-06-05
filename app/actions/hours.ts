@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { assertClientCanUseRetainer } from '@/lib/retainers/guards'
-import { isTicketClosed } from '@/lib/tickets/closed'
+import { isTicketClosed, TICKET_LOCKED_MESSAGE } from '@/lib/tickets/closed'
 
 export async function logHours(
   ticketId: string,
@@ -24,7 +24,7 @@ export async function logHours(
 
   if (!ticket?.client_id) throw new Error('Ticket not found')
   if (isTicketClosed(ticket.status)) {
-    throw new Error('Cannot log hours on a closed ticket')
+    throw new Error(TICKET_LOCKED_MESSAGE)
   }
   await assertClientCanUseRetainer(supabase, ticket.client_id)
 

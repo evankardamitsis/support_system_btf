@@ -16,7 +16,7 @@ import {
   notifyStaffNewTicket,
   notifyStaffWorkApproved,
 } from '@/lib/email/ticket-notifications'
-import { isTicketClosed } from '@/lib/tickets/closed'
+import { isTicketClosed, TICKET_LOCKED_MESSAGE } from '@/lib/tickets/closed'
 import { isEstimateLocked } from '@/lib/tickets/estimate'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
@@ -47,7 +47,7 @@ async function assertTicketOpen(
     .single()
   if (!ticket) throw new Error('Ticket not found')
   if (isTicketClosed(ticket.status)) {
-    throw new Error('This ticket is closed and cannot be modified')
+    throw new Error(TICKET_LOCKED_MESSAGE)
   }
 }
 
@@ -173,6 +173,7 @@ export async function updateTicketEstimatedHours(ticketId: string, hours: number
 
 export async function submitEstimateForApproval(ticketId: string) {
   const { supabase } = await requireStaff()
+  await assertTicketOpen(supabase, ticketId)
 
   const { data: ticket, error: fetchErr } = await supabase
     .from('tickets')
@@ -181,9 +182,6 @@ export async function submitEstimateForApproval(ticketId: string) {
     .single()
 
   if (fetchErr || !ticket) throw new Error(fetchErr?.message ?? 'Ticket not found')
-  if (ticket.status === 'resolved' || ticket.status === 'closed') {
-    throw new Error('Cannot submit an estimate on a closed ticket')
-  }
   if (ticket.estimate_status === 'pending_approval') {
     throw new Error('Estimate is already awaiting client approval')
   }
@@ -256,7 +254,7 @@ export async function approveTicketEstimate(ticketId: string) {
     throw new Error('Not authorized for this ticket')
   }
   if (isTicketClosed(ticket.status)) {
-    throw new Error('This ticket is closed')
+    throw new Error(TICKET_LOCKED_MESSAGE)
   }
   if (ticket.estimate_status !== 'pending_approval') {
     throw new Error('No estimate is waiting for your approval')
@@ -369,7 +367,7 @@ export async function approveTicketWork(ticketId: string) {
     throw new Error('Not authorized for this ticket')
   }
   if (isTicketClosed(ticket.status)) {
-    throw new Error('This ticket is closed')
+    throw new Error(TICKET_LOCKED_MESSAGE)
   }
   if (ticket.completion_status !== 'pending_approval') {
     throw new Error('No completed work is waiting for your approval')
@@ -490,7 +488,7 @@ export async function resolveTicketWithHours(ticketId: string, actualHours: numb
 
   if (ticketErr || !ticket) throw new Error(ticketErr?.message ?? 'Ticket not found')
   if (isTicketClosed(ticket.status)) {
-    throw new Error('This ticket is closed and cannot be modified')
+    throw new Error(TICKET_LOCKED_MESSAGE)
   }
   if (ticket.estimate_status !== 'approved') {
     throw new Error('Client must approve the estimate before resolving')
