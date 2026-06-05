@@ -18,7 +18,12 @@ export function DashboardShell({ children, userName, userEmail, userRole }: Dash
   return (
     <ResolveCelebrationProvider>
     <div data-theme="dashboard" className="flex flex-col h-screen overflow-hidden dash-shell">
-      <TopBar userName={userName} userEmail={userEmail} onMenuClick={() => setSidebarOpen(true)} />
+      <TopBar
+        userName={userName}
+        userEmail={userEmail}
+        userRole={userRole}
+        onMenuClick={() => setSidebarOpen(true)}
+      />
 
       <div className="flex flex-1 overflow-hidden">
         {sidebarOpen && (

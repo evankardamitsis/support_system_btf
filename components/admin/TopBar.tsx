@@ -5,6 +5,7 @@ import { DashboardTopBar } from '@/components/dashboard/DashboardTopBar'
 type TopBarProps = {
   userName?: string
   userEmail?: string
+  userRole?: string
   onMenuClick: () => void
 }
 

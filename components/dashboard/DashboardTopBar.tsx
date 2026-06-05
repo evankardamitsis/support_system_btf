@@ -1,11 +1,13 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Menu, ChevronDown, LogOut } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
 import Link from 'next/link'
+import { ProductAreaSwitcher } from '@/components/admin/ProductAreaSwitcher'
+import { getAdminProductArea, getAdminProductAreaConfig } from '@/lib/admin/product-areas'
 import { DashboardSearch } from './DashboardSearch'
 
 function initials(n?: string, e?: string) {
@@ -20,18 +22,25 @@ export function DashboardTopBar({
   variant,
   userName,
   userEmail,
+  userRole,
   onMenuClick,
 }: {
   variant: 'admin' | 'portal'
   userName?: string
   userEmail?: string
+  userRole?: string
   onMenuClick: () => void
 }) {
   const router = useRouter()
+  const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const ini = initials(userName, userEmail)
-  const ticketsHref = variant === 'admin' ? '/admin/tickets' : '/portal/tickets'
+  const adminArea = variant === 'admin' ? getAdminProductArea(pathname) : null
+  const homeHref =
+    variant === 'admin'
+      ? getAdminProductAreaConfig(pathname).homeHref
+      : '/portal/tickets'
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
@@ -58,29 +67,27 @@ export function DashboardTopBar({
         <Menu size={20} />
       </button>
 
-      <Link
-        href={ticketsHref}
-        className="dash-topbar-brand-link hidden lg:flex items-center shrink-0 gap-2.5 dash-topbar-brand"
-        aria-label="All tickets"
-      >
-        <Image
-          src="/btf-wordmark.svg"
-          alt="BTF"
-          width={96}
-          height={14}
-          className="dash-topbar-logo"
-          priority
-        />
-        {variant === 'admin' ? (
-          <span className="dash-topbar-tag">/ support</span>
-        ) : null}
-      </Link>
+      <div className="hidden lg:flex items-center shrink-0 gap-2 dash-topbar-brand">
+        <Link href={homeHref} className="dash-topbar-brand-link" aria-label="Home">
+          <Image
+            src="/btf-wordmark.svg"
+            alt="BTF"
+            width={96}
+            height={14}
+            className="dash-topbar-logo"
+            priority
+          />
+        </Link>
+        {variant === 'admin' ? <ProductAreaSwitcher userRole={userRole} /> : null}
+      </div>
 
       <div className="flex-1 flex justify-center min-w-0">
-        <DashboardSearch
-          variant={variant}
-          placeholder={variant === 'admin' ? 'Search tickets, clients…' : 'Search tickets…'}
-        />
+        {variant === 'admin' && adminArea === 'ops' ? null : (
+          <DashboardSearch
+            variant={variant}
+            placeholder={variant === 'admin' ? 'Search tickets, clients…' : 'Search tickets…'}
+          />
+        )}
       </div>
 
       <div className="relative shrink-0" ref={ref}>

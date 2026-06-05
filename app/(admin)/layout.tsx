@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { DashboardShell } from '@/components/admin/DashboardShell'
+import { isBtfStaffRole } from '@/lib/auth/staff'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -11,6 +12,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     .from('users').select('role, full_name').eq('id', user.id).single()
 
   if (profile?.role === 'client') redirect('/portal/tickets')
+  if (!isBtfStaffRole(profile?.role)) {
+    redirect(`/auth/login?error=${encodeURIComponent('BTF team access only.')}`)
+  }
 
   return (
     <DashboardShell

@@ -402,6 +402,138 @@ export interface Database {
         }
         Relationships: []
       }
+      company_profile: {
+        Row: {
+          id: string
+          name: string
+          address: string
+          mobile: string
+          phone: string
+          email: string
+          upfront_percent: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          name?: string
+          address?: string
+          mobile?: string
+          phone?: string
+          email?: string
+          upfront_percent?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          address?: string
+          mobile?: string
+          phone?: string
+          email?: string
+          upfront_percent?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      company_ibans: {
+        Row: {
+          id: string
+          bank_name: string
+          iban: string
+          swift_bic: string
+          label: string | null
+          sort_order: number
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          bank_name: string
+          iban: string
+          swift_bic: string
+          label?: string | null
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          bank_name?: string
+          iban?: string
+          swift_bic?: string
+          label?: string | null
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
+      financial_offers: {
+        Row: {
+          id: string
+          client_name: string
+          client_email: string | null
+          line_items: Json
+          hosting_maintenance: string | null
+          ibans: Json
+          upfront_percent: number
+          total_amount: number
+          upfront_amount: number
+          exclude_vat: boolean
+          status: 'open' | 'accepted'
+          accepted_at: string | null
+          accepted_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          emailed_at: string | null
+          created_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          client_name: string
+          client_email?: string | null
+          line_items?: Json
+          hosting_maintenance?: string | null
+          ibans?: Json
+          upfront_percent: number
+          total_amount: number
+          upfront_amount: number
+          exclude_vat?: boolean
+          status?: 'open' | 'accepted'
+          accepted_at?: string | null
+          accepted_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          emailed_at?: string | null
+          created_by: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          client_name?: string
+          client_email?: string | null
+          line_items?: Json
+          hosting_maintenance?: string | null
+          ibans?: Json
+          upfront_percent?: number
+          total_amount?: number
+          upfront_amount?: number
+          exclude_vat?: boolean
+          status?: 'open' | 'accepted'
+          accepted_at?: string | null
+          accepted_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          emailed_at?: string | null
+          created_by?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

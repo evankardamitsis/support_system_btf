@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { SidebarBrand } from '@/components/dashboard/SidebarBrand'
+import { getAdminProductAreaConfig } from '@/lib/admin/product-areas'
 
 interface AdminSidebarProps {
   userName?: string
@@ -10,13 +11,6 @@ interface AdminSidebarProps {
   userRole?: string
   onClose?: () => void
 }
-
-const nav = [
-  { label: 'Tickets', href: '/admin/tickets', adminOnly: false },
-  { label: 'Clients', href: '/admin/clients', adminOnly: false },
-  { label: 'Retainers', href: '/admin/retainers', adminOnly: true },
-  { label: 'Team', href: '/admin/team', adminOnly: false },
-]
 
 function initials(n?: string, e?: string) {
   if (n) {
@@ -29,10 +23,11 @@ function initials(n?: string, e?: string) {
 export function AdminSidebar({ userName, userEmail, userRole, onClose }: AdminSidebarProps) {
   const pathname = usePathname()
   const ini = initials(userName, userEmail)
+  const nav = getAdminProductAreaConfig(pathname).nav
 
   return (
     <aside className="dash-sidebar flex flex-col h-full select-none relative">
-      <SidebarBrand variant="admin" onNavigate={onClose} />
+      <SidebarBrand variant="admin" userRole={userRole} onNavigate={onClose} />
 
       {onClose ? (
         <button

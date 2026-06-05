@@ -1,7 +1,14 @@
+export type EmailAttachment = {
+  name: string
+  content: Buffer | Uint8Array
+  mimeType: string
+}
+
 type SendEmailInput = {
   to: string | string[]
   subject: string
   html: string
+  attachments?: EmailAttachment[]
 }
 
 type Sender = { name: string; email: string }
@@ -33,7 +40,7 @@ function zeptoApiBase(): string {
 }
 
 /** ZeptoMail (Zoho) — free tier: 10,000 emails/month */
-export async function sendEmail({ to, subject, html }: SendEmailInput): Promise<boolean> {
+export async function sendEmail({ to, subject, html, attachments }: SendEmailInput): Promise<boolean> {
   const apiKey = process.env.ZEPTOMAIL_API_KEY
   const from = process.env.EMAIL_FROM
 
@@ -65,6 +72,15 @@ export async function sendEmail({ to, subject, html }: SendEmailInput): Promise<
       to: recipients,
       subject,
       htmlbody: html,
+      ...(attachments?.length
+        ? {
+            attachments: attachments.map(file => ({
+              name: file.name,
+              content: Buffer.from(file.content).toString('base64'),
+              mime_type: file.mimeType,
+            })),
+          }
+        : {}),
     }),
   })
 
