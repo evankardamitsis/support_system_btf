@@ -9,15 +9,18 @@ import { notifyError, notifySuccess } from '@/lib/notify'
 
 export function InviteClientTeamForm() {
   const router = useRouter()
-  const [link, setLink] = useState<string | null>(null)
+  const [fallbackLink, setFallbackLink] = useState<string | null>(null)
+  const [emailError, setEmailError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const form = e.currentTarget
+    const invitedEmail = (form.elements.namedItem('email') as HTMLInputElement)?.value?.trim()
     setError(null)
-    setLink(null)
+    setEmailError(null)
+    setFallbackLink(null)
     setPending(true)
 
     const result = await inviteClientTeamMember(new FormData(form))
@@ -29,8 +32,16 @@ export function InviteClientTeamForm() {
       return
     }
 
-    notifySuccess('Invite link ready — copy and send it privately')
-    setLink(result.url)
+    if (result.emailSent) {
+      notifySuccess(
+        invitedEmail ? `Invite sent to ${invitedEmail}` : 'Invite email sent'
+      )
+    } else {
+      setEmailError(result.emailError ?? 'Email could not be sent')
+      setFallbackLink(result.url)
+      notifyError(result.emailError ?? 'Invite created but email could not be sent')
+    }
+
     form.reset()
     router.refresh()
   }
@@ -39,8 +50,8 @@ export function InviteClientTeamForm() {
     <FormPanel title="Invite teammate">
       <form onSubmit={handleSubmit} className="space-y-4">
         <p className="dash-meta leading-relaxed">
-          Add colleagues who need portal access. Ticket notification emails still go only to your
-          main contact address.
+          Add colleagues who need portal access. We email them an invite link to create their
+          account. Ticket notification emails still go only to your main contact address.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -80,14 +91,15 @@ export function InviteClientTeamForm() {
           className="dash-btn-primary btn-primary cursor-pointer"
           disabled={pending}
         >
-          {pending ? 'Creating invite…' : 'Generate invite link'}
+          {pending ? 'Sending invite…' : 'Send invite'}
         </button>
 
-        {link ? (
+        {emailError && fallbackLink ? (
           <div className="space-y-2 pt-2 border-t border-border">
-            <CopyInput value={link} />
+            <p className="ticket-modal-error leading-relaxed">{emailError}</p>
+            <CopyInput value={fallbackLink} />
             <p className="dash-meta leading-relaxed">
-              Send this link privately. They set a password once; link expires in 7 days.
+              Copy this link and send it manually. It expires in 7 days.
             </p>
           </div>
         ) : null}

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { revokeClientInvite } from '@/app/actions/client-team'
+import { resendClientTeamInvite, revokeClientInvite } from '@/app/actions/client-team'
 import { CopyInput } from '@/components/ui/CopyInput'
 import { notifyError, notifySuccess } from '@/lib/notify'
 
@@ -15,6 +15,7 @@ export function PendingClientInviteActions({
 }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
+  const [fallbackLink, setFallbackLink] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
   function revoke() {
@@ -26,6 +27,7 @@ export function PendingClientInviteActions({
       return
     }
     setError(null)
+    setFallbackLink(null)
     startTransition(async () => {
       const result = await revokeClientInvite(inviteId)
       if (!result.ok) {
@@ -38,11 +40,37 @@ export function PendingClientInviteActions({
     })
   }
 
+  function resend() {
+    setError(null)
+    setFallbackLink(null)
+    startTransition(async () => {
+      const result = await resendClientTeamInvite(inviteId)
+      if (!result.ok) {
+        setError(result.error)
+        notifyError(result.error)
+        return
+      }
+      if (result.emailSent) {
+        notifySuccess('Invite email resent')
+        router.refresh()
+        return
+      }
+      setError(result.emailError ?? 'Email could not be sent')
+      setFallbackLink(result.url)
+      notifyError(result.emailError ?? 'Could not resend invite email')
+    })
+  }
+
   return (
     <div className="team-pending-actions">
-      <div className="team-pending-copy w-full max-w-xs">
-        <CopyInput value={inviteUrl} />
-      </div>
+      <button
+        type="button"
+        className="dash-btn-secondary text-xs cursor-pointer"
+        onClick={resend}
+        disabled={pending}
+      >
+        {pending ? 'Sending…' : 'Resend email'}
+      </button>
       <button
         type="button"
         className="dash-btn-secondary text-xs cursor-pointer team-pending-revoke"
@@ -51,6 +79,18 @@ export function PendingClientInviteActions({
       >
         Revoke
       </button>
+      {fallbackLink ? (
+        <div className="team-pending-copy w-full max-w-xs">
+          <CopyInput value={fallbackLink} />
+        </div>
+      ) : (
+        <details className="team-pending-copy w-full max-w-xs">
+          <summary className="dash-meta text-xs cursor-pointer">Copy invite link</summary>
+          <div className="mt-2">
+            <CopyInput value={inviteUrl} />
+          </div>
+        </details>
+      )}
       {error ? <p className="ticket-modal-error text-xs">{error}</p> : null}
     </div>
   )

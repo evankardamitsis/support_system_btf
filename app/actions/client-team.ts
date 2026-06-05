@@ -10,6 +10,7 @@ import {
 } from "@/lib/team/auth-users";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
+import { sendClientTeamInviteEmail } from "@/lib/email/client-team-invite";
 import type {
   ClientTeamDirectoryResult,
   InviteClientTeamMemberResult,
@@ -43,12 +44,17 @@ function failInvite(error: string): InviteClientTeamMemberResult {
   return { ok: false, error };
 }
 
+type ReusePendingInviteResult =
+  | { ok: true; token: string }
+  | { ok: false; error: string }
+  | null;
+
 async function reusePendingClientInvite(
   admin: SupabaseClient<Database>,
   clientId: string,
   email: string,
   fullName: string,
-): Promise<InviteClientTeamMemberResult | null> {
+): Promise<ReusePendingInviteResult> {
   const { data: pending, error: pendingError } = await admin
     .from("client_invite_tokens")
     .select("id, token, full_name")
@@ -59,9 +65,11 @@ async function reusePendingClientInvite(
     .maybeSingle();
 
   if (pendingError) {
-    return failInvite(
-      clientInvitesSetupError(pendingError) ?? pendingError.message,
-    );
+    return {
+      ok: false,
+      error:
+        clientInvitesSetupError(pendingError) ?? pendingError.message,
+    };
   }
 
   if (!pending?.token) return null;
@@ -73,17 +81,52 @@ async function reusePendingClientInvite(
       .eq("id", pending.id);
 
     if (updateError) {
-      return failInvite(updateError.message);
+      return { ok: false, error: updateError.message };
     }
   }
 
-  return { ok: true, url: clientTeamInviteUrl(pending.token) };
+  return { ok: true, token: pending.token };
+}
+
+async function deliverClientTeamInvite(
+  admin: SupabaseClient<Database>,
+  input: {
+    clientId: string;
+    email: string;
+    fullName: string;
+    token: string;
+    invitedByName: string | null;
+  },
+): Promise<InviteClientTeamMemberResult> {
+  const { data: clientRow } = await admin
+    .from("clients")
+    .select("name")
+    .eq("id", input.clientId)
+    .single();
+
+  const url = clientTeamInviteUrl(input.token);
+  const emailResult = await sendClientTeamInviteEmail({
+    to: input.email,
+    inviteeName: input.fullName,
+    clientName: clientRow?.name ?? "your organization",
+    invitedByName: input.invitedByName,
+    inviteUrl: url,
+  });
+
+  revalidatePath("/portal/team");
+  return {
+    ok: true,
+    url,
+    emailSent: emailResult.sent,
+    emailError: emailResult.sent ? null : emailResult.error,
+  };
 }
 
 export async function inviteClientTeamMember(
   formData: FormData,
 ): Promise<InviteClientTeamMemberResult> {
-  const { user, clientId } = await requireClient();
+  const { user, clientId, profile } = await requireClient();
+  const invitedByName = profile.full_name?.trim() || null;
 
   const email = (formData.get("email") as string)?.trim().toLowerCase();
   const fullName = (formData.get("full_name") as string)?.trim();
@@ -143,7 +186,16 @@ export async function inviteClientTeamMember(
       email,
       fullName,
     );
-    if (reusedAfterSignup) return reusedAfterSignup;
+    if (reusedAfterSignup) {
+      if (!reusedAfterSignup.ok) return failInvite(reusedAfterSignup.error);
+      return deliverClientTeamInvite(admin, {
+        clientId,
+        email,
+        fullName,
+        token: reusedAfterSignup.token,
+        invitedByName,
+      });
+    }
 
     if (authUser.email_confirmed_at) {
       return failInvite(
@@ -162,7 +214,16 @@ export async function inviteClientTeamMember(
     email,
     fullName,
   );
-  if (reused) return reused;
+  if (reused) {
+    if (!reused.ok) return failInvite(reused.error);
+    return deliverClientTeamInvite(admin, {
+      clientId,
+      email,
+      fullName,
+      token: reused.token,
+      invitedByName,
+    });
+  }
 
   const { data: token, error } = await admin
     .from("client_invite_tokens")
@@ -185,8 +246,50 @@ export async function inviteClientTeamMember(
     );
   }
 
-  revalidatePath("/portal/team");
-  return { ok: true, url: clientTeamInviteUrl(token.token) };
+  return deliverClientTeamInvite(admin, {
+    clientId,
+    email,
+    fullName,
+    token: token.token,
+    invitedByName,
+  });
+}
+
+export async function resendClientTeamInvite(
+  inviteId: string,
+): Promise<InviteClientTeamMemberResult> {
+  const { clientId, profile } = await requireClient();
+  const invitedByName = profile.full_name?.trim() || null;
+
+  const adminResult = tryCreateAdminClient();
+  if ("error" in adminResult) {
+    return failInvite(adminResult.error);
+  }
+  const admin = adminResult.client;
+
+  const { data: invite, error: fetchError } = await admin
+    .from("client_invite_tokens")
+    .select("id, email, full_name, token")
+    .eq("id", inviteId)
+    .eq("client_id", clientId)
+    .eq("used", false)
+    .gt("expires_at", new Date().toISOString())
+    .maybeSingle();
+
+  if (fetchError) {
+    return failInvite(fetchError.message);
+  }
+  if (!invite?.token) {
+    return failInvite("Invite not found or already used");
+  }
+
+  return deliverClientTeamInvite(admin, {
+    clientId,
+    email: invite.email,
+    fullName: invite.full_name,
+    token: invite.token,
+    invitedByName,
+  });
 }
 
 export async function getClientTeamDirectory(): Promise<ClientTeamDirectoryResult> {

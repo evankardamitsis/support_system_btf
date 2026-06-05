@@ -19,7 +19,9 @@ export function ClientTeamList({
     return (
       <div className="entity-panel dash-empty">
         <p className="dash-empty-title">No teammates yet</p>
-        <p className="dash-empty-hint">Invite colleagues who need access to tickets and your plan.</p>
+        <p className="dash-empty-hint">
+          Invite colleagues by email — they get a link to create their portal account.
+        </p>
       </div>
     )
   }
