@@ -4,7 +4,12 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { ArrowUpRight } from 'lucide-react'
-import { resolveTicketSimple, updateTicketPriority, updateTicketStatus } from '@/app/actions/tickets'
+import {
+  resolveTicketSimple,
+  updateTicketAssignee,
+  updateTicketPriority,
+  updateTicketStatus,
+} from '@/app/actions/tickets'
 import {
   formatDateTimeHuman,
   formatResolvedAtTable,
@@ -17,6 +22,7 @@ import {
 } from '@/lib/tickets/display'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { PriorityBadge } from '@/components/ui/PriorityBadge'
+import { EditableAssigneeSelect, type AssigneeOption } from './EditableAssigneeSelect'
 import { EditableStatusPill } from './EditableStatusPill'
 import { EditablePriorityPill } from './EditablePriorityPill'
 import { ResolveHoursModal } from './ResolveHoursModal'
@@ -31,11 +37,13 @@ export function AdminTicketRow({
   hrefPrefix,
   hoursLogged,
   hoursBilling = true,
+  staff = [],
 }: {
   ticket: TicketTableRow
   hrefPrefix: string
   hoursLogged: boolean
   hoursBilling?: boolean
+  staff?: AssigneeOption[]
 }) {
   const router = useRouter()
   const [resolveOpen, setResolveOpen] = useState(false)
@@ -58,6 +66,18 @@ export function AdminTicketRow({
     startTransition(async () => {
       const ok = await runWithToast(() => updateTicketPriority(ticket.id, priority), {
         success: `Priority set to ${formatTicketPriority(priority)}`,
+      })
+      if (ok !== null) refresh()
+    })
+  }
+
+  function onAssigneeChange(assigneeId: string | null) {
+    startTransition(async () => {
+      const ok = await runWithToast(() => updateTicketAssignee(ticket.id, assigneeId), {
+        loading: 'Updating assignee…',
+        success: assigneeId
+          ? `Assigned to ${staff.find(s => s.id === assigneeId)?.name ?? 'teammate'}`
+          : 'Assignee cleared',
       })
       if (ok !== null) refresh()
     })
@@ -167,13 +187,23 @@ export function AdminTicketRow({
           </div>
         </div>
 
-        <div className="tickets-cell tickets-cell-assignee min-w-0" data-label="Assigned">
+        <div className="tickets-cell tickets-cell-assignee tickets-cell--control min-w-0" data-label="Assigned">
           <div className="tickets-cell-value">
-            <span
-              className={`tickets-assignee-name ${ticket.assigneeName ? '' : 'tickets-assignee-name--empty'}`}
-            >
-              {ticket.assigneeName ?? 'Unassigned'}
-            </span>
+            {staff.length > 0 ? (
+              <EditableAssigneeSelect
+                value={ticket.assignedTo ?? null}
+                options={staff}
+                disabled={pending}
+                ariaLabel={`Assignee for ${ticket.title}`}
+                onChange={onAssigneeChange}
+              />
+            ) : (
+              <span
+                className={`tickets-assignee-name ${ticket.assigneeName ? '' : 'tickets-assignee-name--empty'}`}
+              >
+                {ticket.assigneeName ?? 'Unassigned'}
+              </span>
+            )}
           </div>
         </div>
 

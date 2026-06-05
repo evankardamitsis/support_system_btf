@@ -133,6 +133,7 @@ export default async function AdminTicketsPage({
     completion_status: t.completion_status ?? null,
     clientName: (t.clients as unknown as { name: string } | null)?.name ?? null,
     hoursBilling: hoursBillingByClient[t.client_id] ?? true,
+    assignedTo: t.assigned_to ?? null,
     assigneeName: t.assigned_to ? (staffNameById.get(t.assigned_to) ?? null) : null,
   }))
 
@@ -190,6 +191,7 @@ export default async function AdminTicketsPage({
           hrefPrefix="/admin/tickets"
           variant="admin"
           hoursLoggedByTicketId={hoursLoggedByTicketId}
+          staff={staff}
           emptyTitle={hasFilters ? 'No tickets match these filters' : 'No tickets yet'}
           emptyHint={
             hasFilters

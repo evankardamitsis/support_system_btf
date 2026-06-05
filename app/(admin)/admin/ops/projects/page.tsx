@@ -7,7 +7,7 @@ export default async function ProjectsPage() {
   const projects = await listProjects()
 
   return (
-    <div className="space-y-6 w-full max-w-5xl">
+    <div className="space-y-6 w-full max-w-6xl">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <PageHeader
           title="Projects"

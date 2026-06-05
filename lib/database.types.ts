@@ -589,6 +589,7 @@ export interface Database {
           description: string | null
           start_date: string | null
           target_date: string | null
+          cost_amount: number | null
           created_by: string
           created_at: string
           updated_at: string
@@ -606,6 +607,7 @@ export interface Database {
           description?: string | null
           start_date?: string | null
           target_date?: string | null
+          cost_amount?: number | null
           created_by: string
           created_at?: string
           updated_at?: string
@@ -623,6 +625,7 @@ export interface Database {
           description?: string | null
           start_date?: string | null
           target_date?: string | null
+          cost_amount?: number | null
           created_by?: string
           created_at?: string
           updated_at?: string

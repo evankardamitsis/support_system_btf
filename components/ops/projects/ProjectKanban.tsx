@@ -1,10 +1,14 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { GripVertical } from 'lucide-react'
 import { updateTask } from '@/app/actions/projects'
 import { PriorityBadge, TaskStatusSelect } from '@/components/ops/projects/StatusSelect'
+import {
+  EditableAssigneeSelect,
+  type AssigneeOption,
+} from '@/components/tickets/EditableAssigneeSelect'
 import {
   TASK_STATUSES,
   TASK_STATUS_LABELS,
@@ -18,14 +22,18 @@ const TASK_DRAG_TYPE = 'application/x-ops-task-id'
 
 function KanbanCard({
   task,
+  staff,
   onStatusChange,
+  onAssigneeChange,
   pending,
   isDragging,
   onDragStart,
   onDragEnd,
 }: {
   task: OpsProjectTask
+  staff: AssigneeOption[]
   onStatusChange: (taskId: string, status: TaskStatus) => void
+  onAssigneeChange: (taskId: string, assigneeId: string | null) => void
   pending: boolean
   isDragging: boolean
   onDragStart: (taskId: string) => void
@@ -60,7 +68,16 @@ function KanbanCard({
       {task.phaseName ? (
         <span className="ops-kanban-phase-chip">{task.phaseName}</span>
       ) : null}
-      {task.assigneeName ? <p className="dash-meta">{task.assigneeName}</p> : null}
+      {staff.length > 0 ? (
+        <EditableAssigneeSelect
+          value={task.assigneeId}
+          options={staff}
+          disabled={pending}
+          className="ops-task-assignee"
+          ariaLabel={`Assignee for ${task.title}`}
+          onChange={assigneeId => onAssigneeChange(task.id, assigneeId)}
+        />
+      ) : null}
       {task.subtasks.length > 0 ? (
         <div className="ops-kanban-subtasks-wrap">
           <div className="ops-kanban-subtasks-progress">
@@ -90,30 +107,57 @@ function KanbanCard({
   )
 }
 
-export function ProjectKanban({ project }: { project: OpsProjectDetail }) {
+export function ProjectKanban({
+  project,
+  staff,
+}: {
+  project: OpsProjectDetail
+  staff: AssigneeOption[]
+}) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [tasks, setTasks] = useState(project.tasks)
+  const [syncedAt, setSyncedAt] = useState(project.updatedAt)
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null)
   const [dropTarget, setDropTarget] = useState<TaskStatus | null>(null)
-  const tasksRef = useRef(tasks)
 
-  useEffect(() => {
+  if (project.updatedAt !== syncedAt) {
+    setSyncedAt(project.updatedAt)
     setTasks(project.tasks)
-  }, [project.tasks])
+  }
 
-  useEffect(() => {
-    tasksRef.current = tasks
-  }, [tasks])
+  function patchTask(taskId: string, patch: Partial<Pick<OpsProjectTask, 'status' | 'assigneeId' | 'assigneeName'>>) {
+    setTasks(current => current.map(t => (t.id === taskId ? { ...t, ...patch } : t)))
+  }
 
   function persistStatusChange(taskId: string, status: TaskStatus) {
-    const previous = tasksRef.current
-    setTasks(current => current.map(t => (t.id === taskId ? { ...t, status } : t)))
+    const previous = tasks
+    patchTask(taskId, { status })
 
     startTransition(async () => {
       const ok = await runWithToast(() => updateTask(taskId, { status }), {
         loading: 'Moving task…',
         success: 'Task moved',
+      })
+      if (ok === null) {
+        setTasks(previous)
+        return
+      }
+      router.refresh()
+    })
+  }
+
+  function persistAssigneeChange(taskId: string, assigneeId: string | null) {
+    const previous = tasks
+    const assigneeName = assigneeId ? staff.find(s => s.id === assigneeId)?.name ?? null : null
+    patchTask(taskId, { assigneeId, assigneeName })
+
+    startTransition(async () => {
+      const ok = await runWithToast(() => updateTask(taskId, { assigneeId }), {
+        loading: 'Updating assignee…',
+        success: assigneeId
+          ? `Assigned to ${assigneeName ?? 'teammate'}`
+          : 'Assignee cleared',
       })
       if (ok === null) {
         setTasks(previous)
@@ -164,7 +208,7 @@ export function ProjectKanban({ project }: { project: OpsProjectDetail }) {
                 setDropTarget(null)
                 if (!taskId) return
 
-                const task = tasksRef.current.find(t => t.id === taskId)
+                const task = tasks.find(t => t.id === taskId)
                 if (!task || task.status === status) return
                 persistStatusChange(taskId, status)
               }}
@@ -178,7 +222,9 @@ export function ProjectKanban({ project }: { project: OpsProjectDetail }) {
                   <KanbanCard
                     key={task.id}
                     task={task}
+                    staff={staff}
                     onStatusChange={persistStatusChange}
+                    onAssigneeChange={persistAssigneeChange}
                     pending={pending}
                     isDragging={draggedTaskId === task.id}
                     onDragStart={setDraggedTaskId}

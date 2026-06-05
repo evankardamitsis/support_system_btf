@@ -42,6 +42,7 @@ function mapProjectRow(
     description: row.description,
     startDate: row.start_date,
     targetDate: row.target_date,
+    costAmount: row.cost_amount != null ? Number(row.cost_amount) : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     phaseCount: counts.phases,

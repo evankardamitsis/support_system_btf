@@ -3,12 +3,19 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
-import { deleteProject, updateProjectStatus } from '@/app/actions/projects'
+import { ChevronDown, Plus } from 'lucide-react'
+import { deleteProject, updateProjectCost, updateProjectStatus } from '@/app/actions/projects'
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
+import { ProjectAddPanel } from '@/components/ops/projects/ProjectAddPanel'
 import { ProjectKanban } from '@/components/ops/projects/ProjectKanban'
 import { ProjectListView } from '@/components/ops/projects/ProjectListView'
+import {
+  formatProjectCost,
+  formatProjectDate,
+  parseProjectCostInput,
+} from '@/lib/ops/projects/display'
 import type { OpsProjectDetail, ProjectStatus } from '@/lib/ops/projects/types'
-import { runWithToast } from '@/lib/notify'
+import { notifyError, runWithToast } from '@/lib/notify'
 
 type StaffOption = { id: string; name: string }
 
@@ -28,8 +35,20 @@ export function ProjectDetail({
 }) {
   const router = useRouter()
   const [view, setView] = useState<'kanban' | 'list'>('kanban')
+  const [headerExpanded, setHeaderExpanded] = useState(true)
+  const [showAddPanel, setShowAddPanel] = useState(false)
   const [pending, startTransition] = useTransition()
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [costInput, setCostInput] = useState(
+    project.costAmount != null ? String(project.costAmount) : ''
+  )
+  const [editingCost, setEditingCost] = useState(false)
+  const [syncedAt, setSyncedAt] = useState(project.updatedAt)
+
+  if (project.updatedAt !== syncedAt && !editingCost) {
+    setSyncedAt(project.updatedAt)
+    setCostInput(project.costAmount != null ? String(project.costAmount) : '')
+  }
 
   const pct =
     project.taskCount > 0 ? Math.round((project.doneTaskCount / project.taskCount) * 100) : 0
@@ -40,6 +59,32 @@ export function ProjectDetail({
         loading: 'Updating…',
         success: 'Project updated',
       })
+      router.refresh()
+    })
+  }
+
+  function handleCostSave() {
+    setEditingCost(false)
+    startTransition(async () => {
+      let costAmount: number | null
+      try {
+        costAmount = parseProjectCostInput(costInput)
+      } catch (err) {
+        notifyError(err instanceof Error ? err.message : 'Invalid project cost')
+        setCostInput(project.costAmount != null ? String(project.costAmount) : '')
+        return
+      }
+
+      if (costAmount === project.costAmount) return
+
+      const ok = await runWithToast(() => updateProjectCost(project.id, costAmount), {
+        loading: 'Saving cost…',
+        success: 'Cost updated',
+      })
+      if (ok === null) {
+        setCostInput(project.costAmount != null ? String(project.costAmount) : '')
+        return
+      }
       router.refresh()
     })
   }
@@ -62,77 +107,219 @@ export function ProjectDetail({
         ← Back to projects
       </Link>
 
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold text-[var(--text-1)]">{project.name}</h1>
-          <div className="flex flex-wrap items-center gap-3 mt-1">
-            {project.isInternal ? (
-              <span className="ops-projects-internal-badge">Internal</span>
-            ) : (
-              <span className="dash-meta">{project.clientName ?? 'No client'}</span>
-            )}
-            {project.leadName ? <span className="dash-meta">Lead: {project.leadName}</span> : null}
-            <span className="dash-meta tabular-nums">
-              {project.doneTaskCount}/{project.taskCount} tasks · {pct}%
-            </span>
-            {project.financialOfferId ? (
-              <Link href="/admin/ops/financial-offers" className="dash-meta underline">
-                Linked offer
-              </Link>
-            ) : null}
-          </div>
-          {project.description ? <p className="dash-meta mt-2">{project.description}</p> : null}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            className="btf-input"
-            value={project.status}
-            disabled={pending}
-            onChange={e => handleStatusChange(e.target.value as ProjectStatus)}
-            aria-label="Project status"
-          >
-            {(Object.keys(STATUS_LABELS) as ProjectStatus[]).map(s => (
-              <option key={s} value={s}>
-                {STATUS_LABELS[s]}
-              </option>
-            ))}
-          </select>
-          <div className="ops-project-view-toggle" role="tablist" aria-label="View mode">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={view === 'kanban'}
-              className={`ops-project-view-btn${view === 'kanban' ? ' ops-project-view-btn--active' : ''}`}
-              onClick={() => setView('kanban')}
-            >
-              Kanban
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={view === 'list'}
-              className={`ops-project-view-btn${view === 'list' ? ' ops-project-view-btn--active' : ''}`}
-              onClick={() => setView('list')}
-            >
-              List
-            </button>
-          </div>
+      <header
+        className={`ops-project-head${headerExpanded ? ' ops-project-head--expanded' : ' ops-project-head--collapsed'}`}
+      >
+        <div className="ops-project-head-grid">
           <button
             type="button"
-            className="dash-btn-ghost text-red-400"
-            onClick={() => setConfirmDelete(true)}
-            disabled={pending}
+            className="ops-project-head-toggle"
+            onClick={() => setHeaderExpanded(v => !v)}
+            aria-expanded={headerExpanded}
+            aria-label={headerExpanded ? 'Collapse project header' : 'Expand project header'}
           >
-            Delete
+            <ChevronDown
+              size={18}
+              className={`ops-project-head-chevron${headerExpanded ? '' : ' ops-project-head-chevron--collapsed'}`}
+              aria-hidden
+            />
           </button>
+
+          <div className="ops-project-head-copy min-w-0">
+            <div className="ops-project-head-identity">
+              <h1 className="ops-project-title">{project.name}</h1>
+              <p className="ops-project-eyebrow">
+                <span className={`ops-project-status-pill ops-project-status-pill--${project.status}`}>
+                  {STATUS_LABELS[project.status]}
+                </span>
+                {project.isInternal ? (
+                  <span className="ops-projects-internal-badge">Internal</span>
+                ) : (
+                  <span>{project.clientName ?? 'No client'}</span>
+                )}
+                {project.financialOfferId ? (
+                  <>
+                    <span className="ops-project-sep" aria-hidden>
+                      ·
+                    </span>
+                    <Link href="/admin/ops/financial-offers" className="ops-project-eyebrow-link">
+                      Linked offer
+                    </Link>
+                  </>
+                ) : null}
+                {project.leadName ? (
+                  <>
+                    <span className="ops-project-sep" aria-hidden>
+                      ·
+                    </span>
+                    <span>Lead: {project.leadName}</span>
+                  </>
+                ) : null}
+              </p>
+            </div>
+
+            {project.description ? (
+              <p className="ops-project-description" title={project.description}>
+                {project.description}
+              </p>
+            ) : null}
+
+            <dl className="ops-project-stats">
+              <div className="ops-project-stat ops-project-stat--cost">
+                <dt>Cost</dt>
+                <dd>
+                  {editingCost ? (
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      className="btf-input ops-project-cost-input"
+                      value={costInput}
+                      disabled={pending}
+                      placeholder="EUR amount"
+                      aria-label="Project cost in EUR"
+                      onChange={e => setCostInput(e.target.value)}
+                      onBlur={handleCostSave}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          handleCostSave()
+                        }
+                        if (e.key === 'Escape') {
+                          setCostInput(project.costAmount != null ? String(project.costAmount) : '')
+                          setEditingCost(false)
+                        }
+                      }}
+                      autoFocus
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      className="ops-project-stat-value ops-project-stat-value--cost"
+                      disabled={pending}
+                      onClick={() => setEditingCost(true)}
+                      title="Click to edit project cost"
+                    >
+                      {formatProjectCost(project.costAmount)}
+                    </button>
+                  )}
+                  {project.financialOfferId ? (
+                    <span className="ops-project-stat-hint">From offer</span>
+                  ) : null}
+                </dd>
+              </div>
+
+              <div className="ops-project-stat">
+                <dt>Start</dt>
+                <dd className="ops-project-stat-value tabular-nums">
+                  <time dateTime={project.startDate ?? undefined}>
+                    {formatProjectDate(project.startDate)}
+                  </time>
+                </dd>
+              </div>
+
+              <div className="ops-project-stat">
+                <dt>Target</dt>
+                <dd className="ops-project-stat-value tabular-nums">
+                  <time dateTime={project.targetDate ?? undefined}>
+                    {formatProjectDate(project.targetDate)}
+                  </time>
+                </dd>
+              </div>
+
+              <div className="ops-project-stat ops-project-stat--progress">
+                <dt>Progress</dt>
+                <dd>
+                  <span className="ops-project-stat-value tabular-nums">{pct}%</span>
+                  <span className="ops-project-stat-hint">
+                    {project.doneTaskCount}/{project.taskCount} tasks
+                  </span>
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          <div className="ops-project-toolbar" data-pending={pending ? 'true' : undefined}>
+            <div className="ops-project-control">
+              <span className="ops-project-control-label">Status</span>
+              <select
+                className="btf-input ops-project-status-select"
+                value={project.status}
+                disabled={pending}
+                onChange={e => handleStatusChange(e.target.value as ProjectStatus)}
+                aria-label="Project status"
+              >
+                {(Object.keys(STATUS_LABELS) as ProjectStatus[]).map(s => (
+                  <option key={s} value={s}>
+                    {STATUS_LABELS[s]}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="ops-project-control">
+              <span className="ops-project-control-label">View</span>
+              <div className="ops-project-view-toggle" role="tablist" aria-label="View mode">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={view === 'kanban'}
+                  className={`ops-project-view-btn${view === 'kanban' ? ' ops-project-view-btn--active' : ''}`}
+                  onClick={() => setView('kanban')}
+                >
+                  Kanban
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={view === 'list'}
+                  className={`ops-project-view-btn${view === 'list' ? ' ops-project-view-btn--active' : ''}`}
+                  onClick={() => setView('list')}
+                >
+                  List
+                </button>
+              </div>
+            </div>
+
+            <div className="ops-project-toolbar-actions">
+              <button
+                type="button"
+                className={`dash-btn-primary btn-primary ops-project-add-btn${showAddPanel ? ' ops-project-add-btn--open' : ''}`}
+                onClick={() => setShowAddPanel(v => !v)}
+                disabled={pending}
+                aria-expanded={showAddPanel}
+              >
+                <Plus size={15} />
+                Add task
+              </button>
+              <button
+                type="button"
+                className="ops-project-delete-btn"
+                onClick={() => setConfirmDelete(true)}
+                disabled={pending}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      </header>
+
+      {showAddPanel ? (
+        <ProjectAddPanel
+          project={project}
+          staff={staff}
+          onRefresh={() => router.refresh()}
+        />
+      ) : null}
 
       {view === 'kanban' ? (
-        <ProjectKanban project={project} />
+        <ProjectKanban project={project} staff={staff} />
       ) : (
-        <ProjectListView project={project} staff={staff} onRefresh={() => router.refresh()} />
+        <ProjectListView
+          project={project}
+          staff={staff}
+          onRefresh={() => router.refresh()}
+        />
       )}
 
       <ConfirmDeleteModal

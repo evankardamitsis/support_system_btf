@@ -17,6 +17,20 @@ import type {
   TaskStatus,
 } from '@/lib/ops/projects/types'
 
+async function assertStaffAssignee(
+  supabase: Awaited<ReturnType<typeof import('@/lib/supabase/server').createClient>>,
+  assigneeId: string
+) {
+  const { data: assignee } = await supabase
+    .from('users')
+    .select('id, role')
+    .eq('id', assigneeId)
+    .maybeSingle()
+  if (!assignee || !['admin', 'agent'].includes(assignee.role)) {
+    throw new Error('Assignee must be an admin or agent')
+  }
+}
+
 function revalidateProjectPaths(projectId?: string) {
   revalidatePath('/admin/ops/projects')
   revalidatePath('/admin/ops/projects/new')
@@ -63,6 +77,7 @@ export async function createProject(input: {
   description?: string | null
   startDate?: string | null
   targetDate?: string | null
+  costAmount?: number | null
 }) {
   const { supabase, user } = await requireAdminPage()
 
@@ -83,6 +98,7 @@ export async function createProject(input: {
       description: input.description?.trim() || null,
       start_date: input.startDate || null,
       target_date: input.targetDate || null,
+      cost_amount: input.costAmount ?? null,
       created_by: user.id,
     })
     .select('id')
@@ -103,7 +119,7 @@ export async function createProjectFromOffer(offerId: string, templateKey: Proje
 
   const { data: offer, error: offerError } = await supabase
     .from('financial_offers')
-    .select('id, client_name, status')
+    .select('id, client_name, status, total_amount')
     .eq('id', offerId)
     .is('deleted_at', null)
     .single()
@@ -118,6 +134,7 @@ export async function createProjectFromOffer(offerId: string, templateKey: Proje
       is_internal: false,
       financial_offer_id: offer.id,
       template_key: templateKey,
+      cost_amount: Number(offer.total_amount),
       created_by: user.id,
     })
     .select('id')
@@ -155,6 +172,21 @@ export async function createProjectFromOffer(offerId: string, templateKey: Proje
 
   revalidateProjectPaths(data.id)
   return data.id as string
+}
+
+export async function updateProjectCost(projectId: string, costAmount: number | null) {
+  const { supabase } = await requireAdminPage()
+  if (costAmount != null && costAmount < 0) throw new Error('Project cost cannot be negative')
+
+  const { error } = await supabase
+    .from('ops_projects')
+    .update({
+      cost_amount: costAmount,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', projectId)
+  if (error) throw new Error(error.message)
+  revalidateProjectPaths(projectId)
 }
 
 export async function updateProjectStatus(projectId: string, status: ProjectStatus) {
@@ -205,6 +237,8 @@ export async function createTask(input: {
   const title = input.title.trim()
   if (!title) throw new Error('Task title is required')
 
+  if (input.assigneeId) await assertStaffAssignee(supabase, input.assigneeId)
+
   if (input.parentId) {
     const { data: parent } = await supabase
       .from('ops_project_tasks')
@@ -254,6 +288,7 @@ export async function updateTask(
     .eq('id', taskId)
     .single()
   if (!task) throw new Error('Task not found')
+  if (patch.assigneeId) await assertStaffAssignee(supabase, patch.assigneeId)
 
   const updates: Database['public']['Tables']['ops_project_tasks']['Update'] = {
     updated_at: new Date().toISOString(),

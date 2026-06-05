@@ -1,8 +1,13 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { createPhase, createTask, updatePhaseStatus, updateTask } from '@/app/actions/projects'
+import { ChevronDown } from 'lucide-react'
+import { createTask, updatePhaseStatus, updateTask } from '@/app/actions/projects'
 import { PhaseStatusSelect, PriorityBadge, TaskStatusSelect } from '@/components/ops/projects/StatusSelect'
+import {
+  EditableAssigneeSelect,
+  type AssigneeOption,
+} from '@/components/tickets/EditableAssigneeSelect'
 import type {
   OpsProjectDetail,
   OpsProjectPhase,
@@ -12,7 +17,84 @@ import type {
 } from '@/lib/ops/projects/types'
 import { runWithToast } from '@/lib/notify'
 
-type StaffOption = { id: string; name: string }
+type StaffOption = AssigneeOption
+
+const PHASE_TONE_COUNT = 6
+
+function PhaseSection({
+  phaseId,
+  title,
+  toneIndex,
+  status,
+  taskCount,
+  doneCount,
+  collapsed,
+  onToggle,
+  onStatusChange,
+  pending,
+  children,
+}: {
+  phaseId: string
+  title: string
+  toneIndex: number
+  status?: PhaseStatus
+  taskCount: number
+  doneCount: number
+  collapsed: boolean
+  onToggle: (phaseId: string) => void
+  onStatusChange?: (status: PhaseStatus) => void
+  pending: boolean
+  children: React.ReactNode
+}) {
+  const phasePct = taskCount > 0 ? (doneCount / taskCount) * 100 : 0
+  const toneClass = `ops-list-phase--tone-${toneIndex % PHASE_TONE_COUNT}`
+
+  return (
+    <section
+      className={`ops-list-phase ${toneClass}${collapsed ? ' ops-list-phase--collapsed' : ''}`}
+    >
+      <div className="ops-list-phase-head">
+        <button
+          type="button"
+          className="ops-list-phase-toggle"
+          onClick={() => onToggle(phaseId)}
+          aria-expanded={!collapsed}
+          aria-controls={`ops-phase-body-${phaseId}`}
+        >
+          <ChevronDown
+            size={16}
+            className={`ops-list-phase-chevron${collapsed ? ' ops-list-phase-chevron--collapsed' : ''}`}
+            aria-hidden
+          />
+          <span className="ops-list-phase-title">{title}</span>
+          <span className="ops-list-phase-count">{taskCount}</span>
+        </button>
+        {status && onStatusChange ? (
+          <PhaseStatusSelect
+            value={status}
+            disabled={pending}
+            className="ops-list-select"
+            aria-label={`Status for phase ${title}`}
+            onChange={onStatusChange}
+          />
+        ) : null}
+        <div className="ops-list-phase-progress">
+          <div className="ops-list-phase-progress-bar">
+            <div className="ops-list-phase-progress-fill" style={{ width: `${phasePct}%` }} />
+          </div>
+          <span className="ops-list-phase-progress-label">
+            {doneCount}/{taskCount}
+          </span>
+        </div>
+      </div>
+      {!collapsed ? (
+        <div id={`ops-phase-body-${phaseId}`} className="ops-list-phase-body">
+          {children}
+        </div>
+      ) : null}
+    </section>
+  )
+}
 
 function TaskRow({
   task,
@@ -36,6 +118,15 @@ function TaskRow({
     runWithToast(() => updateTask(task.id, { status }), {
       loading: 'Updating…',
       success: 'Task updated',
+    }).then(() => onRefresh())
+  }
+
+  function handleAssigneeChange(assigneeId: string | null) {
+    runWithToast(() => updateTask(task.id, { assigneeId }), {
+      loading: 'Updating assignee…',
+      success: assigneeId
+        ? `Assigned to ${staff.find(s => s.id === assigneeId)?.name ?? 'teammate'}`
+        : 'Assignee cleared',
     }).then(() => onRefresh())
   }
 
@@ -74,8 +165,15 @@ function TaskRow({
           aria-label={`Status for ${task.title}`}
           onChange={handleStatusChange}
         />
-        {task.assigneeName ? (
-          <span className="ops-list-assignee">{task.assigneeName}</span>
+        {staff.length > 0 ? (
+          <EditableAssigneeSelect
+            value={task.assigneeId}
+            options={staff}
+            disabled={pending}
+            className="ops-task-assignee"
+            ariaLabel={`Assignee for ${task.title}`}
+            onChange={handleAssigneeChange}
+          />
         ) : null}
         {depth === 0 ? (
           <button
@@ -128,10 +226,16 @@ export function ProjectListView({
   onRefresh: () => void
 }) {
   const [pending, startTransition] = useTransition()
-  const [newPhaseName, setNewPhaseName] = useState('')
-  const [addingPhase, setAddingPhase] = useState(false)
-  const [newTaskPhaseId, setNewTaskPhaseId] = useState<string>('')
-  const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [collapsedPhases, setCollapsedPhases] = useState<Set<string>>(() => new Set())
+
+  function togglePhase(phaseId: string) {
+    setCollapsedPhases(prev => {
+      const next = new Set(prev)
+      if (next.has(phaseId)) next.delete(phaseId)
+      else next.add(phaseId)
+      return next
+    })
+  }
 
   const tasksByPhase = new Map<string | null, OpsProjectTask[]>()
   for (const task of project.tasks) {
@@ -150,70 +254,27 @@ export function ProjectListView({
     })
   }
 
-  function handleAddPhase(e: React.FormEvent) {
-    e.preventDefault()
-    if (!newPhaseName.trim()) return
-    startTransition(async () => {
-      await runWithToast(() => createPhase(project.id, newPhaseName), {
-        loading: 'Adding phase…',
-        success: 'Phase added',
-      })
-      setNewPhaseName('')
-      setAddingPhase(false)
-      onRefresh()
-    })
-  }
-
-  function handleAddTask(e: React.FormEvent) {
-    e.preventDefault()
-    if (!newTaskTitle.trim()) return
-    startTransition(async () => {
-      await runWithToast(
-        () =>
-          createTask({
-            projectId: project.id,
-            phaseId: newTaskPhaseId || null,
-            title: newTaskTitle,
-          }),
-        { loading: 'Adding task…', success: 'Task added' }
-      )
-      setNewTaskTitle('')
-      onRefresh()
-    })
-  }
-
   const unphased = tasksByPhase.get(null) ?? []
 
   return (
-    <div className="ops-list-view space-y-6">
-      {project.phases.map(phase => {
+    <div className="ops-list-view">
+      {project.phases.map((phase, index) => {
         const phaseTasks = tasksByPhase.get(phase.id) ?? []
         const doneCount = phaseTasks.filter(t => t.status === 'done').length
-        const phasePct = phaseTasks.length > 0 ? (doneCount / phaseTasks.length) * 100 : 0
         return (
-          <section key={phase.id} className={`ops-list-phase ops-list-phase--${phase.status}`}>
-            <div className={`ops-list-phase-head ops-list-phase-head--${phase.status}`}>
-              <span className={`ops-list-phase-stripe ops-list-phase-stripe--${phase.status}`} aria-hidden />
-              <h3 className="ops-list-phase-title">{phase.name}</h3>
-              <PhaseStatusSelect
-                value={phase.status}
-                disabled={pending}
-                className="ops-list-select"
-                aria-label={`Status for phase ${phase.name}`}
-                onChange={status => handlePhaseStatus(phase.id, status)}
-              />
-              <div className="ops-list-phase-progress">
-                <div className="ops-list-phase-progress-bar">
-                  <div
-                    className="ops-list-phase-progress-fill"
-                    style={{ width: `${phasePct}%` }}
-                  />
-                </div>
-                <span className="ops-list-phase-progress-label">
-                  {doneCount}/{phaseTasks.length}
-                </span>
-              </div>
-            </div>
+          <PhaseSection
+            key={phase.id}
+            phaseId={phase.id}
+            title={phase.name}
+            toneIndex={index}
+            status={phase.status}
+            taskCount={phaseTasks.length}
+            doneCount={doneCount}
+            collapsed={collapsedPhases.has(phase.id)}
+            onToggle={togglePhase}
+            onStatusChange={status => handlePhaseStatus(phase.id, status)}
+            pending={pending}
+          >
             {phaseTasks.length === 0 ? (
               <p className="dash-meta px-4 py-2">No tasks in this phase</p>
             ) : (
@@ -229,15 +290,21 @@ export function ProjectListView({
                 />
               ))
             )}
-          </section>
+          </PhaseSection>
         )
       })}
 
       {unphased.length > 0 ? (
-        <section className="ops-list-phase">
-          <div className="ops-list-phase-head">
-            <h3 className="ops-list-phase-title">Unassigned</h3>
-          </div>
+        <PhaseSection
+          phaseId="__unassigned__"
+          title="Unassigned"
+          toneIndex={PHASE_TONE_COUNT}
+          taskCount={unphased.length}
+          doneCount={unphased.filter(t => t.status === 'done').length}
+          collapsed={collapsedPhases.has('__unassigned__')}
+          onToggle={togglePhase}
+          pending={pending}
+        >
           {unphased.map(task => (
             <TaskRow
               key={task.id}
@@ -249,70 +316,8 @@ export function ProjectListView({
               onRefresh={onRefresh}
             />
           ))}
-        </section>
+        </PhaseSection>
       ) : null}
-
-      <div className="ops-list-actions space-y-4">
-        {addingPhase ? (
-          <form onSubmit={handleAddPhase} className="ops-list-inline-form">
-            <input
-              className="btf-input"
-              value={newPhaseName}
-              onChange={e => setNewPhaseName(e.target.value)}
-              placeholder="Phase name"
-              disabled={pending}
-              autoFocus
-            />
-            <button type="submit" className="dash-btn-primary btn-primary" disabled={pending}>
-              Add phase
-            </button>
-            <button
-              type="button"
-              className="dash-btn-ghost"
-              onClick={() => setAddingPhase(false)}
-              disabled={pending}
-            >
-              Cancel
-            </button>
-          </form>
-        ) : (
-          <button
-            type="button"
-            className="dash-btn-ghost"
-            onClick={() => setAddingPhase(true)}
-            disabled={pending}
-          >
-            + Add phase
-          </button>
-        )}
-
-        <form onSubmit={handleAddTask} className="ops-list-inline-form">
-          <select
-            className="btf-input"
-            value={newTaskPhaseId}
-            onChange={e => setNewTaskPhaseId(e.target.value)}
-            disabled={pending}
-            aria-label="Phase for new task"
-          >
-            <option value="">No phase</option>
-            {project.phases.map(p => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <input
-            className="btf-input flex-1"
-            value={newTaskTitle}
-            onChange={e => setNewTaskTitle(e.target.value)}
-            placeholder="New task title"
-            disabled={pending}
-          />
-          <button type="submit" className="dash-btn-primary btn-primary" disabled={pending}>
-            Add task
-          </button>
-        </form>
-      </div>
     </div>
   )
 }

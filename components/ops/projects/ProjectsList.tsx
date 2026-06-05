@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
+import { formatProjectCost, formatProjectDate } from '@/lib/ops/projects/display'
 import type { OpsProjectRecord, ProjectStatus } from '@/lib/ops/projects/types'
 
 const STATUS_LABELS: Record<ProjectStatus, string> = {
@@ -60,6 +61,9 @@ export function ProjectsList({ projects }: { projects: OpsProjectRecord[] }) {
             <span>Client</span>
             <span>Status</span>
             <span>Progress</span>
+            <span>Cost</span>
+            <span>Start</span>
+            <span>Target</span>
             <span>Lead</span>
           </div>
           <div>
@@ -97,6 +101,15 @@ export function ProjectsList({ projects }: { projects: OpsProjectRecord[] }) {
                       {project.doneTaskCount}/{project.taskCount}
                     </span>
                     <span className="dash-meta ml-2">{pct}%</span>
+                  </div>
+                  <div className="ops-projects-cell tabular-nums" data-label="Cost">
+                    {formatProjectCost(project.costAmount)}
+                  </div>
+                  <div className="ops-projects-cell tabular-nums" data-label="Start">
+                    <time dateTime={project.startDate ?? undefined}>{formatProjectDate(project.startDate)}</time>
+                  </div>
+                  <div className="ops-projects-cell tabular-nums" data-label="Target">
+                    <time dateTime={project.targetDate ?? undefined}>{formatProjectDate(project.targetDate)}</time>
                   </div>
                   <div className="ops-projects-cell" data-label="Lead">
                     <span className="dash-meta">{project.leadName ?? '—'}</span>

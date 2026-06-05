@@ -7,9 +7,10 @@ import { createProject } from '@/app/actions/projects'
 import { PageHeader } from '@/components/dashboard/PageHeader'
 import { FormPanel } from '@/components/dashboard/FormPanel'
 import { DashCancel } from '@/components/dashboard/DashCancel'
+import { parseProjectCostInput } from '@/lib/ops/projects/display'
 import { PROJECT_TEMPLATES } from '@/lib/ops/projects/templates'
 import type { ProjectTemplateKey } from '@/lib/ops/projects/types'
-import { runWithToast } from '@/lib/notify'
+import { notifyError, runWithToast } from '@/lib/notify'
 
 type ClientOption = { id: string; name: string }
 type StaffOption = { id: string; name: string }
@@ -35,8 +36,17 @@ export function NewProjectForm({
     const description = String(form.get('description') ?? '') || null
     const startDate = String(form.get('startDate') ?? '') || null
     const targetDate = String(form.get('targetDate') ?? '') || null
+    const costRaw = String(form.get('costAmount') ?? '')
 
     startTransition(async () => {
+      let costAmount: number | null = null
+      try {
+        costAmount = parseProjectCostInput(costRaw)
+      } catch (err) {
+        notifyError(err instanceof Error ? err.message : 'Invalid project cost')
+        return
+      }
+
       const id = await runWithToast(
         () =>
           createProject({
@@ -48,6 +58,7 @@ export function NewProjectForm({
             description,
             startDate,
             targetDate,
+            costAmount,
           }),
         { loading: 'Creating project…', success: 'Project created' }
       )
@@ -156,6 +167,19 @@ export function NewProjectForm({
                 className="btf-input w-full resize-y"
                 disabled={pending}
               />
+            </div>
+
+            <div>
+              <label className="dash-label">Project cost (EUR)</label>
+              <input
+                type="text"
+                name="costAmount"
+                inputMode="decimal"
+                className="btf-input w-full"
+                placeholder="e.g. 4500"
+                disabled={pending}
+              />
+              <p className="dash-meta mt-1">Optional. Set manually or leave blank.</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

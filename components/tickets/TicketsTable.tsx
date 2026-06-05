@@ -3,6 +3,7 @@ import { StatusPill } from '@/components/ui/StatusPill'
 import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { ArrowUpRight } from 'lucide-react'
 import { AdminTicketRow } from './AdminTicketRow'
+import type { AssigneeOption } from './EditableAssigneeSelect'
 import {
   formatDateTimeHuman,
   formatResolvedAtTable,
@@ -27,6 +28,7 @@ export type TicketTableRow = {
   estimate_status?: 'pending_approval' | 'approved' | null
   completion_status?: 'pending_approval' | 'approved' | null
   hoursBilling?: boolean
+  assignedTo?: string | null
   assigneeName?: string | null
 }
 
@@ -37,6 +39,7 @@ export function TicketsTable({
   hoursLoggedByTicketId = {},
   emptyTitle = 'No tickets found',
   emptyHint = 'Try another filter or create a new ticket',
+  staff = [],
 }: {
   tickets: TicketTableRow[]
   hrefPrefix: string
@@ -44,6 +47,7 @@ export function TicketsTable({
   hoursLoggedByTicketId?: Record<string, boolean>
   emptyTitle?: string
   emptyHint?: string
+  staff?: AssigneeOption[]
 }) {
   const gridClass =
     variant === 'admin' ? 'tickets-grid tickets-grid--admin' : 'tickets-grid tickets-grid--portal'
@@ -78,6 +82,7 @@ export function TicketsTable({
                 hrefPrefix={hrefPrefix}
                 hoursLogged={hoursLoggedByTicketId[t.id] ?? (t.actual_hours != null && t.actual_hours > 0)}
                 hoursBilling={t.hoursBilling ?? true}
+                staff={staff}
               />
             )
           }

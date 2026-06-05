@@ -34,6 +34,7 @@ export type OpsProjectRecord = {
   description: string | null
   startDate: string | null
   targetDate: string | null
+  costAmount: number | null
   createdAt: string
   updatedAt: string
   phaseCount: number
