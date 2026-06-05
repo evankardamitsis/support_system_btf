@@ -7,6 +7,7 @@ import { tryCreateAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth/require-admin'
 import { getRetainerForClient } from '@/lib/retainers/active'
 import {
+  getClientNotificationEmails,
   notifyClientEstimatePending,
   notifyStaffEstimateApproved,
 } from '@/lib/email/ticket-notifications'
@@ -156,6 +157,13 @@ export async function submitEstimateForApproval(ticketId: string) {
     throw new Error('Enter estimated hours before submitting')
   }
 
+  const clientEmails = await getClientNotificationEmails(ticket.client_id)
+  if (!clientEmails.length) {
+    throw new Error(
+      'No client email on file — add an email on the client record or invite a portal user before submitting'
+    )
+  }
+
   const now = new Date().toISOString()
   const { error } = await supabase
     .from('tickets')
@@ -168,13 +176,16 @@ export async function submitEstimateForApproval(ticketId: string) {
 
   if (error) throw new Error(error.message)
 
-  await notifyClientEstimatePending({
+  const notify = await notifyClientEstimatePending({
     ticketId,
     ticketTitle: ticket.title,
     clientId: ticket.client_id,
     estimatedHours: hours,
     priority: ticket.priority,
   })
+  if (!notify.sent) {
+    throw new Error(notify.error)
+  }
 
   revalidateTicketPaths(ticketId)
 }

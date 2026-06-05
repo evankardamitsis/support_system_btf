@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { CommentThread } from '@/components/tickets/CommentThread'
-import { EstimateApprovalPanel } from '@/components/tickets/EstimateApprovalPanel'
+import { EstimateApprovalModal } from '@/components/tickets/EstimateApprovalModal'
 import { TicketCommentForm } from '@/components/tickets/TicketCommentForm'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
@@ -55,6 +55,15 @@ export default async function PortalTicketDetailPage({
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6 items-start">
         <div className="space-y-5">
+          {pendingApproval && estimatedHours != null && estimatedHours > 0 ? (
+            <EstimateApprovalModal
+              ticketId={ticket.id}
+              ticketTitle={ticket.title}
+              estimatedHours={estimatedHours}
+              priority={ticket.priority as TicketPriority}
+            />
+          ) : null}
+
           <div className="dash-panel">
             <div className="dash-card-section px-5 py-4">
               <div className="flex items-start justify-between gap-4 mb-2">
@@ -90,14 +99,6 @@ export default async function PortalTicketDetailPage({
               <PriorityBadge priority={ticket.priority as TicketPriority} />
             </div>
           </div>
-
-          {pendingApproval && estimatedHours != null && estimatedHours > 0 ? (
-            <EstimateApprovalPanel
-              ticketId={ticket.id}
-              estimatedHours={estimatedHours}
-              priority={ticket.priority as TicketPriority}
-            />
-          ) : null}
 
           <div className="dash-panel">
             <div className="dash-card-section px-5 py-3">

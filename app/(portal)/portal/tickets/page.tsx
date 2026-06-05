@@ -32,7 +32,7 @@ export default async function PortalTicketsPage({
 
   const { data: all } = await supabase
     .from('tickets')
-    .select('id, title, status, priority, type, created_at, updated_at')
+    .select('id, title, status, priority, type, created_at, updated_at, estimate_status')
     .eq('client_id', profile!.client_id!)
     .order('updated_at', { ascending: false })
 
@@ -57,6 +57,7 @@ export default async function PortalTicketsPage({
     priority: t.priority as TicketPriority,
     type: t.type,
     updated_at: t.updated_at,
+    estimate_status: t.estimate_status ?? null,
   }))
 
   return (

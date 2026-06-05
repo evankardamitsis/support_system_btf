@@ -4,16 +4,13 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { ArrowUpRight } from 'lucide-react'
-import {
-  updateTicketPriority,
-  updateTicketEstimatedHours,
-  updateTicketStatus,
-} from '@/app/actions/tickets'
+import { updateTicketPriority, updateTicketStatus } from '@/app/actions/tickets'
 import {
   formatTicketId,
   formatRelativeTime,
   priorityAccent,
   isRecentlyUpdated,
+  ticketRowStatusClass,
 } from '@/lib/tickets/display'
 import { EditableStatusPill } from './EditableStatusPill'
 import { EditablePriorityPill } from './EditablePriorityPill'
@@ -39,6 +36,7 @@ export function AdminTicketRow({
   const recent = isRecentlyUpdated(ticket.updated_at)
   const href = `${hrefPrefix}/${ticket.id}`
   const estimateLocked = isEstimateLocked(ticket.estimate_status ?? null)
+  const statusRowClass = ticketRowStatusClass(ticket.status)
 
   function refresh() {
     router.refresh()
@@ -48,20 +46,6 @@ export function AdminTicketRow({
     startTransition(async () => {
       const ok = await runWithToast(() => updateTicketPriority(ticket.id, priority), {
         success: `Priority set to ${formatTicketPriority(priority)}`,
-      })
-      if (ok !== null) refresh()
-    })
-  }
-
-  function onEstimateBlur(raw: string) {
-    const parsed = raw.trim() === '' ? null : parseFloat(raw)
-    const next =
-      parsed == null || Number.isNaN(parsed) ? null : Math.max(0, parsed)
-    const current = ticket.estimated_hours ?? null
-    if (next === current || (next != null && current != null && next === current)) return
-    startTransition(async () => {
-      const ok = await runWithToast(() => updateTicketEstimatedHours(ticket.id, next), {
-        success: next != null ? `Estimate set to ${next}h` : 'Estimate cleared',
       })
       if (ok !== null) refresh()
     })
@@ -87,7 +71,7 @@ export function AdminTicketRow({
   return (
     <>
       <div
-        className={`tickets-grid tickets-grid--admin tickets-row tickets-row--static tickets-row--${ticket.priority}`}
+        className={`tickets-grid tickets-grid--admin tickets-row tickets-row--static tickets-row--${ticket.priority}${statusRowClass}`}
         style={{ ['--row-accent' as string]: accent }}
         data-pending={pending ? 'true' : undefined}
       >
@@ -134,19 +118,14 @@ export function AdminTicketRow({
           <span className="tickets-client-name">{ticket.clientName ?? '—'}</span>
         </div>
 
-        <div className="tickets-cell tickets-cell-hours tickets-cell--control">
-          <input
-            type="number"
-            step="0.25"
-            min="0"
-            className="dash-input-cell tabular-nums"
-            defaultValue={ticket.estimated_hours ?? ''}
-            placeholder="Est"
-            aria-label={`Estimated hours for ${ticket.title}`}
-            disabled={estimateLocked}
-            onBlur={e => onEstimateBlur(e.target.value)}
-            onClick={e => e.stopPropagation()}
-          />
+        <div className="tickets-cell tickets-cell-hours">
+          {ticket.estimated_hours != null && ticket.estimated_hours > 0 ? (
+            <span className="tickets-hours-estimate tabular-nums">
+              {ticket.estimated_hours.toFixed(1)}h
+            </span>
+          ) : (
+            <span className="tickets-hours-muted">—</span>
+          )}
         </div>
 
         <div className="tickets-cell tickets-cell-hours">

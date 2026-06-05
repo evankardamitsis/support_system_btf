@@ -1,4 +1,4 @@
-import type { TicketPriority } from '@/lib/types'
+import type { TicketPriority, TicketStatus } from '@/lib/types'
 
 export function formatTicketId(id: string) {
   return `TKT-${id.substring(0, 4).toUpperCase()}`
@@ -25,4 +25,11 @@ export const priorityAccent: Record<TicketPriority, string> = {
 export function isRecentlyUpdated(dateStr: string) {
   const h = (Date.now() - new Date(dateStr).getTime()) / 3600000
   return h < 2
+}
+
+/** Prominent admin table row tint — open & waiting only */
+export function ticketRowStatusClass(status: TicketStatus): string {
+  if (status === 'open') return ' tickets-row--status-open'
+  if (status === 'waiting_on_client') return ' tickets-row--status-waiting'
+  return ''
 }

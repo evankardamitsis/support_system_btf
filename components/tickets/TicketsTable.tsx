@@ -78,16 +78,20 @@ export function TicketsTable({
           const accent = priorityAccent[t.priority] ?? priorityAccent.normal
           const recent = isRecentlyUpdated(t.updated_at)
           const href = `${hrefPrefix}/${t.id}`
+          const needsApproval = t.estimate_status === 'pending_approval'
 
           return (
             <Link
               key={t.id}
               href={href}
-              className={`${gridClass} tickets-row tickets-row--${t.priority}`}
+              className={`${gridClass} tickets-row tickets-row--${t.priority}${needsApproval ? ' tickets-row--needs-approval' : ''}`}
               style={{ ['--row-accent' as string]: accent }}
             >
               <div className="tickets-cell tickets-cell-status">
                 <StatusPill status={t.status} />
+                {needsApproval ? (
+                  <span className="tickets-approve-badge">Approve estimate</span>
+                ) : null}
               </div>
 
               <div className="tickets-cell tickets-cell-priority">
