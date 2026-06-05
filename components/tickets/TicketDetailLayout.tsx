@@ -12,7 +12,7 @@ import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { EditableStatusPill } from './EditableStatusPill'
 import { EditablePriorityPill } from './EditablePriorityPill'
 import { ResolveHoursModal } from './ResolveHoursModal'
-import { TicketDetailSidebar } from './TicketDetailSidebar'
+import { TicketDetailSidebar, type ExtraHoursItem } from './TicketDetailSidebar'
 import { DeleteTicketButton } from './DeleteTicketButton'
 import { formatDateTimeHuman, formatTicketId } from '@/lib/tickets/display'
 import { isTicketClosed } from '@/lib/tickets/closed'
@@ -54,6 +54,8 @@ export function TicketDetailLayout({
   activeRetainer,
   retainers,
   defaultRetainerId,
+  extraHours = [],
+  completionDisputeNote = null,
   isAdmin = false,
 }: {
   children: ReactNode
@@ -76,6 +78,8 @@ export function TicketDetailLayout({
   activeRetainer: RetainerOption | null
   retainers: RetainerOption[]
   defaultRetainerId?: string | null
+  extraHours?: ExtraHoursItem[]
+  completionDisputeNote?: string | null
   isAdmin?: boolean
 }) {
   const router = useRouter()
@@ -228,6 +232,8 @@ export function TicketDetailLayout({
           activeRetainer={activeRetainer}
           retainers={retainers}
           defaultRetainerId={defaultRetainerId}
+          extraHours={extraHours}
+          completionDisputeNote={completionDisputeNote}
           onResolve={() => setResolveOpen(true)}
         />
       </div>

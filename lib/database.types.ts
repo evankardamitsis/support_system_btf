@@ -142,6 +142,8 @@ export interface Database {
           completion_status: 'pending_approval' | 'approved' | null
           completion_submitted_at: string | null
           completion_approved_at: string | null
+          completion_dispute_note: string | null
+          completion_disputed_at: string | null
         }
         Insert: {
           id?: string
@@ -164,6 +166,8 @@ export interface Database {
           completion_status?: 'pending_approval' | 'approved' | null
           completion_submitted_at?: string | null
           completion_approved_at?: string | null
+          completion_dispute_note?: string | null
+          completion_disputed_at?: string | null
         }
         Update: {
           id?: string
@@ -186,6 +190,8 @@ export interface Database {
           completion_status?: 'pending_approval' | 'approved' | null
           completion_submitted_at?: string | null
           completion_approved_at?: string | null
+          completion_dispute_note?: string | null
+          completion_disputed_at?: string | null
         }
         Relationships: []
       }
@@ -225,6 +231,7 @@ export interface Database {
           minutes: number
           note: string | null
           logged_at: string
+          is_extra: boolean
         }
         Insert: {
           id?: string
@@ -234,6 +241,7 @@ export interface Database {
           minutes: number
           note?: string | null
           logged_at?: string
+          is_extra?: boolean
         }
         Update: {
           id?: string
@@ -243,6 +251,46 @@ export interface Database {
           minutes?: number
           note?: string | null
           logged_at?: string
+          is_extra?: boolean
+        }
+        Relationships: []
+      }
+      ticket_extra_hours: {
+        Row: {
+          id: string
+          ticket_id: string
+          retainer_id: string
+          agent_id: string
+          minutes: number
+          note: string | null
+          status: 'pending_approval' | 'approved'
+          submitted_at: string
+          approved_at: string | null
+          hours_log_id: string | null
+        }
+        Insert: {
+          id?: string
+          ticket_id: string
+          retainer_id: string
+          agent_id: string
+          minutes: number
+          note?: string | null
+          status?: 'pending_approval' | 'approved'
+          submitted_at?: string
+          approved_at?: string | null
+          hours_log_id?: string | null
+        }
+        Update: {
+          id?: string
+          ticket_id?: string
+          retainer_id?: string
+          agent_id?: string
+          minutes?: number
+          note?: string | null
+          status?: 'pending_approval' | 'approved'
+          submitted_at?: string
+          approved_at?: string | null
+          hours_log_id?: string | null
         }
         Relationships: []
       }

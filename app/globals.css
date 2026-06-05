@@ -1839,6 +1839,55 @@
   transition: color 100ms ease;
 }
 
+[data-theme="dashboard"] .estimate-modal-dispute {
+  width: 100%;
+  padding: 0.5rem 0;
+  border: none;
+  background: transparent;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-2);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+[data-theme="dashboard"] .estimate-modal-dispute:hover:not(:disabled) {
+  color: var(--text-1);
+}
+
+.estimate-modal-dispute-input {
+  margin-bottom: 0.25rem;
+}
+
+[data-theme="dashboard"] .ticket-work-disputed {
+  margin-top: 1rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--warn, #b45309) 35%, var(--border));
+  border-radius: 0.625rem;
+  background: color-mix(in srgb, var(--warn, #b45309) 8%, var(--surface));
+}
+
+[data-theme="dashboard"] .ticket-work-disputed-eyebrow {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--warn, #b45309);
+}
+
+[data-theme="dashboard"] .ticket-work-disputed-text {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--text-1);
+  white-space: pre-wrap;
+}
+
+[data-theme="dashboard"] .ticket-work-disputed-hint {
+  margin: 0.625rem 0 0;
+}
+
 [data-theme="dashboard"] .estimate-modal-later:hover:not(:disabled) {
   color: var(--text-1);
 }
@@ -3572,6 +3621,10 @@
   align-items: end;
 }
 
+[data-theme="dashboard"] .ticket-detail-hours-grid[data-has-extra="true"] {
+  grid-template-columns: 1fr auto auto;
+}
+
 [data-theme="dashboard"] .ticket-detail-hours-readout {
   display: flex;
   flex-direction: column;
@@ -3682,6 +3735,82 @@
   margin-top: 0.875rem;
   padding-top: 0.875rem;
   border-top: 1px solid var(--border);
+}
+
+[data-theme="dashboard"] .ticket-extra-hours-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  margin-top: 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+[data-theme="dashboard"] .ticket-extra-hours-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+}
+
+[data-theme="dashboard"] .ticket-extra-hours-item-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-1);
+}
+
+[data-theme="dashboard"] .ticket-extra-hours-status {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+[data-theme="dashboard"] .ticket-extra-hours-status[data-status="pending_approval"] {
+  color: var(--warn, #b45309);
+}
+
+[data-theme="dashboard"] .ticket-extra-hours-status[data-status="approved"] {
+  color: var(--ok, #15803d);
+}
+
+.extra-hours-approval-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.extra-hours-approval-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.625rem;
+  background: var(--surface);
+}
+
+.extra-hours-approval-hours {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.extra-hours-approval-note {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-2);
 }
 
 [data-theme="dashboard"] .ticket-detail-activity {

@@ -15,6 +15,7 @@ import {
   notifyStaffEstimateApproved,
   notifyStaffNewTicket,
   notifyStaffWorkApproved,
+  notifyStaffWorkDisputed,
 } from '@/lib/email/ticket-notifications'
 import { isTicketClosed, TICKET_LOCKED_MESSAGE } from '@/lib/tickets/closed'
 import { isEstimateLocked } from '@/lib/tickets/estimate'
@@ -321,6 +322,8 @@ export async function submitWorkForClientCheck(ticketId: string) {
     .update({
       completion_status: 'pending_approval',
       completion_submitted_at: now,
+      completion_dispute_note: null,
+      completion_disputed_at: null,
       status: 'waiting_on_client',
     })
     .eq('id', ticketId)
@@ -392,6 +395,84 @@ export async function approveTicketWork(ticketId: string) {
   })
   if (!staffNotify.sent) {
     console.error('[email] staff work-approved notification failed:', staffNotify.error)
+  }
+
+  revalidateTicketPaths(ticketId)
+}
+
+export async function disputeTicketWork(ticketId: string, concerns: string) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/auth/login')
+
+  const trimmed = concerns.trim()
+  if (!trimmed) {
+    throw new Error('Describe what needs to be addressed before we can close this ticket')
+  }
+  if (trimmed.length < 10) {
+    throw new Error('Please provide a bit more detail about your concerns')
+  }
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role, client_id, full_name')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile || profile.role !== 'client' || !profile.client_id) {
+    throw new Error('Only client users can dispute completed work')
+  }
+
+  const { data: ticket, error: fetchErr } = await supabase
+    .from('tickets')
+    .select('id, title, client_id, completion_status, status')
+    .eq('id', ticketId)
+    .single()
+
+  if (fetchErr || !ticket) throw new Error(fetchErr?.message ?? 'Ticket not found')
+  if (ticket.client_id !== profile.client_id) {
+    throw new Error('Not authorized for this ticket')
+  }
+  if (isTicketClosed(ticket.status)) {
+    throw new Error(TICKET_LOCKED_MESSAGE)
+  }
+  if (ticket.completion_status !== 'pending_approval') {
+    throw new Error('No completed work is waiting for your approval')
+  }
+
+  const now = new Date().toISOString()
+  const { error: updateErr } = await supabase
+    .from('tickets')
+    .update({
+      completion_status: null,
+      completion_dispute_note: trimmed,
+      completion_disputed_at: now,
+      status: 'in_progress',
+    })
+    .eq('id', ticketId)
+    .eq('completion_status', 'pending_approval')
+
+  if (updateErr) throw new Error(updateErr.message)
+
+  const commentBody = `Disputed completion:\n\n${trimmed}`
+  const { error: commentErr } = await supabase.from('ticket_comments').insert({
+    ticket_id: ticketId,
+    author_id: user.id,
+    body: commentBody,
+    is_internal: false,
+  })
+
+  if (commentErr) throw new Error(commentErr.message)
+
+  const staffNotify = await notifyStaffWorkDisputed({
+    ticketId,
+    ticketTitle: ticket.title,
+    concerns: trimmed,
+  })
+  if (!staffNotify.sent) {
+    console.error('[email] staff work-disputed notification failed:', staffNotify.error)
   }
 
   revalidateTicketPaths(ticketId)

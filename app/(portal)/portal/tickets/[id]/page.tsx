@@ -7,6 +7,7 @@ import { enrichCommentsWithAuthors } from '@/lib/comments/authors'
 import { CommentThread } from '@/components/tickets/CommentThread'
 import { EstimateApprovalModal } from '@/components/tickets/EstimateApprovalModal'
 import { WorkApprovalModal } from '@/components/tickets/WorkApprovalModal'
+import { ExtraHoursApprovalModal } from '@/components/tickets/ExtraHoursApprovalModal'
 import { TicketCommentForm } from '@/components/tickets/TicketCommentForm'
 import { formatDateTimeHuman } from '@/lib/tickets/display'
 import { isTicketClosed } from '@/lib/tickets/closed'
@@ -46,12 +47,20 @@ export default async function PortalTicketDetailPage({
   const pendingWorkApproval = ticket.completion_status === 'pending_approval'
   const closed = isTicketClosed(ticket.status as TicketStatus)
 
-  const { data: comments } = await supabase
+  const [{ data: comments }, { data: pendingExtraHours }] = await Promise.all([
+    supabase
     .from('ticket_comments')
     .select('id, body, author_id, is_internal, created_at')
     .eq('ticket_id', id)
     .eq('is_internal', false)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: true }),
+    supabase
+      .from('ticket_extra_hours')
+      .select('id, minutes, note, submitted_at')
+      .eq('ticket_id', id)
+      .eq('status', 'pending_approval')
+      .order('submitted_at', { ascending: true }),
+  ])
 
   const enrichedComments = await enrichCommentsWithAuthors(supabase, comments ?? [])
 
@@ -74,6 +83,13 @@ export default async function PortalTicketDetailPage({
 
           {!closed && pendingWorkApproval ? (
             <WorkApprovalModal ticketId={ticket.id} ticketTitle={ticket.title} />
+          ) : null}
+
+          {closed && (pendingExtraHours?.length ?? 0) > 0 ? (
+            <ExtraHoursApprovalModal
+              ticketTitle={ticket.title}
+              pending={pendingExtraHours ?? []}
+            />
           ) : null}
 
           <div className="dash-panel">

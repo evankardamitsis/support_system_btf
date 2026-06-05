@@ -7,7 +7,7 @@ import {
   submitWorkForClientCheck,
   updateTicketEstimatedHours,
 } from '@/app/actions/tickets'
-import { logHours } from '@/app/actions/hours'
+import { submitExtraHours } from '@/app/actions/extra-hours'
 import { UsageBar } from '@/components/dashboard/UsageBar'
 import { runWithToast } from '@/lib/notify'
 import { isTicketClosed } from '@/lib/tickets/closed'
@@ -33,6 +33,17 @@ type RetainerOption = {
   hours_used: number
 }
 
+export type ExtraHoursItem = {
+  id: string
+  minutes: number
+  note: string | null
+  status: 'pending_approval' | 'approved'
+  submitted_at: string
+  approved_at: string | null
+  period_start: string
+  period_end: string
+}
+
 export function TicketDetailSidebar({
   ticketId,
   status,
@@ -45,6 +56,8 @@ export function TicketDetailSidebar({
   activeRetainer,
   retainers,
   defaultRetainerId,
+  extraHours = [],
+  completionDisputeNote = null,
   onResolve,
 }: {
   ticketId: string
@@ -58,6 +71,8 @@ export function TicketDetailSidebar({
   activeRetainer: RetainerOption | null
   retainers: RetainerOption[]
   defaultRetainerId?: string | null
+  extraHours?: ExtraHoursItem[]
+  completionDisputeNote?: string | null
   onResolve: () => void
 }) {
   const router = useRouter()
@@ -79,9 +94,18 @@ export function TicketDetailSidebar({
   const showAwaitingWork = !closed && isAwaitingWorkApproval(completionStatus)
   const showSubmitWork = !closed && canSubmitWorkForCheck(estimateStatus, completionStatus, status)
   const showResolve = !closed && canResolveTicket(estimateStatus, completionStatus, status)
+  const showDisputeNote = !closed && completionDisputeNote && completionStatus === null
   const estimateLocked = closed || isEstimateLocked(estimateStatus)
   const logged =
     actualHours != null && actualHours > 0 ? `${actualHours.toFixed(1)}h` : '—'
+  const approvedExtraMinutes = extraHours
+    .filter(item => item.status === 'approved')
+    .reduce((sum, item) => sum + item.minutes, 0)
+  const extraHoursLabel =
+    approvedExtraMinutes > 0
+      ? `${(approvedExtraMinutes / 60).toFixed(1)}h`
+      : '—'
+  const pendingExtraCount = extraHours.filter(item => item.status === 'pending_approval').length
 
   function refresh() {
     router.refresh()
@@ -92,7 +116,10 @@ export function TicketDetailSidebar({
       <section className="ticket-detail-aside-card">
         <h3 className="ticket-detail-aside-title">Time on this ticket</h3>
 
-        <div className="ticket-detail-hours-grid">
+        <div
+          className="ticket-detail-hours-grid"
+          data-has-extra={closed ? 'true' : undefined}
+        >
           <div className="ticket-detail-hours-field">
             <label className="ticket-detail-control-label" htmlFor="detail-estimate">
               Estimate
@@ -132,6 +159,17 @@ export function TicketDetailSidebar({
               {logged}
             </span>
           </div>
+          {closed ? (
+            <div className="ticket-detail-hours-readout">
+              <span className="ticket-detail-control-label">Extra</span>
+              <span
+                className="ticket-detail-hours-logged tabular-nums"
+                data-filled={extraHoursLabel !== '—' ? 'true' : undefined}
+              >
+                {extraHoursLabel}
+              </span>
+            </div>
+          ) : null}
         </div>
 
         {showSubmit ? (
@@ -199,6 +237,16 @@ export function TicketDetailSidebar({
           <p className="ticket-detail-aside-note dash-meta">Hours recorded for this ticket.</p>
         ) : null}
 
+        {showDisputeNote ? (
+          <div className="ticket-work-disputed" role="status">
+            <span className="ticket-work-disputed-eyebrow">Client disputed completion</span>
+            <p className="ticket-work-disputed-text">{completionDisputeNote}</p>
+            <p className="ticket-work-disputed-hint dash-meta">
+              Address the concerns, continue work, then submit for client check again.
+            </p>
+          </div>
+        ) : null}
+
         {closed ? (
           <p className="ticket-detail-aside-note dash-meta">This ticket is resolved — no further edits.</p>
         ) : null}
@@ -245,7 +293,7 @@ export function TicketDetailSidebar({
         </section>
       )}
 
-      {!closed && retainers.length > 0 ? (
+      {closed && retainers.length > 0 ? (
         <section className="ticket-detail-aside-card ticket-detail-aside-card--muted">
           <button
             type="button"
@@ -253,9 +301,39 @@ export function TicketDetailSidebar({
             onClick={() => setShowMoreLog(v => !v)}
             aria-expanded={showMoreLog}
           >
-            <span>Log additional time</span>
+            <span>Request extra time</span>
             <span aria-hidden>{showMoreLog ? '−' : '+'}</span>
           </button>
+
+          {extraHours.length > 0 ? (
+            <ul className="ticket-extra-hours-list">
+              {extraHours.map(item => {
+                const hours = (item.minutes / 60).toFixed(2).replace(/\.00$/, '')
+                const period = `${new Date(item.period_start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${new Date(item.period_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                return (
+                  <li key={item.id} className="ticket-extra-hours-item">
+                    <div className="ticket-extra-hours-item-main">
+                      <span className="tabular-nums">{hours}h</span>
+                      <span
+                        className="ticket-extra-hours-status"
+                        data-status={item.status}
+                      >
+                        {item.status === 'pending_approval' ? 'Awaiting client' : 'Approved'}
+                      </span>
+                    </div>
+                    <span className="dash-meta">{period}</span>
+                    {item.note ? <span className="dash-meta">{item.note}</span> : null}
+                  </li>
+                )
+              })}
+            </ul>
+          ) : null}
+
+          {pendingExtraCount > 0 ? (
+            <p className="ticket-detail-aside-note dash-meta">
+              {pendingExtraCount} request{pendingExtraCount === 1 ? '' : 's'} awaiting client approval.
+            </p>
+          ) : null}
 
           {showMoreLog ? (
             <form
@@ -269,26 +347,28 @@ export function TicketDetailSidebar({
                 startTransition(async () => {
                   const ok = await runWithToast(
                     () =>
-                      logHours(
+                      submitExtraHours(
                         ticketId,
                         retainerId,
                         Math.round(hours * 60),
                         (formData.get('note') as string) || undefined
                       ),
                     {
-                      loading: 'Logging time…',
-                      success: `${hours}h added to this ticket`,
+                      loading: 'Sending request…',
+                      success: `${hours}h sent to client for approval`,
                     }
                   )
                   if (ok !== null) {
                     e.currentTarget.reset()
+                    setShowMoreLog(false)
                     refresh()
                   }
                 })
               }}
             >
               <p className="dash-meta leading-relaxed">
-                After resolving, add more time or split across billing periods.
+                Request additional hours on this resolved ticket. The client must approve before
+                time is billed to the selected retainer period.
               </p>
               <select
                 name="retainer_id"
@@ -315,7 +395,7 @@ export function TicketDetailSidebar({
               />
               <input name="note" placeholder="Note (optional)" className="btf-input w-full text-sm" />
               <button type="submit" className="dash-btn-secondary w-full cursor-pointer justify-center">
-                Add time
+                Send to client
               </button>
             </form>
           ) : null}

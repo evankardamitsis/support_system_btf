@@ -32,7 +32,8 @@ export default async function AdminTicketDetailPage({
     .single()
   if (!ticket) notFound()
 
-  const [{ data: comments }, { data: retainers }, { data: hourLog }] = await Promise.all([
+  const [{ data: comments }, { data: retainers }, { data: hourLog }, { data: extraHoursRows }] =
+    await Promise.all([
     supabase
       .from('ticket_comments')
       .select('id, body, author_id, is_internal, created_at')
@@ -44,6 +45,13 @@ export default async function AdminTicketDetailPage({
       .eq('client_id', ticket.client_id)
       .order('period_start', { ascending: false }),
     supabase.from('hours_log').select('id').eq('ticket_id', id).limit(1).maybeSingle(),
+    supabase
+      .from('ticket_extra_hours')
+      .select(
+        'id, minutes, note, status, submitted_at, approved_at, retainers(period_start, period_end)'
+      )
+      .eq('ticket_id', id)
+      .order('submitted_at', { ascending: false }),
   ])
 
   const [activeRetainer, enrichedComments, staffForMentions] = await Promise.all([
@@ -61,6 +69,22 @@ export default async function AdminTicketDetailPage({
   const messageCount = enrichedComments.length
   const staffNames = staffForMentions.map(s => s.name)
   const closed = isTicketClosed(ticket.status as TicketStatus)
+  const extraHours = (extraHoursRows ?? []).map(row => {
+    const retainer = row.retainers as unknown as {
+      period_start: string
+      period_end: string
+    } | null
+    return {
+      id: row.id,
+      minutes: row.minutes,
+      note: row.note,
+      status: row.status as 'pending_approval' | 'approved',
+      submitted_at: row.submitted_at,
+      approved_at: row.approved_at,
+      period_start: retainer?.period_start ?? '',
+      period_end: retainer?.period_end ?? '',
+    }
+  })
 
   return (
     <div className="ticket-detail w-full">
@@ -82,12 +106,14 @@ export default async function AdminTicketDetailPage({
         description={ticket.description}
         estimateStatus={ticket.estimate_status ?? null}
         completionStatus={ticket.completion_status ?? null}
+        completionDisputeNote={ticket.completion_dispute_note ?? null}
         estimatedHours={estimatedHours}
         actualHours={actualHours}
         hoursLogged={hoursLogged}
         activeRetainer={activeRetainer}
         retainers={retainers ?? []}
         defaultRetainerId={activeRetainer?.id}
+        extraHours={extraHours}
         isAdmin={isAdmin}
       >
         <section className="ticket-detail-activity dash-panel">

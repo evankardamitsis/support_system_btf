@@ -6,6 +6,7 @@ export type Retainer = Database['public']['Tables']['retainers']['Row']
 export type Ticket = Database['public']['Tables']['tickets']['Row']
 export type TicketComment = Database['public']['Tables']['ticket_comments']['Row']
 export type HoursLog = Database['public']['Tables']['hours_log']['Row']
+export type TicketExtraHours = Database['public']['Tables']['ticket_extra_hours']['Row']
 export type InviteToken = Database['public']['Tables']['invite_tokens']['Row']
 
 export type TicketStatus = Ticket['status']

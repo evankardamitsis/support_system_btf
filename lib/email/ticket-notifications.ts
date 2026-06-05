@@ -403,6 +403,48 @@ export async function notifyStaffWorkApproved(input: {
   return { sent: true }
 }
 
+export async function notifyStaffWorkDisputed(input: {
+  ticketId: string
+  ticketTitle: string
+  concerns: string
+}): Promise<NotifyResult> {
+  const recipients = await getStaffNotificationEmails()
+  if (!recipients.length) {
+    return {
+      sent: false,
+      error: 'No admin or agent emails found — ensure staff users have signed up with email',
+    }
+  }
+
+  const url = `${appOrigin()}/admin/tickets/${input.ticketId}`
+  const ticketRef = formatTicketId(input.ticketId)
+  const preview =
+    input.concerns.length > 280
+      ? `${input.concerns.slice(0, 277).trim()}…`
+      : input.concerns
+
+  const sent = await sendEmail({
+    to: recipients,
+    subject: `Client disputed completed work — ${ticketRef}`,
+    html: emailShell(
+      'Client disputed completion',
+      `The client disputed completed work on <strong>${input.ticketTitle}</strong> (${ticketRef}). Address their concerns, continue the work, then submit for client check again.<br><br><em>“${preview.replace(/\n/g, '<br>')}”</em>`,
+      'Open ticket',
+      url
+    ),
+  })
+
+  if (!sent) {
+    return {
+      sent: false,
+      error:
+        'Work was disputed but the team notification email could not be sent. Check ZEPTOMAIL_API_KEY and EMAIL_FROM.',
+    }
+  }
+
+  return { sent: true }
+}
+
 export async function notifyStaffInternalMention(input: {
   ticketId: string
   ticketTitle: string
@@ -456,7 +498,85 @@ export async function notifyStaffInternalMention(input: {
   return { sent: true }
 }
 
-  
+export async function notifyClientExtraHoursPending(input: {
+  ticketId: string
+  ticketTitle: string
+  clientId: string
+  hours: number
+}): Promise<NotifyResult> {
+  const recipients = await getClientNotificationEmails(input.clientId)
+  if (!recipients.length) {
+    return {
+      sent: false,
+      error: 'No client email on file — add an email on the client record or invite a portal user',
+    }
+  }
+
+  const url = `${appOrigin()}/portal/tickets/${input.ticketId}`
+  const ticketRef = formatTicketId(input.ticketId)
+  const hours = formatHours(input.hours)
+
+  const sent = await sendEmail({
+    to: recipients,
+    subject: `Action required: approve extra hours — ${ticketRef}`,
+    html: emailShell(
+      'Approve extra hours',
+      `BTF has requested <strong>${hours}h</strong> of additional time on <strong>${input.ticketTitle}</strong> (${ticketRef}). Sign in to your support portal to review and approve before it is billed to your retainer.`,
+      'Open portal & review',
+      url
+    ),
+  })
+
+  if (!sent) {
+    return {
+      sent: false,
+      error:
+        'Extra hours are waiting on the client, but the notification email could not be sent. Check ZEPTOMAIL_API_KEY, ZEPTOMAIL_API_URL, and EMAIL_FROM.',
+    }
+  }
+
+  return { sent: true }
+}
+
+export async function notifyStaffExtraHoursApproved(input: {
+  ticketId: string
+  ticketTitle: string
+  hours: number
+}): Promise<NotifyResult> {
+  const recipients = await getStaffNotificationEmails()
+  if (!recipients.length) {
+    return {
+      sent: false,
+      error: 'No admin or agent emails found — ensure staff users have signed up with email',
+    }
+  }
+
+  const url = `${appOrigin()}/admin/tickets/${input.ticketId}`
+  const ticketRef = formatTicketId(input.ticketId)
+  const hours = formatHours(input.hours)
+
+  const sent = await sendEmail({
+    to: recipients,
+    subject: `Client approved extra hours — ${ticketRef}`,
+    html: emailShell(
+      'Client approved extra hours',
+      `The client approved <strong>${hours}h</strong> of additional time on <strong>${input.ticketTitle}</strong> (${ticketRef}). The hours have been billed to the selected retainer period.`,
+      'View ticket',
+      url
+    ),
+  })
+
+  if (!sent) {
+    return {
+      sent: false,
+      error:
+        'Extra hours were approved but the team notification email could not be sent. Check ZEPTOMAIL_API_KEY and EMAIL_FROM.',
+    }
+  }
+
+  return { sent: true }
+}
+
 export async function notifyStaffEstimateApproved(input: {
   ticketId: string
   ticketTitle: string
