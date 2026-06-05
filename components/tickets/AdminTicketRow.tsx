@@ -21,9 +21,8 @@ import { EditableStatusPill } from './EditableStatusPill'
 import { EditablePriorityPill } from './EditablePriorityPill'
 import { ResolveHoursModal } from './ResolveHoursModal'
 import type { TicketTableRow } from './TicketsTable'
-import { isTicketClosed } from '@/lib/tickets/closed'
+import { canEditTicketPriority, isTicketClosed } from '@/lib/tickets/closed'
 import { canResolveTicket } from '@/lib/tickets/completion'
-import { isEstimateLocked } from '@/lib/tickets/estimate'
 import { formatTicketPriority, formatTicketStatus, notifyError, runWithToast } from '@/lib/notify'
 import type { TicketPriority, TicketStatus } from '@/lib/types'
 
@@ -42,8 +41,8 @@ export function AdminTicketRow({
   const accent = priorityAccent[ticket.priority] ?? priorityAccent.normal
   const recent = isRecentlyUpdated(ticket.updated_at)
   const href = `${hrefPrefix}/${ticket.id}`
-  const estimateLocked = isEstimateLocked(ticket.estimate_status ?? null)
   const closed = isTicketClosed(ticket.status)
+  const priorityEditable = canEditTicketPriority(ticket.status)
   const statusRowClass =
     ticketRowStatusClass(ticket.status) +
     ticketRowAwaitingApprovalClass(ticket.estimate_status, ticket.completion_status)
@@ -53,7 +52,7 @@ export function AdminTicketRow({
   }
 
   function onPriorityChange(priority: TicketPriority) {
-    if (closed) return
+    if (!priorityEditable) return
     startTransition(async () => {
       const ok = await runWithToast(() => updateTicketPriority(ticket.id, priority), {
         success: `Priority set to ${formatTicketPriority(priority)}`,
@@ -116,15 +115,15 @@ export function AdminTicketRow({
 
         <div className="tickets-cell tickets-cell-priority tickets-cell--control" data-label="Priority">
           <div className="tickets-cell-value">
-            {closed ? (
-              <PriorityBadge priority={ticket.priority} />
-            ) : (
+            {priorityEditable ? (
               <EditablePriorityPill
                 value={ticket.priority}
                 onChange={onPriorityChange}
-                disabled={pending || estimateLocked}
+                disabled={pending}
                 ariaLabel={`Priority for ${ticket.title}`}
               />
+            ) : (
+              <PriorityBadge priority={ticket.priority} />
             )}
           </div>
         </div>

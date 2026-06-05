@@ -17,9 +17,17 @@ import {
   notifyStaffWorkApproved,
   notifyStaffWorkDisputed,
 } from '@/lib/email/ticket-notifications'
-import { isTicketClosed, TICKET_LOCKED_MESSAGE } from '@/lib/tickets/closed'
+import {
+  canEditTicketPriority,
+  isTicketClosed,
+  TICKET_LOCKED_MESSAGE,
+  TICKET_PRIORITY_LOCKED_MESSAGE,
+} from '@/lib/tickets/closed'
 import { isEstimateLocked } from '@/lib/tickets/estimate'
+import type { Database } from '@/lib/database.types'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
+
+type TicketUpdate = Database['public']['Tables']['tickets']['Update']
 
 export type DeleteTicketResult = { ok: true } | { ok: false; error: string }
 
@@ -50,6 +58,15 @@ async function assertTicketOpen(
   if (isTicketClosed(ticket.status)) {
     throw new Error(TICKET_LOCKED_MESSAGE)
   }
+}
+
+async function staffPatchTicket(ticketId: string, patch: TicketUpdate) {
+  const adminResult = tryCreateAdminClient()
+  if ('error' in adminResult) {
+    throw new Error(adminResult.error)
+  }
+  const { error } = await adminResult.client.from('tickets').update(patch).eq('id', ticketId)
+  if (error) throw new Error(error.message)
 }
 
 function revalidateTicketPaths(ticketId: string) {
@@ -137,15 +154,18 @@ export async function createPortalTicket(formData: FormData): Promise<string> {
 
 export async function updateTicketPriority(ticketId: string, priority: TicketPriority) {
   const { supabase } = await requireStaff()
-  await assertTicketOpen(supabase, ticketId)
+
   const { data: ticket } = await supabase
     .from('tickets')
-    .select('estimate_status')
+    .select('status')
     .eq('id', ticketId)
     .single()
-  if (isEstimateLocked(ticket?.estimate_status ?? null)) {
-    throw new Error('Priority is locked while the estimate is pending or approved')
+
+  if (!ticket) throw new Error('Ticket not found')
+  if (!canEditTicketPriority(ticket.status)) {
+    throw new Error(TICKET_PRIORITY_LOCKED_MESSAGE)
   }
+
   const { error } = await supabase.from('tickets').update({ priority }).eq('id', ticketId)
   if (error) throw new Error(error.message)
   revalidateTicketPaths(ticketId)
@@ -542,8 +562,7 @@ export async function updateTicketStatus(ticketId: string, status: TicketStatus)
   } else {
     patch.resolved_at = null
   }
-  const { error } = await supabase.from('tickets').update(patch).eq('id', ticketId)
-  if (error) throw new Error(error.message)
+  await staffPatchTicket(ticketId, patch)
 
   if (resolvedNotify) {
     const clientNotify = await notifyClientTicketResolved({
@@ -613,16 +632,11 @@ export async function resolveTicketWithHours(ticketId: string, actualHours: numb
     if (logErr) throw new Error(logErr.message)
   }
 
-  const { error: updateErr } = await supabase
-    .from('tickets')
-    .update({
-      status: 'resolved',
-      resolved_at: now,
-      actual_hours: Math.round(actualHours * 100) / 100,
-    })
-    .eq('id', ticketId)
-
-  if (updateErr) throw new Error(updateErr.message)
+  await staffPatchTicket(ticketId, {
+    status: 'resolved',
+    resolved_at: now,
+    actual_hours: Math.round(actualHours * 100) / 100,
+  })
 
   const roundedActual = Math.round(actualHours * 100) / 100
   const clientNotify = await notifyClientTicketResolved({

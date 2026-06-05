@@ -15,11 +15,10 @@ import { ResolveHoursModal } from './ResolveHoursModal'
 import { TicketDetailSidebar, type ExtraHoursItem } from './TicketDetailSidebar'
 import { DeleteTicketButton } from './DeleteTicketButton'
 import { formatDateTimeHuman, formatTicketId } from '@/lib/tickets/display'
-import { isTicketClosed } from '@/lib/tickets/closed'
+import { canEditTicketPriority, isTicketClosed } from '@/lib/tickets/closed'
 import type { CompletionStatus } from '@/lib/tickets/completion'
 import { canResolveTicket } from '@/lib/tickets/completion'
 import {
-  isEstimateLocked,
   type EstimateStatus,
 } from '@/lib/tickets/estimate'
 import { formatTicketPriority, formatTicketStatus, notifyError, runWithToast } from '@/lib/notify'
@@ -91,7 +90,7 @@ export function TicketDetailLayout({
   }
 
   const closed = isTicketClosed(status)
-  const priorityLocked = isEstimateLocked(estimateStatus)
+  const priorityEditable = canEditTicketPriority(status)
 
   function onStatusChange(next: TicketStatus) {
     if (closed) return
@@ -190,20 +189,24 @@ export function TicketDetailLayout({
               </div>
               <div className="ticket-detail-control">
                 <span className="ticket-detail-control-label">Priority</span>
-                <EditablePriorityPill
-                  value={priority}
-                  onChange={next =>
-                    startTransition(async () => {
-                      const ok = await runWithToast(() => updateTicketPriority(ticketId, next), {
-                        loading: 'Updating priority…',
-                        success: `Priority set to ${formatTicketPriority(next)}`,
+                {priorityEditable ? (
+                  <EditablePriorityPill
+                    value={priority}
+                    onChange={next =>
+                      startTransition(async () => {
+                        const ok = await runWithToast(() => updateTicketPriority(ticketId, next), {
+                          loading: 'Updating priority…',
+                          success: `Priority set to ${formatTicketPriority(next)}`,
+                        })
+                        if (ok !== null) refresh()
                       })
-                      if (ok !== null) refresh()
-                    })
-                  }
-                  disabled={pending || priorityLocked}
-                  ariaLabel="Change ticket priority"
-                />
+                    }
+                    disabled={pending}
+                    ariaLabel="Change ticket priority"
+                  />
+                ) : (
+                  <PriorityBadge priority={priority} />
+                )}
               </div>
             </div>
           )}
