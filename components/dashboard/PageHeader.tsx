@@ -15,7 +15,7 @@ export function PageHeader({
         <h1 className="dash-title">{title}</h1>
         {description ? <p className="dash-subtitle">{description}</p> : null}
       </div>
-      {action ? <div className="shrink-0">{action}</div> : null}
+      {action ? <div className="dash-page-header-action shrink-0">{action}</div> : null}
     </div>
   )
 }

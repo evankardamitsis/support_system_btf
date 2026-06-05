@@ -76,11 +76,11 @@ export function RetainersList({ retainers }: { retainers: RetainerListItem[] }) 
                 ) : null}
               </div>
 
-              <div className="retainers-cell">
+              <div className="retainers-cell" data-label="Package">
                 <PackageChip packageName={r.package_name} />
               </div>
 
-              <div className="retainers-cell">
+              <div className="retainers-cell" data-label="Period">
                 <p className="retainers-period tabular-nums">
                   {new Date(r.period_start).toLocaleDateString('en-GB', {
                     day: 'numeric',
@@ -95,26 +95,33 @@ export function RetainersList({ retainers }: { retainers: RetainerListItem[] }) 
                 </p>
               </div>
 
-              <div className="retainers-cell retainers-hours">
-                <span className="tabular-nums">{used.toFixed(1)}</span>
-                <span className="retainers-hours-sep">/</span>
-                <span className="tabular-nums">{total.toFixed(0)}h</span>
+              <div className="retainers-cell retainers-hours" data-label="Hours">
+                <div className="retainers-hours-value">
+                  <span className="tabular-nums">{used.toFixed(1)}</span>
+                  <span className="retainers-hours-sep">/</span>
+                  <span className="tabular-nums">{total.toFixed(0)}h</span>
+                </div>
               </div>
 
-              <div className="retainers-cell retainers-cell-cost tabular-nums">
+              <div
+                className="retainers-cell retainers-cell-cost tabular-nums"
+                data-label="Cost"
+              >
                 {formatPeriodCost(r.period_cost)}
               </div>
 
-              <div className="retainers-cell">
+              <div className="retainers-cell" data-label="Remaining">
                 <span className="retainers-remaining tabular-nums" data-tone={tone}>
                   {isOver ? '−' : ''}
                   {Math.abs(remaining).toFixed(1)}h
                 </span>
               </div>
 
-              <div className="retainers-cell retainers-cell-usage">
-                <UsageBar percent={pct} tone={tone} />
-                <span className="retainers-pct tabular-nums">{Math.round(pct)}%</span>
+              <div className="retainers-cell retainers-cell-usage" data-label="Usage">
+                <div className="retainers-usage-value">
+                  <UsageBar percent={pct} tone={tone} />
+                  <span className="retainers-pct tabular-nums">{Math.round(pct)}%</span>
+                </div>
               </div>
 
               <div className="retainers-cell retainers-cell-arrow" aria-hidden>

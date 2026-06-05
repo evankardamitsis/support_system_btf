@@ -90,15 +90,19 @@ export function TicketsTable({
               className={`${gridClass} tickets-row tickets-row--${t.priority}${needsApproval ? ' tickets-row--needs-approval' : ''}`}
               style={{ ['--row-accent' as string]: accent }}
             >
-              <div className="tickets-cell tickets-cell-status">
-                <StatusPill status={t.status} />
-                {needsApproval ? (
-                  <span className="tickets-approve-badge">Approve estimate</span>
-                ) : null}
+              <div className="tickets-cell tickets-cell-status" data-label="Status">
+                <div className="tickets-cell-value tickets-cell-value--stack">
+                  <StatusPill status={t.status} />
+                  {needsApproval ? (
+                    <span className="tickets-approve-badge">Approve estimate</span>
+                  ) : null}
+                </div>
               </div>
 
-              <div className="tickets-cell tickets-cell-priority">
-                <PriorityBadge priority={t.priority} />
+              <div className="tickets-cell tickets-cell-priority" data-label="Priority">
+                <div className="tickets-cell-value">
+                  <PriorityBadge priority={t.priority} />
+                </div>
               </div>
 
               <div className="tickets-cell tickets-cell-subject min-w-0">
@@ -112,23 +116,25 @@ export function TicketsTable({
                 </span>
               </div>
 
-              <div className="tickets-cell tickets-cell-updated">
-                {t.resolved_at && (t.status === 'resolved' || t.status === 'closed') ? (
-                  <time
-                    dateTime={t.resolved_at}
-                    className="tickets-updated tickets-resolved-at"
-                    title={formatDateTimeHuman(t.resolved_at)}
-                  >
-                    {formatResolvedAtTable(t.resolved_at)}
-                  </time>
-                ) : (
-                  <time
-                    dateTime={t.updated_at}
-                    className={recent ? 'tickets-updated-recent' : 'tickets-updated'}
-                  >
-                    {formatRelativeTime(t.updated_at)}
-                  </time>
-                )}
+              <div className="tickets-cell tickets-cell-updated" data-label="Updated">
+                <div className="tickets-cell-value">
+                  {t.resolved_at && (t.status === 'resolved' || t.status === 'closed') ? (
+                    <time
+                      dateTime={t.resolved_at}
+                      className="tickets-updated tickets-resolved-at"
+                      title={formatDateTimeHuman(t.resolved_at)}
+                    >
+                      {formatResolvedAtTable(t.resolved_at)}
+                    </time>
+                  ) : (
+                    <time
+                      dateTime={t.updated_at}
+                      className={recent ? 'tickets-updated-recent' : 'tickets-updated'}
+                    >
+                      {formatRelativeTime(t.updated_at)}
+                    </time>
+                  )}
+                </div>
               </div>
 
               <div className="tickets-cell tickets-cell-action" aria-hidden>

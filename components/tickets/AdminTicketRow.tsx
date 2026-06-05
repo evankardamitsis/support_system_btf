@@ -79,25 +79,29 @@ export function AdminTicketRow({
         style={{ ['--row-accent' as string]: accent }}
         data-pending={pending ? 'true' : undefined}
       >
-        <div className="tickets-cell tickets-cell-status tickets-cell--control">
-          <EditableStatusPill
-            value={ticket.status}
-            onChange={onStatusChange}
-            disabled={pending}
-            ariaLabel={`Status for ${ticket.title}`}
-          />
-          {ticket.estimate_status === 'pending_approval' ? (
-            <span className="tickets-awaiting-approval-badge">Awaiting approval</span>
-          ) : null}
+        <div className="tickets-cell tickets-cell-status tickets-cell--control" data-label="Status">
+          <div className="tickets-cell-value tickets-cell-value--stack">
+            <EditableStatusPill
+              value={ticket.status}
+              onChange={onStatusChange}
+              disabled={pending}
+              ariaLabel={`Status for ${ticket.title}`}
+            />
+            {ticket.estimate_status === 'pending_approval' ? (
+              <span className="tickets-awaiting-approval-badge">Awaiting approval</span>
+            ) : null}
+          </div>
         </div>
 
-        <div className="tickets-cell tickets-cell-priority tickets-cell--control">
-          <EditablePriorityPill
-            value={ticket.priority}
-            onChange={onPriorityChange}
-            disabled={pending || estimateLocked}
-            ariaLabel={`Priority for ${ticket.title}`}
-          />
+        <div className="tickets-cell tickets-cell-priority tickets-cell--control" data-label="Priority">
+          <div className="tickets-cell-value">
+            <EditablePriorityPill
+              value={ticket.priority}
+              onChange={onPriorityChange}
+              disabled={pending || estimateLocked}
+              ariaLabel={`Priority for ${ticket.title}`}
+            />
+          </div>
         </div>
 
         <div className="tickets-cell tickets-cell-subject min-w-0">
@@ -121,37 +125,44 @@ export function AdminTicketRow({
           </Link>
         </div>
 
-        <div className="tickets-cell tickets-cell-client min-w-0">
-          <span className="tickets-client-name">{ticket.clientName ?? '—'}</span>
+        <div className="tickets-cell tickets-cell-client min-w-0" data-label="Client">
+          <div className="tickets-cell-value">
+            <span className="tickets-client-name">{ticket.clientName ?? '—'}</span>
+          </div>
         </div>
 
-        <div className="tickets-cell tickets-cell-hours">
-          {ticket.estimated_hours != null && ticket.estimated_hours > 0 ? (
-            <span className="tickets-hours-estimate tabular-nums">
-              {ticket.estimated_hours.toFixed(1)}h
-            </span>
-          ) : (
-            <span className="tickets-hours-muted">—</span>
-          )}
+        <div className="tickets-cell tickets-cell-hours" data-label="Est">
+          <div className="tickets-cell-value">
+            {ticket.estimated_hours != null && ticket.estimated_hours > 0 ? (
+              <span className="tickets-hours-estimate tabular-nums">
+                {ticket.estimated_hours.toFixed(1)}h
+              </span>
+            ) : (
+              <span className="tickets-hours-muted">—</span>
+            )}
+          </div>
         </div>
 
-        <div className="tickets-cell tickets-cell-hours">
-          {ticket.actual_hours != null && ticket.actual_hours > 0 ? (
-            <span className="tickets-hours-actual tabular-nums">{ticket.actual_hours.toFixed(1)}h</span>
-          ) : ticket.status === 'resolved' || ticket.status === 'closed' ? (
-            <button
-              type="button"
-              className="tickets-hours-log-btn"
-              onClick={() => setResolveOpen(true)}
-            >
-              Log hrs
-            </button>
-          ) : (
-            <span className="tickets-hours-muted">—</span>
-          )}
+        <div className="tickets-cell tickets-cell-hours" data-label="Actual">
+          <div className="tickets-cell-value">
+            {ticket.actual_hours != null && ticket.actual_hours > 0 ? (
+              <span className="tickets-hours-actual tabular-nums">{ticket.actual_hours.toFixed(1)}h</span>
+            ) : ticket.status === 'resolved' || ticket.status === 'closed' ? (
+              <button
+                type="button"
+                className="tickets-hours-log-btn"
+                onClick={() => setResolveOpen(true)}
+              >
+                Log hrs
+              </button>
+            ) : (
+              <span className="tickets-hours-muted">—</span>
+            )}
+          </div>
         </div>
 
-        <div className="tickets-cell tickets-cell-updated">
+        <div className="tickets-cell tickets-cell-updated" data-label="Updated">
+          <div className="tickets-cell-value">
           {ticket.resolved_at &&
           (ticket.status === 'resolved' || ticket.status === 'closed') ? (
             <time
@@ -169,6 +180,7 @@ export function AdminTicketRow({
               {formatRelativeTime(ticket.updated_at)}
             </time>
           )}
+          </div>
         </div>
 
         <div className="tickets-cell tickets-cell-action">
