@@ -7,6 +7,7 @@ import { SidebarBrand } from '@/components/dashboard/SidebarBrand'
 const nav = [
   { label: 'My Tickets', href: '/portal/tickets', onboarding: 'nav-tickets' },
   { label: 'My Plan', href: '/portal/retainer', onboarding: 'nav-plan' },
+  { label: 'Team', href: '/portal/team', onboarding: 'nav-team' },
 ]
 
 function initials(name?: string, email?: string) {

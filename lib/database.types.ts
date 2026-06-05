@@ -327,6 +327,42 @@ export interface Database {
         }
         Relationships: []
       }
+      client_invite_tokens: {
+        Row: {
+          id: string
+          client_id: string
+          email: string
+          full_name: string
+          token: string
+          used: boolean
+          expires_at: string
+          invited_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          email: string
+          full_name: string
+          token?: string
+          used?: boolean
+          expires_at?: string
+          invited_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          email?: string
+          full_name?: string
+          token?: string
+          used?: boolean
+          expires_at?: string
+          invited_by?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       staff_invite_tokens: {
         Row: {
           id: string

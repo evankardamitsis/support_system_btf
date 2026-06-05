@@ -88,33 +88,14 @@ export async function getClientNotificationEmails(clientId: string): Promise<str
   const adminResult = tryCreateAdminClient()
   if ('error' in adminResult) return []
 
-  const { client } = adminResult
-
-  const found = new Set<string>()
-
-  const { data: clientRow } = await client
+  const { data: clientRow } = await adminResult.client
     .from('clients')
     .select('email')
     .eq('id', clientId)
     .maybeSingle()
 
-  if (clientRow?.email?.trim()) {
-    found.add(clientRow.email.trim().toLowerCase())
-  }
-
-  const { data: profiles } = await client
-    .from('users')
-    .select('id')
-    .eq('client_id', clientId)
-    .eq('role', 'client')
-
-  for (const profile of profiles ?? []) {
-    const { data } = await client.auth.admin.getUserById(profile.id)
-    const email = data?.user?.email?.trim()
-    if (email) found.add(email.toLowerCase())
-  }
-
-  return [...found]
+  const email = clientRow?.email?.trim().toLowerCase()
+  return email ? [email] : []
 }
 
 export async function getStaffNotificationEmails(): Promise<string[]> {
