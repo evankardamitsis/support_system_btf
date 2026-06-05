@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { tryCreateAdminClient } from "@/lib/supabase/admin";
 import { requireClient } from "@/lib/auth/require-client";
 import {
-  clearIncompleteStaffSignup,
+  clearIncompleteClientTeamSignup,
   findAuthUserByEmail,
   getAuthEmailById,
 } from "@/lib/team/auth-users";
@@ -421,7 +421,11 @@ export async function revokeClientInvite(
     return { ok: false, error: deleteError.message };
   }
 
-  await clearIncompleteStaffSignup(adminResult.client, invite.email);
+  await clearIncompleteClientTeamSignup(
+    adminResult.client,
+    invite.email,
+    clientId,
+  );
 
   revalidatePath("/portal/team");
   return { ok: true };

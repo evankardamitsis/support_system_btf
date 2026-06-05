@@ -81,3 +81,46 @@ export async function clearIncompleteStaffSignup(
     // Best-effort cleanup so revoke still succeeds.
   }
 }
+
+/**
+ * Drop auth user (and cascaded public.users row) left over from an incomplete
+ * client team invite, so the email can be invited again.
+ */
+export async function clearIncompleteClientTeamSignup(
+  admin: SupabaseClient,
+  email: string,
+  clientId: string
+): Promise<void> {
+  const normalized = normalizeEmail(email)
+
+  const authUser = await findAuthUserByEmail(admin, normalized)
+  if (!authUser) return
+
+  const { data: profile } = await admin
+    .from('users')
+    .select('role, client_id')
+    .eq('id', authUser.id)
+    .maybeSingle()
+
+  if (profile?.role === 'admin' || profile?.role === 'agent') return
+
+  if (profile?.role === 'client' && profile.client_id && profile.client_id !== clientId) {
+    return
+  }
+
+  const { data: consumedInvite } = await admin
+    .from('client_invite_tokens')
+    .select('id')
+    .eq('email', normalized)
+    .eq('client_id', clientId)
+    .eq('used', true)
+    .maybeSingle()
+
+  if (consumedInvite) return
+
+  try {
+    await admin.auth.admin.deleteUser(authUser.id)
+  } catch {
+    // Best-effort cleanup so revoke still succeeds.
+  }
+}
