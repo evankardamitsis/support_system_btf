@@ -24,6 +24,7 @@ import {
   TICKET_PRIORITY_LOCKED_MESSAGE,
 } from '@/lib/tickets/closed'
 import { isEstimateLocked } from '@/lib/tickets/estimate'
+import { billApprovedExtraHoursForTicket } from '@/lib/tickets/extra-hours-billing'
 import type { Database } from '@/lib/database.types'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
@@ -715,6 +716,8 @@ export async function resolveTicketOffline(ticketId: string, actualHours: number
     })
     if (logErr) throw new Error(logErr.message)
   }
+
+  await billApprovedExtraHoursForTicket(admin, ticketId)
 
   const { error: clearExtraErr } = await admin
     .from('ticket_extra_hours')

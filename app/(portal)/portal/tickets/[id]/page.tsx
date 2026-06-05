@@ -9,7 +9,8 @@ import { EstimateApprovalModal } from '@/components/tickets/EstimateApprovalModa
 import { WorkApprovalModal } from '@/components/tickets/WorkApprovalModal'
 import { ExtraHoursApprovalModal } from '@/components/tickets/ExtraHoursApprovalModal'
 import { TicketCommentForm } from '@/components/tickets/TicketCommentForm'
-import { formatDateTimeHuman } from '@/lib/tickets/display'
+import { PortalTicketHoursSummary } from '@/components/portal/PortalTicketHoursSummary'
+import { formatDateTimeHuman, formatHoursShort } from '@/lib/tickets/display'
 import { isTicketClosed } from '@/lib/tickets/closed'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
@@ -43,11 +44,13 @@ export default async function PortalTicketDetailPage({
 
   const estimatedHours =
     ticket.estimated_hours != null ? Number(ticket.estimated_hours) : null
+  const actualHours = ticket.actual_hours != null ? Number(ticket.actual_hours) : null
   const pendingEstimateApproval = ticket.estimate_status === 'pending_approval'
   const pendingWorkApproval = ticket.completion_status === 'pending_approval'
   const closed = isTicketClosed(ticket.status as TicketStatus)
 
-  const [{ data: comments }, { data: pendingExtraHours }] = await Promise.all([
+  const [{ data: comments }, { data: pendingExtraHours }, { data: approvedExtraHours }] =
+    await Promise.all([
     supabase
     .from('ticket_comments')
     .select('id, body, author_id, is_internal, created_at')
@@ -60,9 +63,18 @@ export default async function PortalTicketDetailPage({
       .eq('ticket_id', id)
       .eq('status', 'pending_approval')
       .order('submitted_at', { ascending: true }),
+    supabase
+      .from('ticket_extra_hours')
+      .select('minutes')
+      .eq('ticket_id', id)
+      .eq('status', 'approved'),
   ])
 
   const enrichedComments = await enrichCommentsWithAuthors(supabase, comments ?? [])
+  const approvedExtraMinutes = (approvedExtraHours ?? []).reduce(
+    (sum, row) => sum + row.minutes,
+    0
+  )
 
   return (
     <div className="space-y-6">
@@ -108,6 +120,13 @@ export default async function PortalTicketDetailPage({
                 {ticket.title}
               </h1>
             </div>
+            <PortalTicketHoursSummary
+              variant="hero"
+              closed={closed}
+              estimatedHours={estimatedHours}
+              actualHours={actualHours}
+              approvedExtraMinutes={approvedExtraMinutes}
+            />
             {ticket.description && (
               <div
                 className="px-5 py-4"
@@ -154,11 +173,18 @@ export default async function PortalTicketDetailPage({
             <h3 className="dash-section-title">Details</h3>
           </div>
           <div className="px-4 py-4 flex flex-col gap-3">
+            <PortalTicketHoursSummary
+              variant="aside"
+              closed={closed}
+              estimatedHours={estimatedHours}
+              actualHours={actualHours}
+              approvedExtraMinutes={approvedExtraMinutes}
+            />
             {[
               { label: 'Type', value: ticket.type },
               { label: 'Priority', value: ticket.priority },
-              ...(estimatedHours != null
-                ? [{ label: 'Estimate', value: `${estimatedHours.toFixed(2).replace(/\.00$/, '')}h` }]
+              ...(!closed && estimatedHours != null
+                ? [{ label: 'Estimate', value: formatHoursShort(estimatedHours) }]
                 : []),
               { label: 'Opened', value: new Date(ticket.created_at).toLocaleDateString('en-GB') },
               { label: 'Updated', value: relativeTime(ticket.updated_at) },

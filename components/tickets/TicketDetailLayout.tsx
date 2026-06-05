@@ -98,11 +98,14 @@ export function TicketDetailLayout({
     if (closed) return
     if (isExtraHoursWorkActive(status, extraHoursActiveAt) && next === 'resolved') {
       startTransition(async () => {
-        const ok = await runWithToast(() => completeExtraHoursWork(ticketId), {
+        const result = await runWithToast(() => completeExtraHoursWork(ticketId), {
           loading: 'Updating ticket…',
-          success: 'Extra work completed — ticket resolved',
+          success: data =>
+            data.billedHours > 0
+              ? `Resolved — ${data.billedHours}h extra billed to retainer`
+              : 'Extra work completed — ticket resolved',
         })
-        if (ok !== null) refresh()
+        if (result !== null) refresh()
       })
       return
     }

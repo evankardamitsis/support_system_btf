@@ -249,7 +249,11 @@ export function TicketDetailSidebar({
         ) : showCompleteExtraWork ? (
           <div className="ticket-detail-resolve-actions mt-4 flex flex-col gap-2">
             <p className="ticket-detail-aside-note dash-meta">
-              Extra hours approved — complete the additional work, then mark the ticket resolved.
+              Extra hours approved — complete the additional work, then mark resolved to bill{' '}
+              {approvedExtraMinutes > 0
+                ? `${(approvedExtraMinutes / 60).toFixed(1)}h`
+                : 'the approved time'}{' '}
+              to the retainer.
             </p>
             <button
               type="button"
@@ -257,11 +261,14 @@ export function TicketDetailSidebar({
               disabled={pending}
               onClick={() =>
                 startTransition(async () => {
-                  const ok = await runWithToast(() => completeExtraHoursWork(ticketId), {
+                  const result = await runWithToast(() => completeExtraHoursWork(ticketId), {
                     loading: 'Updating ticket…',
-                    success: 'Extra work completed — ticket resolved',
+                    success: data =>
+                      data.billedHours > 0
+                        ? `Resolved — ${data.billedHours}h extra billed to retainer`
+                        : 'Extra work completed — ticket resolved',
                   })
-                  if (ok !== null) refresh()
+                  if (result !== null) refresh()
                 })
               }
             >
@@ -401,24 +408,21 @@ export function TicketDetailSidebar({
               className="ticket-detail-more-form"
               onSubmit={e => {
                 e.preventDefault()
-                const formData = new FormData(e.currentTarget)
+                const form = e.currentTarget
+                const formData = new FormData(form)
                 const hours = parseFloat(formData.get('hours') as string)
+                const note = (formData.get('note') as string) || undefined
                 if (!hours) return
                 startTransition(async () => {
                   const ok = await runWithToast(
-                    () =>
-                      submitExtraHours(
-                        ticketId,
-                        Math.round(hours * 60),
-                        (formData.get('note') as string) || undefined
-                      ),
+                    () => submitExtraHours(ticketId, Math.round(hours * 60), note),
                     {
                       loading: 'Sending request…',
                       success: `${hours}h sent to client for approval`,
                     }
                   )
                   if (ok !== null) {
-                    e.currentTarget.reset()
+                    form.reset()
                     setShowMoreLog(false)
                     refresh()
                   }

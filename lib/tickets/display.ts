@@ -4,6 +4,10 @@ export function formatTicketId(id: string) {
   return `TKT-${id.substring(0, 4).toUpperCase()}`
 }
 
+export function formatHoursShort(hours: number): string {
+  return `${hours.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')}h`
+}
+
 export function formatDateTimeHuman(dateStr: string): string {
   return new Date(dateStr).toLocaleString('en-GB', {
     day: 'numeric',

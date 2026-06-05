@@ -18,12 +18,18 @@ export function dismissToast(id: string | number) {
 
 export async function runWithToast<T>(
   action: () => Promise<T>,
-  messages: { loading?: string; success: string; error?: string }
+  messages: {
+    loading?: string
+    success: string | ((result: T) => string)
+    error?: string
+  }
 ): Promise<T | null> {
   const id = toast.loading(messages.loading ?? 'Working…')
   try {
     const result = await action()
-    toast.success(messages.success, { id })
+    const successMessage =
+      typeof messages.success === 'function' ? messages.success(result) : messages.success
+    toast.success(successMessage, { id })
     return result
   } catch (err) {
     const message =

@@ -12,6 +12,7 @@ import {
 import { getRetainerForClient } from '@/lib/retainers/active'
 import { assertClientCanUseRetainer } from '@/lib/retainers/guards'
 import { isTicketClosed } from '@/lib/tickets/closed'
+import { billApprovedExtraHoursForTicket } from '@/lib/tickets/extra-hours-billing'
 import { canCompleteExtraHoursWork, canRequestExtraHours } from '@/lib/tickets/extra-hours'
 
 async function requireStaff() {
@@ -96,6 +97,7 @@ export async function submitExtraHours(ticketId: string, minutes: number, note?:
   }
 
   revalidateExtraHoursPaths(ticketId)
+  return { ok: true as const }
 }
 
 export async function approveExtraHours(extraHoursId: string) {
@@ -147,28 +149,12 @@ export async function approveExtraHours(extraHoursId: string) {
   }
   const admin = adminResult.client
 
-  const { data: hoursLog, error: logErr } = await admin
-    .from('hours_log')
-    .insert({
-      ticket_id: request.ticket_id,
-      retainer_id: request.retainer_id,
-      agent_id: request.agent_id,
-      minutes: request.minutes,
-      note: request.note ?? 'Extra hours (client approved)',
-      is_extra: true,
-    })
-    .select('id')
-    .single()
-
-  if (logErr || !hoursLog) throw new Error(logErr?.message ?? 'Could not record extra hours')
-
   const now = new Date().toISOString()
   const { error: updateErr } = await admin
     .from('ticket_extra_hours')
     .update({
       status: 'approved',
       approved_at: now,
-      hours_log_id: hoursLog.id,
     })
     .eq('id', extraHoursId)
     .eq('status', 'pending_approval')
@@ -216,9 +202,12 @@ export async function completeExtraHoursWork(ticketId: string) {
   if ('error' in adminResult) {
     throw new Error(adminResult.error)
   }
+  const admin = adminResult.client
+
+  const { billedMinutes } = await billApprovedExtraHoursForTicket(admin, ticketId)
 
   const now = new Date().toISOString()
-  const { error } = await adminResult.client
+  const { error } = await admin
     .from('tickets')
     .update({
       status: 'resolved',
@@ -232,4 +221,9 @@ export async function completeExtraHoursWork(ticketId: string) {
   if (error) throw new Error(error.message)
 
   revalidateExtraHoursPaths(ticketId)
+
+  return {
+    ok: true as const,
+    billedHours: Math.round((billedMinutes / 60) * 100) / 100,
+  }
 }
