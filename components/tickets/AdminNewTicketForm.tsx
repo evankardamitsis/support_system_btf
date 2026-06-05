@@ -6,11 +6,15 @@ import { createTicket } from '@/app/actions/tickets'
 import { DashCancel } from '@/components/dashboard/DashCancel'
 import { runWithToast } from '@/lib/notify'
 
+import type { AssigneeOption } from './EditableAssigneeSelect'
+
 export function AdminNewTicketForm({
   clients,
+  staff = [],
   defaultClientId,
 }: {
   clients: Array<{ id: string; name: string }>
+  staff?: AssigneeOption[]
   defaultClientId?: string
 }) {
   const router = useRouter()
@@ -63,6 +67,20 @@ export function AdminNewTicketForm({
           disabled={pending}
         />
       </div>
+      {staff.length > 0 ? (
+        <div>
+          <label className="dash-label">Assign to</label>
+          <select name="assigned_to" className="dash-select w-full text-sm" defaultValue="" disabled={pending}>
+            <option value="">Unassigned</option>
+            {staff.map(member => (
+              <option key={member.id} value={member.id}>
+                {member.name}
+              </option>
+            ))}
+          </select>
+          <p className="dash-meta mt-1">Teammate is notified by email when assigned.</p>
+        </div>
+      ) : null}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="dash-label">Type</label>

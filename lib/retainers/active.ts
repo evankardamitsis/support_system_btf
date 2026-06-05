@@ -9,6 +9,7 @@ type RetainerRow = {
   hours_used: number
   package_name?: string
   period_cost?: number
+  hours_limited?: boolean
 }
 
 type Db = SupabaseClient<Database>
@@ -42,7 +43,7 @@ async function fetchByDateRangeWithPackage(
   const today = new Date().toISOString().slice(0, 10)
   let query = supabase
     .from('retainers')
-    .select('id, period_start, period_end, hours_total, hours_used, package_name')
+    .select('id, period_start, period_end, hours_total, hours_used, package_name, hours_limited')
     .eq('client_id', clientId)
     .order('period_start', { ascending: false })
     .limit(1)
@@ -63,7 +64,7 @@ async function fetchByDateRangeAdmin(
   const today = new Date().toISOString().slice(0, 10)
   let query = supabase
     .from('retainers')
-    .select('id, period_start, period_end, hours_total, hours_used, package_name, period_cost')
+    .select('id, period_start, period_end, hours_total, hours_used, package_name, period_cost, hours_limited')
     .eq('client_id', clientId)
     .order('period_start', { ascending: false })
     .limit(1)

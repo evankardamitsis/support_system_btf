@@ -4,7 +4,7 @@ import {
   billingPeriodContainingDate,
   renewalDateFromPeriodEnd,
 } from '@/lib/retainers/period'
-import type { RetainerPackage } from '@/lib/retainers/packages'
+import { parseRetainerPackage, type RetainerPackage } from '@/lib/retainers/packages'
 
 export type AutoRenewResult = {
   renewed: number
@@ -94,12 +94,12 @@ export async function processAutoRenewals(): Promise<AutoRenewResult> {
         nextStart
       )
 
-      const packageName: RetainerPackage = last.package_name === 'grow' ? 'grow' : 'care'
+      const packageName: RetainerPackage = parseRetainerPackage(last.package_name)
 
       await insertRetainerPeriod(supabase, {
         clientId: client.id,
         packageName,
-        hoursTotal: Number(last.hours_total),
+        hoursTotal: packageName === 'fixed' ? 0 : Number(last.hours_total),
         periodCost: Number(last.period_cost ?? 0),
         periodStart: period_start,
         periodEnd: period_end,

@@ -5,11 +5,12 @@ import { createClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/auth/require-admin'
 import { insertRetainerPeriod } from '@/lib/retainers/insert-period'
 import { currentBillingPeriod } from '@/lib/retainers/period'
-import type { RetainerPackage } from '@/lib/retainers/packages'
+import { isHoursBasedPackage } from '@/lib/retainers/billing-model'
+import { parseRetainerPackage, type RetainerPackage } from '@/lib/retainers/packages'
 import type { RetainerLifecycleStatus } from '@/lib/retainers/status'
 
 function parsePackage(raw: string | null): RetainerPackage {
-  return raw === 'grow' ? 'grow' : 'care'
+  return parseRetainerPackage(raw)
 }
 
 function revalidateClientRetainerPaths(clientId: string) {
@@ -58,15 +59,19 @@ export async function createRetainerPeriod(formData: FormData): Promise<string> 
 
   const clientId = formData.get('client_id') as string
   const packageName = parsePackage(formData.get('package_name') as string)
-  const hoursTotal = parseFloat(formData.get('hours_total') as string)
+  const hoursLimited = isHoursBasedPackage(packageName)
+  const hoursTotal = hoursLimited ? parseFloat(formData.get('hours_total') as string) : 0
   const periodCost = parseFloat(formData.get('period_cost') as string)
   const billingDay = parseInt(formData.get('billing_cycle_day') as string, 10) || 1
 
-  if (!clientId || !hoursTotal || hoursTotal <= 0 || Number.isNaN(hoursTotal)) {
+  if (!clientId) {
+    throw new Error('Client is required')
+  }
+  if (hoursLimited && (!hoursTotal || hoursTotal <= 0 || Number.isNaN(hoursTotal))) {
     throw new Error('Monthly hours are required')
   }
-  if (Number.isNaN(periodCost) || periodCost < 0) {
-    throw new Error('Contract value must be zero or greater')
+  if (Number.isNaN(periodCost) || periodCost <= 0) {
+    throw new Error('Period cost is required')
   }
 
   const { data: client } = await supabase

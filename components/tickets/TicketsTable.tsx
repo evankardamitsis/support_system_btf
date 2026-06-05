@@ -26,6 +26,8 @@ export type TicketTableRow = {
   actual_hours?: number | null
   estimate_status?: 'pending_approval' | 'approved' | null
   completion_status?: 'pending_approval' | 'approved' | null
+  hoursBilling?: boolean
+  assigneeName?: string | null
 }
 
 export function TicketsTable({
@@ -75,6 +77,7 @@ export function TicketsTable({
                 ticket={t}
                 hrefPrefix={hrefPrefix}
                 hoursLogged={hoursLoggedByTicketId[t.id] ?? (t.actual_hours != null && t.actual_hours > 0)}
+                hoursBilling={t.hoursBilling ?? true}
               />
             )
           }
@@ -162,6 +165,7 @@ function HeaderCells({ variant }: { variant: 'admin' | 'portal' }) {
       {variant === 'admin' ? (
         <>
           <span>Client</span>
+          <span>Assigned</span>
           <span>Est</span>
           <span>Actual</span>
         </>

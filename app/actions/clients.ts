@@ -6,19 +6,20 @@ import { tryCreateAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth/require-admin'
 import { insertRetainerPeriod } from '@/lib/retainers/insert-period'
 import { currentBillingPeriod } from '@/lib/retainers/period'
-import type { RetainerPackage } from '@/lib/retainers/packages'
+import { isHoursBasedPackage, packageLabel } from '@/lib/retainers/billing-model'
+import { parseRetainerPackage, type RetainerPackage } from '@/lib/retainers/packages'
 
 export type DeleteClientResult = { ok: true } | { ok: false; error: string }
 
 function parsePackage(raw: string | null): RetainerPackage {
-  return raw === 'grow' ? 'grow' : 'care'
+  return parseRetainerPackage(raw)
 }
 
 export async function createClientAction(formData: FormData): Promise<string> {
   const supabase = await createClient()
 
   const packageName = parsePackage(formData.get('package_name') as string)
-  const packageLabel = packageName === 'grow' ? 'Grow' : 'Care'
+  const planLabel = packageLabel(packageName)
   const billingCycleDay = parseInt(formData.get('billing_cycle_day') as string, 10) || 1
 
   const { data: client, error } = await supabase
@@ -27,7 +28,7 @@ export async function createClientAction(formData: FormData): Promise<string> {
       name: formData.get('name') as string,
       email: formData.get('email') as string,
       contact_name: (formData.get('contact_name') as string) || null,
-      plan_name: packageLabel,
+      plan_name: planLabel,
       billing_cycle_day: billingCycleDay,
       sla_response_hours: parseInt(formData.get('sla_response_hours') as string, 10) || 8,
     })
@@ -40,7 +41,12 @@ export async function createClientAction(formData: FormData): Promise<string> {
   const periodCost = parseFloat(formData.get('period_cost') as string)
   const useCustomDates = formData.get('use_custom_dates') === 'true'
 
-  if (hoursTotal && hoursTotal > 0) {
+  const hoursLimited = isHoursBasedPackage(packageName)
+  const shouldCreatePeriod =
+    (hoursLimited && hoursTotal && hoursTotal > 0) ||
+    (!hoursLimited && periodCost && periodCost > 0)
+
+  if (shouldCreatePeriod) {
     const { period_start, period_end } = useCustomDates
       ? {
           period_start: formData.get('period_start') as string,
@@ -52,7 +58,7 @@ export async function createClientAction(formData: FormData): Promise<string> {
       await insertRetainerPeriod(supabase, {
         clientId: client.id,
         packageName,
-        hoursTotal,
+        hoursTotal: hoursLimited ? hoursTotal : 0,
         periodCost: Number.isNaN(periodCost) ? 0 : periodCost,
         periodStart: period_start,
         periodEnd: period_end,

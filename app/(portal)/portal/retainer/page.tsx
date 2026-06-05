@@ -11,6 +11,7 @@ import {
   canUseRetainerHours,
   retainerStatusMessage,
 } from '@/lib/retainers/status'
+import { retainerTracksHours } from '@/lib/retainers/billing-model'
 
 export default async function RetainerPage() {
   const { supabase, clientId } = await requirePortalClient()
@@ -21,6 +22,7 @@ export default async function RetainerPage() {
   ])
 
   const lifecycleBlocked = !canUseRetainerHours(retainerStatus)
+  const hoursBilling = retainerTracksHours(retainer)
 
   const hoursUsed = retainer ? Number(retainer.hours_used) : 0
   const hoursTotal = retainer ? Number(retainer.hours_total) : 0
@@ -37,7 +39,9 @@ export default async function RetainerPage() {
         description={
           retainer
             ? `Current period · ${new Date(retainer.period_start).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })} – ${new Date(retainer.period_end).toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' })}`
-            : 'Your support plan and included hours'
+            : hoursBilling
+              ? 'Your support plan and included hours'
+              : 'Your support plan'
         }
       />
 
@@ -56,44 +60,61 @@ export default async function RetainerPage() {
             <PackageChip packageName={retainer.package_name} />
           </div>
 
-          <MetricStrip
-            foldLabel="Hours"
-            items={[
-              { label: 'Used', value: `${hoursUsed.toFixed(1)}h` },
-              {
-                label: 'Remaining',
-                value: `${isOver ? '−' : ''}${Math.abs(hoursLeft).toFixed(1)}h`,
-                accent: isOver ? '#f87171' : isDanger ? '#fb923c' : '#4ade80',
-                emphasis: isDanger || isOver,
-              },
-              { label: 'Total', value: `${hoursTotal.toFixed(0)}h` },
-            ]}
-          />
+          {hoursBilling ? (
+            <>
+              <MetricStrip
+                foldLabel="Hours"
+                items={[
+                  { label: 'Used', value: `${hoursUsed.toFixed(1)}h` },
+                  {
+                    label: 'Remaining',
+                    value: `${isOver ? '−' : ''}${Math.abs(hoursLeft).toFixed(1)}h`,
+                    accent: isOver ? '#f87171' : isDanger ? '#fb923c' : '#4ade80',
+                    emphasis: isDanger || isOver,
+                  },
+                  { label: 'Total', value: `${hoursTotal.toFixed(0)}h` },
+                ]}
+              />
 
-          <section className="retainer-panel anim-fade-up anim-fade-up-3" data-alert={isDanger ? 'true' : undefined}>
-            <div className="retainer-panel-head">
-              <div>
-                <p className="retainer-panel-title">Usage this period</p>
-                {isDanger ? (
-                  <StatusFlag
-                    label={isOver ? 'Over capacity' : 'Running low'}
-                    tone={isOver ? 'danger' : 'warn'}
-                  />
-                ) : null}
+              <section
+                className="retainer-panel anim-fade-up anim-fade-up-3"
+                data-alert={isDanger ? 'true' : undefined}
+              >
+                <div className="retainer-panel-head">
+                  <div>
+                    <p className="retainer-panel-title">Usage this period</p>
+                    {isDanger ? (
+                      <StatusFlag
+                        label={isOver ? 'Over capacity' : 'Running low'}
+                        tone={isOver ? 'danger' : 'warn'}
+                      />
+                    ) : null}
+                  </div>
+                  <span className="retainer-panel-period tabular-nums">{Math.round(pct)}% used</span>
+                </div>
+
+                <UsageBar percent={pct} tone={tone} height={10} />
+
+                <p className="dash-meta leading-relaxed mt-4">
+                  {isOver
+                    ? 'You have used all included hours for this period — your team will be in touch.'
+                    : isDanger
+                      ? 'Running low on hours — consider planning ahead for new work.'
+                      : 'Plenty of hours remaining in this period.'}
+                </p>
+              </section>
+            </>
+          ) : (
+            <section className="retainer-panel anim-fade-up anim-fade-up-3">
+              <div className="retainer-panel-head">
+                <p className="retainer-panel-title">Fixed monthly plan</p>
               </div>
-              <span className="retainer-panel-period tabular-nums">{Math.round(pct)}% used</span>
-            </div>
-
-            <UsageBar percent={pct} tone={tone} height={10} />
-
-            <p className="dash-meta leading-relaxed mt-4">
-              {isOver
-                ? 'You have used all included hours for this period — your team will be in touch.'
-                : isDanger
-                  ? 'Running low on hours — consider planning ahead for new work.'
-                  : 'Plenty of hours remaining in this period.'}
-            </p>
-          </section>
+              <p className="dash-meta leading-relaxed">
+                Unlimited support requests for this billing period — no hour tracking. Submit tickets
+                anytime and your team will handle them.
+              </p>
+            </section>
+          )}
         </div>
       ) : (
         <div className="retainer-panel dash-empty">

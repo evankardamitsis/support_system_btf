@@ -11,6 +11,7 @@ interface PortalShellProps {
   userName?: string
   userEmail?: string
   onboardingCompleted: boolean
+  hoursBilling?: boolean
 }
 
 export function PortalDashboardShell({
@@ -18,6 +19,7 @@ export function PortalDashboardShell({
   userName,
   userEmail,
   onboardingCompleted,
+  hoursBilling = true,
 }: PortalShellProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -68,7 +70,11 @@ export function PortalDashboardShell({
         </main>
       </div>
 
-      <PortalOnboarding onboardingCompleted={onboardingCompleted} runId={tourRunId} />
+      <PortalOnboarding
+        onboardingCompleted={onboardingCompleted}
+        runId={tourRunId}
+        hoursBilling={hoursBilling}
+      />
     </div>
   )
 }

@@ -7,7 +7,14 @@ export function PackageChip({
   packageName: string | null | undefined
   className?: string
 }) {
-  const pkg = packageName === 'grow' ? 'grow' : packageName === 'care' ? 'care' : null
+  const pkg =
+    packageName === 'grow'
+      ? 'grow'
+      : packageName === 'care'
+        ? 'care'
+        : packageName === 'fixed'
+          ? 'fixed'
+          : null
   const label = formatPackageName(packageName)
 
   return (

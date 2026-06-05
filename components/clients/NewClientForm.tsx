@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/dashboard/PageHeader'
 import { FormPanel } from '@/components/dashboard/FormPanel'
 import { DashCancel } from '@/components/dashboard/DashCancel'
 import { PACKAGE_LABELS, RETAINER_PACKAGES, type RetainerPackage } from '@/lib/retainers/packages'
+import { isHoursBasedPackage } from '@/lib/retainers/billing-model'
 import { runWithToast } from '@/lib/notify'
 
 export function NewClientForm() {
@@ -48,7 +49,7 @@ export function NewClientForm() {
 
       <PageHeader
         title="New client"
-        description="Add a client with a Care or Grow retainer — hours and contract value are per client."
+        description="Add a client with a Care, Grow, or Fixed retainer — hours and contract value are per client."
       />
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -118,7 +119,7 @@ export function NewClientForm() {
           </div>
         </FormPanel>
 
-        <FormPanel title="Retainer (Care / Grow)">
+        <FormPanel title="Retainer">
           <div className="flex flex-col gap-4">
             <div>
               <p className="dash-label">Package</p>
@@ -138,22 +139,26 @@ export function NewClientForm() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="dash-label">
-                  Monthly hours <span className="dash-label-required">*</span>
-                </label>
-                <input
-                  name="hours_total"
-                  type="number"
-                  step="0.5"
-                  min="0.5"
-                  required
-                  placeholder="e.g. 20"
-                  className="btf-input w-full tabular-nums"
-                  disabled={pending}
-                />
-              </div>
+            <div className={`grid gap-4 ${isHoursBasedPackage(packageName) ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              {isHoursBasedPackage(packageName) ? (
+                <div>
+                  <label className="dash-label">
+                    Monthly hours <span className="dash-label-required">*</span>
+                  </label>
+                  <input
+                    name="hours_total"
+                    type="number"
+                    step="0.5"
+                    min="0.5"
+                    required
+                    placeholder="e.g. 20"
+                    className="btf-input w-full tabular-nums"
+                    disabled={pending}
+                  />
+                </div>
+              ) : (
+                <input type="hidden" name="hours_total" value="0" />
+              )}
               <div>
                 <label className="dash-label">
                   Period cost <span className="dash-label-required">*</span>

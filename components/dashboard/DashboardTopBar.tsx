@@ -5,6 +5,7 @@ import { Menu, ChevronDown, LogOut } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
+import Link from 'next/link'
 import { DashboardSearch } from './DashboardSearch'
 
 function initials(n?: string, e?: string) {
@@ -30,6 +31,7 @@ export function DashboardTopBar({
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const ini = initials(userName, userEmail)
+  const ticketsHref = variant === 'admin' ? '/admin/tickets' : '/portal/tickets'
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
@@ -56,7 +58,11 @@ export function DashboardTopBar({
         <Menu size={20} />
       </button>
 
-      <div className="hidden lg:flex items-center shrink-0 gap-2.5 dash-topbar-brand">
+      <Link
+        href={ticketsHref}
+        className="dash-topbar-brand-link hidden lg:flex items-center shrink-0 gap-2.5 dash-topbar-brand"
+        aria-label="All tickets"
+      >
         <Image
           src="/btf-wordmark.svg"
           alt="BTF"
@@ -68,7 +74,7 @@ export function DashboardTopBar({
         {variant === 'admin' ? (
           <span className="dash-topbar-tag">/ support</span>
         ) : null}
-      </div>
+      </Link>
 
       <div className="flex-1 flex justify-center min-w-0">
         <DashboardSearch

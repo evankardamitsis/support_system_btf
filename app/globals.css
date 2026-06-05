@@ -616,6 +616,15 @@
   width: 240px;
 }
 
+[data-theme="dashboard"] .dash-topbar-brand-link {
+  text-decoration: none;
+  transition: opacity 140ms ease;
+}
+
+[data-theme="dashboard"] .dash-topbar-brand-link:hover {
+  opacity: 0.85;
+}
+
 [data-theme="dashboard"] .dash-topbar-logo {
   width: auto;
   height: 13px;
@@ -1420,6 +1429,7 @@
     minmax(84px, 0.55fr)
     minmax(180px, 2fr)
     minmax(96px, 0.85fr)
+    minmax(88px, 0.75fr)
     minmax(52px, 0.35fr)
     minmax(52px, 0.35fr)
     minmax(92px, 0.55fr)
@@ -1614,6 +1624,44 @@
 [data-theme="dashboard"] .pill-select:focus-within {
   outline: 1px dashed color-mix(in srgb, var(--accent) 35%, transparent);
   outline-offset: 2px;
+}
+
+[data-theme="dashboard"] .pill-select--assignee .assignee-pill-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border: 1px solid color-mix(in srgb, #60a5fa 35%, var(--border));
+  color: #93c5fd;
+  font-family: var(--font-dm-mono);
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-theme="dashboard"] .assignee-pill-label--readonly {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  font-family: var(--font-dm-mono);
+}
+
+[data-theme="dashboard"] .tickets-assignee-name {
+  font-size: 0.75rem;
+  color: var(--text-1);
+  font-family: var(--font-dm-mono);
+}
+
+[data-theme="dashboard"] .tickets-assignee-name--empty {
+  color: var(--text-3);
 }
 
 [data-theme="dashboard"] .dash-input-cell {
@@ -2900,6 +2948,11 @@
   color: var(--accent);
 }
 
+[data-theme="dashboard"] .package-chip--fixed {
+  border-color: rgba(167, 139, 250, 0.35);
+  color: #c4b5fd;
+}
+
 [data-theme="dashboard"] .retainer-package-picker {
   display: flex;
   gap: 0.5rem;
@@ -3565,6 +3618,21 @@
   text-transform: uppercase;
   color: var(--text-2);
   font-family: var(--font-dm-mono);
+}
+
+[data-theme="dashboard"] .ticket-detail-assignee {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  width: 100%;
+}
+
+[data-theme="dashboard"] .ticket-detail-head-grid {
+  align-items: flex-start;
 }
 
 [data-theme="dashboard"] .portal-ticket-header-badges {

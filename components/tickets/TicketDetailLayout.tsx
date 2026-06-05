@@ -4,6 +4,8 @@ import { useState, useTransition, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
+  resolveTicketSimple,
+  updateTicketAssignee,
   updateTicketPriority,
   updateTicketStatus,
 } from '@/app/actions/tickets'
@@ -11,6 +13,7 @@ import { StatusPill } from '@/components/ui/StatusPill'
 import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { EditableStatusPill } from './EditableStatusPill'
 import { EditablePriorityPill } from './EditablePriorityPill'
+import { EditableAssigneeSelect, type AssigneeOption } from './EditableAssigneeSelect'
 import { useResolveCelebration } from '@/components/admin/ResolveCelebrationProvider'
 import { ResolveHoursModal } from './ResolveHoursModal'
 import { ResolveOfflineModal } from './ResolveOfflineModal'
@@ -60,6 +63,9 @@ export function TicketDetailLayout({
   completionDisputeNote = null,
   hoursOverageNote = null,
   isAdmin = false,
+  hoursBilling = true,
+  assignedTo = null,
+  staffOptions = [],
 }: {
   children: ReactNode
   ticketId: string
@@ -84,6 +90,9 @@ export function TicketDetailLayout({
   completionDisputeNote?: string | null
   hoursOverageNote?: string | null
   isAdmin?: boolean
+  hoursBilling?: boolean
+  assignedTo?: string | null
+  staffOptions?: AssigneeOption[]
 }) {
   const router = useRouter()
   const celebrate = useResolveCelebration()
@@ -122,11 +131,24 @@ export function TicketDetailLayout({
       !hoursLogged &&
       status !== 'resolved'
     ) {
-      if (!canResolveTicket(estimateStatus, completionStatus, status)) {
-        notifyError('Complete estimate and work approvals before resolving')
+      if (hoursBilling) {
+        if (!canResolveTicket(estimateStatus, completionStatus, status)) {
+          notifyError('Complete estimate and work approvals before resolving')
+          return
+        }
+        setResolveOpen(true)
         return
       }
-      setResolveOpen(true)
+      startTransition(async () => {
+        const ok = await runWithToast(() => resolveTicketSimple(ticketId), {
+          loading: 'Resolving ticket…',
+          success: 'Ticket resolved',
+        })
+        if (ok !== null) {
+          celebrate()
+          refresh()
+        }
+      })
       return
     }
     startTransition(async () => {
@@ -134,7 +156,10 @@ export function TicketDetailLayout({
         loading: 'Updating status…',
         success: `Status set to ${formatTicketStatus(next)}`,
       })
-      if (ok !== null) refresh()
+      if (ok !== null) {
+        if (next === 'resolved') celebrate()
+        refresh()
+      }
     })
   }
 
@@ -237,6 +262,31 @@ export function TicketDetailLayout({
               </div>
             </div>
           )}
+          {staffOptions.length > 0 ? (
+            <div
+              className="ticket-detail-assignee"
+              data-pending={pending ? 'true' : undefined}
+            >
+              <span className="ticket-detail-control-label">Assigned</span>
+              <EditableAssigneeSelect
+                value={assignedTo}
+                options={staffOptions}
+                disabled={pending}
+                ariaLabel="Change assignee"
+                onChange={next =>
+                  startTransition(async () => {
+                    const ok = await runWithToast(() => updateTicketAssignee(ticketId, next), {
+                      loading: 'Updating assignee…',
+                      success: next
+                        ? `Assigned to ${staffOptions.find(s => s.id === next)?.name ?? 'teammate'}`
+                        : 'Assignee cleared',
+                    })
+                    if (ok !== null) refresh()
+                  })
+                }
+              />
+            </div>
+          ) : null}
         </div>
       </header>
 
@@ -265,7 +315,23 @@ export function TicketDetailLayout({
           completionDisputeNote={completionDisputeNote}
           hoursOverageNote={hoursOverageNote}
           isAdmin={isAdmin}
-          onResolve={() => setResolveOpen(true)}
+          hoursBilling={hoursBilling}
+          onResolve={() => {
+            if (hoursBilling) {
+              setResolveOpen(true)
+              return
+            }
+            startTransition(async () => {
+              const ok = await runWithToast(() => resolveTicketSimple(ticketId), {
+                loading: 'Resolving ticket…',
+                success: 'Ticket resolved',
+              })
+              if (ok !== null) {
+                celebrate()
+                refresh()
+              }
+            })
+          }}
           onResolveOffline={() => setResolveOfflineOpen(true)}
         />
       </div>

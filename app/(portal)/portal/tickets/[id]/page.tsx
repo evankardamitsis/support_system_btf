@@ -1,6 +1,5 @@
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { enrichCommentsWithAuthors } from '@/lib/comments/authors'
@@ -12,6 +11,8 @@ import { TicketCommentForm } from '@/components/tickets/TicketCommentForm'
 import { PortalTicketHoursSummary } from '@/components/portal/PortalTicketHoursSummary'
 import { formatDateTimeHuman } from '@/lib/tickets/display'
 import { isTicketClosed } from '@/lib/tickets/closed'
+import { requirePortalClient } from '@/lib/auth/portal-context'
+import { clientUsesHourBilling } from '@/lib/retainers/billing-model'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
 function ticketId(id: string) {
@@ -33,13 +34,12 @@ export default async function PortalTicketDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { supabase, clientId } = await requirePortalClient()
 
-  const { data: ticket } = await supabase.from('tickets').select('*').eq('id', id).single()
+  const [{ data: ticket }, hoursBilling] = await Promise.all([
+    supabase.from('tickets').select('*').eq('id', id).single(),
+    clientUsesHourBilling(supabase, clientId),
+  ])
   if (!ticket) notFound()
 
   const estimatedHours =
@@ -88,7 +88,7 @@ export default async function PortalTicketDetailPage({
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6 items-start">
         <div className="space-y-5">
-          {!closed && pendingEstimateApproval && estimatedHours != null && estimatedHours > 0 ? (
+          {hoursBilling && !closed && pendingEstimateApproval && estimatedHours != null && estimatedHours > 0 ? (
             <EstimateApprovalModal
               ticketId={ticket.id}
               ticketTitle={ticket.title}
@@ -97,11 +97,11 @@ export default async function PortalTicketDetailPage({
             />
           ) : null}
 
-          {!closed && pendingWorkApproval ? (
+          {hoursBilling && !closed && pendingWorkApproval ? (
             <WorkApprovalModal ticketId={ticket.id} ticketTitle={ticket.title} />
           ) : null}
 
-          {closed && (pendingExtraHours?.length ?? 0) > 0 ? (
+          {hoursBilling && closed && (pendingExtraHours?.length ?? 0) > 0 ? (
             <ExtraHoursApprovalModal
               ticketTitle={ticket.title}
               pending={pendingExtraHours ?? []}
@@ -124,17 +124,19 @@ export default async function PortalTicketDetailPage({
                 {ticket.title}
               </h1>
             </div>
-            <PortalTicketHoursSummary
-              closed={closed}
-              status={ticket.status as TicketStatus}
-              estimatedHours={estimatedHours}
-              actualHours={actualHours}
-              approvedExtraMinutes={approvedExtraMinutes}
-              pendingExtraMinutes={pendingExtraMinutes}
-              extraHoursActiveAt={ticket.extra_hours_active_at ?? null}
-              estimateStatus={ticket.estimate_status ?? null}
-              hoursOverageNote={ticket.hours_overage_note}
-            />
+            {hoursBilling ? (
+              <PortalTicketHoursSummary
+                closed={closed}
+                status={ticket.status as TicketStatus}
+                estimatedHours={estimatedHours}
+                actualHours={actualHours}
+                approvedExtraMinutes={approvedExtraMinutes}
+                pendingExtraMinutes={pendingExtraMinutes}
+                extraHoursActiveAt={ticket.extra_hours_active_at ?? null}
+                estimateStatus={ticket.estimate_status ?? null}
+                hoursOverageNote={ticket.hours_overage_note}
+              />
+            ) : null}
             {ticket.description ? (
               <section className="portal-ticket-request">
                 <h2 className="portal-ticket-request-label">Your request</h2>

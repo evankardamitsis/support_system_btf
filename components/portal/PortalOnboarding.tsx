@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useState, type CSSProperties }
 import { usePathname } from 'next/navigation'
 import { markPortalOnboardingComplete } from '@/app/actions/portal'
 import {
-  PORTAL_ONBOARDING_STEPS,
+  getPortalOnboardingSteps,
   type PortalOnboardingStep,
 } from '@/components/portal/onboarding-steps'
 
@@ -82,19 +82,29 @@ function tooltipPosition(
 export function PortalOnboarding({
   onboardingCompleted,
   runId = 0,
+  hoursBilling = true,
 }: {
   onboardingCompleted: boolean
   runId?: number
+  hoursBilling?: boolean
 }) {
   const pathname = usePathname()
   const [completed, setCompleted] = useState(onboardingCompleted)
   const [active, setActive] = useState(false)
   const [stepIndex, setStepIndex] = useState(0)
   const [spotlight, setSpotlight] = useState<SpotlightRect | null>(null)
+  const [prevRunId, setPrevRunId] = useState(runId)
 
-  const steps = PORTAL_ONBOARDING_STEPS
-  const step = steps[stepIndex]
-  const isLast = stepIndex === steps.length - 1
+  if (runId > 0 && runId !== prevRunId) {
+    setPrevRunId(runId)
+    setStepIndex(0)
+    setActive(true)
+  }
+
+  const steps = getPortalOnboardingSteps(hoursBilling)
+  const safeStepIndex = Math.min(stepIndex, Math.max(steps.length - 1, 0))
+  const step = steps[safeStepIndex]
+  const isLast = safeStepIndex === steps.length - 1
 
   const finish = useCallback(() => {
     setActive(false)
@@ -106,35 +116,36 @@ export function PortalOnboarding({
     }
   }, [completed])
 
-  const updateSpotlight = useCallback(() => {
-    setSpotlight(getSpotlightRect(step?.target))
-  }, [step])
-
   useEffect(() => {
-    if (runId > 0) {
-      setStepIndex(0)
-      setActive(true)
-      return
-    }
-    if (completed) return
+    if (completed || runId > 0) return
     const timer = window.setTimeout(() => setActive(true), 450)
     return () => window.clearTimeout(timer)
   }, [completed, runId])
 
   useLayoutEffect(() => {
     if (!active) return
-    updateSpotlight()
+
+    let cancelled = false
+    const syncSpotlight = () => {
+      if (cancelled) return
+      setSpotlight(getSpotlightRect(step?.target))
+    }
+
+    const frame = requestAnimationFrame(syncSpotlight)
 
     const target = step?.target ? document.querySelector(step.target) : null
     target?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
 
-    window.addEventListener('resize', updateSpotlight)
-    window.addEventListener('scroll', updateSpotlight, true)
+    const onLayoutChange = () => requestAnimationFrame(syncSpotlight)
+    window.addEventListener('resize', onLayoutChange)
+    window.addEventListener('scroll', onLayoutChange, true)
     return () => {
-      window.removeEventListener('resize', updateSpotlight)
-      window.removeEventListener('scroll', updateSpotlight, true)
+      cancelled = true
+      cancelAnimationFrame(frame)
+      window.removeEventListener('resize', onLayoutChange)
+      window.removeEventListener('scroll', onLayoutChange, true)
     }
-  }, [active, stepIndex, step, pathname, updateSpotlight])
+  }, [active, safeStepIndex, step, pathname])
 
   useEffect(() => {
     if (!active) return
@@ -182,7 +193,7 @@ export function PortalOnboarding({
         style={tooltipPosition(spotlight, spotlight ? step.placement : 'center')}
       >
         <p className="portal-onboarding-eyebrow">
-          Step {stepIndex + 1} of {steps.length}
+          Step {safeStepIndex + 1} of {steps.length}
         </p>
         <h2 id="portal-onboarding-title" className="portal-onboarding-title">
           {step.title}

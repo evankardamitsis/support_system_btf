@@ -1,14 +1,21 @@
-export const RETAINER_PACKAGES = ['care', 'grow'] as const
+export const RETAINER_PACKAGES = ['care', 'grow', 'fixed'] as const
 export type RetainerPackage = (typeof RETAINER_PACKAGES)[number]
 
 export const PACKAGE_LABELS: Record<RetainerPackage, string> = {
   care: 'Care',
   grow: 'Grow',
+  fixed: 'Fixed',
 }
 
 export function formatPackageName(pkg: string | null | undefined): string {
-  if (pkg === 'care' || pkg === 'grow') return PACKAGE_LABELS[pkg]
+  if (pkg === 'care' || pkg === 'grow' || pkg === 'fixed') return PACKAGE_LABELS[pkg]
   return pkg ?? '—'
+}
+
+export function parseRetainerPackage(raw: string | null | undefined): RetainerPackage {
+  if (raw === 'grow') return 'grow'
+  if (raw === 'fixed') return 'fixed'
+  return 'care'
 }
 
 /** Admin-only — BTF internal contract value */

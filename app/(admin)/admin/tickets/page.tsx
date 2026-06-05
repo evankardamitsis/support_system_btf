@@ -7,6 +7,19 @@ import { TicketsTableToolbar } from '@/components/tickets/TicketsTableToolbar'
 import { computeTicketAnalytics } from '@/lib/tickets/analytics'
 import { Plus } from 'lucide-react'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
+import { hourBillingByClientFromRetainers } from '@/lib/retainers/billing-model'
+import { getStaffForMentions } from '@/app/actions/comments'
+
+function matchesAssigneeFilter(
+  assignedTo: string | null,
+  filter: string | undefined,
+  currentUserId: string | undefined
+): boolean {
+  if (!filter) return true
+  if (filter === 'me') return assignedTo === currentUserId
+  if (filter === 'unassigned') return assignedTo == null
+  return assignedTo === filter
+}
 
 const statusTabs = [
   { label: 'All', value: '' },
@@ -19,21 +32,31 @@ const statusTabs = [
 export default async function AdminTicketsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; priority?: string; client?: string }>
+  searchParams: Promise<{ status?: string; priority?: string; client?: string; assigned?: string }>
 }) {
   const filters = await searchParams
   const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  const [{ data: all }, { data: clientRows }, { data: hourLogs }] = await Promise.all([
+  const [{ data: all }, { data: clientRows }, { data: hourLogs }, { data: retainerRows }, staff] =
+    await Promise.all([
     supabase
       .from('tickets')
       .select(
-        'id, client_id, status, priority, title, type, created_at, updated_at, resolved_at, estimated_hours, actual_hours, estimate_status, completion_status, clients(name)'
+        'id, client_id, assigned_to, status, priority, title, type, created_at, updated_at, resolved_at, estimated_hours, actual_hours, estimate_status, completion_status, clients(name)'
       )
       .order('updated_at', { ascending: false }),
     supabase.from('clients').select('id, name').order('name'),
     supabase.from('hours_log').select('ticket_id'),
+    supabase
+      .from('retainers')
+      .select('client_id, package_name, hours_limited, period_start, period_end'),
+    getStaffForMentions(),
   ])
+
+  const staffNameById = new Map(staff.map(member => [member.id, member.name]))
 
   const hoursLoggedByTicketId: Record<string, boolean> = {}
   for (const row of hourLogs ?? []) {
@@ -59,12 +82,30 @@ export default async function AdminTicketsPage({
     resolved: scoped.filter(t => t.status === 'resolved').length,
   }
 
+  const mineCount = scoped.filter(t =>
+    matchesAssigneeFilter(t.assigned_to ?? null, 'me', user?.id)
+  ).length
+
   let tickets = scoped
   if (filters.status) tickets = tickets.filter(t => t.status === filters.status)
   if (filters.priority) tickets = tickets.filter(t => t.priority === filters.priority)
+  if (filters.assigned) {
+    tickets = tickets.filter(t =>
+      matchesAssigneeFilter(t.assigned_to ?? null, filters.assigned, user?.id)
+    )
+  }
 
   const activeStatus = filters.status ?? ''
-  const hasFilters = Boolean(filters.status || filters.priority || activeClient)
+  const activeAssigned = filters.assigned ?? ''
+  const hasFilters = Boolean(filters.status || filters.priority || activeClient || activeAssigned)
+  const assignedLabel =
+    activeAssigned === 'me'
+      ? 'assigned to you'
+      : activeAssigned === 'unassigned'
+        ? 'unassigned'
+        : activeAssigned
+          ? `assigned to ${staffNameById.get(activeAssigned) ?? 'teammate'}`
+          : null
 
   const analytics = computeTicketAnalytics(
     scoped.map(t => ({
@@ -74,6 +115,9 @@ export default async function AdminTicketsPage({
       actual_hours: t.actual_hours != null ? Number(t.actual_hours) : null,
     }))
   )
+
+  const clientIds = [...new Set(scoped.map(t => t.client_id))]
+  const hoursBillingByClient = hourBillingByClientFromRetainers(retainerRows ?? [], clientIds)
 
   const rows = tickets.map(t => ({
     id: t.id,
@@ -88,6 +132,8 @@ export default async function AdminTicketsPage({
     estimate_status: t.estimate_status ?? null,
     completion_status: t.completion_status ?? null,
     clientName: (t.clients as unknown as { name: string } | null)?.name ?? null,
+    hoursBilling: hoursBillingByClient[t.client_id] ?? true,
+    assigneeName: t.assigned_to ? (staffNameById.get(t.assigned_to) ?? null) : null,
   }))
 
   return (
@@ -95,9 +141,13 @@ export default async function AdminTicketsPage({
       <PageHeader
         title="Ticket queue"
         description={
-          clientName
-            ? `Tickets for ${clientName} — click any row to open.`
-            : 'Status and priority first — click any row to open. Sorted by last activity.'
+          clientName && assignedLabel
+            ? `Tickets for ${clientName}, ${assignedLabel} — click any row to open.`
+            : clientName
+              ? `Tickets for ${clientName} — click any row to open.`
+              : assignedLabel
+                ? `Tickets ${assignedLabel} — click any row to open. Sorted by last activity.`
+                : 'Status and priority first — click any row to open. Sorted by last activity.'
         }
         action={
           <DashButton
@@ -125,10 +175,14 @@ export default async function AdminTicketsPage({
           activeStatus={activeStatus}
           priority={filters.priority}
           client={activeClient}
+          assigned={activeAssigned}
           clients={clients}
+          staff={staff}
+          mineCount={mineCount}
           totalShown={rows.length}
           showPriorityFilter
           showClientFilter
+          showAssigneeFilter
         />
 
         <TicketsTable
@@ -139,7 +193,7 @@ export default async function AdminTicketsPage({
           emptyTitle={hasFilters ? 'No tickets match these filters' : 'No tickets yet'}
           emptyHint={
             hasFilters
-              ? 'Change status, client, or priority above'
+              ? 'Change status, assignee, client, or priority above'
               : 'Create a ticket to get started'
           }
         />

@@ -7,6 +7,7 @@ import { CommentThread } from '@/components/tickets/CommentThread'
 import { TicketCommentForm } from '@/components/tickets/TicketCommentForm'
 import { TicketDetailLayout } from '@/components/tickets/TicketDetailLayout'
 import { getRetainerForClient } from '@/lib/retainers/active'
+import { retainerTracksHours } from '@/lib/retainers/billing-model'
 import { isTicketClosed } from '@/lib/tickets/closed'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
@@ -60,12 +61,13 @@ export default async function AdminTicketDetailPage({
   }
 
   const [activeRetainer, enrichedComments, staffForMentions] = await Promise.all([
-    getRetainerForClient(supabase, ticket.client_id),
+    getRetainerForClient(supabase, ticket.client_id, { includePackage: true }),
     enrichCommentsWithAuthors(supabase, comments ?? []),
     getStaffForMentions(),
   ])
 
   const hoursLogged = Boolean(hourLog)
+  const hoursBilling = retainerTracksHours(activeRetainer)
   const estimatedHours =
     ticket.estimated_hours != null ? Number(ticket.estimated_hours) : null
   const actualHours = ticket.actual_hours != null ? Number(ticket.actual_hours) : null
@@ -120,6 +122,9 @@ export default async function AdminTicketDetailPage({
         extraHours={extraHours}
         extraHoursActiveAt={ticket.extra_hours_active_at ?? null}
         isAdmin={isAdmin}
+        hoursBilling={hoursBilling}
+        assignedTo={ticket.assigned_to ?? null}
+        staffOptions={staffForMentions}
       >
         <section className="ticket-detail-activity dash-panel">
           <div className="ticket-detail-activity-head">

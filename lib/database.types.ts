@@ -94,6 +94,7 @@ export interface Database {
           hours_total: number
           hours_used: number
           period_cost: number
+          hours_limited: boolean
           created_at: string
         }
         Insert: {
@@ -105,6 +106,7 @@ export interface Database {
           hours_total: number
           hours_used?: number
           period_cost?: number
+          hours_limited?: boolean
           created_at?: string
         }
         Update: {
@@ -116,6 +118,7 @@ export interface Database {
           hours_total?: number
           hours_used?: number
           period_cost?: number
+          hours_limited?: boolean
           created_at?: string
         }
         Relationships: []

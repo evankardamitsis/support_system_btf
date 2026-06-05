@@ -1,4 +1,5 @@
 import { getRetainerForClient } from '@/lib/retainers/active'
+import { retainerTracksHours } from '@/lib/retainers/billing-model'
 import { renewalDateFromPeriodEnd } from '@/lib/retainers/period'
 import { formatPackageName } from '@/lib/retainers/packages'
 import { tryCreateAdminClient } from '@/lib/supabase/admin'
@@ -177,19 +178,25 @@ export async function notifyClientTicketResolved(input: {
 
   const url = `${appOrigin()}/portal/tickets/${input.ticketId}`
   const ticketRef = formatTicketId(input.ticketId)
-  const hoursLine = resolvedHoursMessage(input.estimatedHours, input.actualHours)
 
-  let retainerLine = ''
+  let detailLine =
+    'View the ticket in your portal for full details.'
   const adminResult = tryCreateAdminClient()
   if (!('error' in adminResult)) {
-    const retainer = await getRetainerForClient(adminResult.client, input.clientId)
-    if (retainer) {
-      retainerLine = ` ${retainerRemainingMessage({
-        hoursTotal: retainer.hours_total,
-        hoursUsed: retainer.hours_used,
-        periodStart: retainer.period_start,
-        periodEnd: retainer.period_end,
-      })}`
+    const retainer = await getRetainerForClient(adminResult.client, input.clientId, {
+      includePackage: true,
+    })
+    if (retainerTracksHours(retainer)) {
+      const hoursLine = resolvedHoursMessage(input.estimatedHours, input.actualHours)
+      const retainerLine = retainer
+        ? ` ${retainerRemainingMessage({
+            hoursTotal: retainer.hours_total,
+            hoursUsed: retainer.hours_used,
+            periodStart: retainer.period_start,
+            periodEnd: retainer.period_end,
+          })}`
+        : ''
+      detailLine = `${hoursLine}${retainerLine} View the ticket in your portal for full details.`
     }
   }
 
@@ -198,7 +205,7 @@ export async function notifyClientTicketResolved(input: {
     subject: `Ticket resolved — ${ticketRef}`,
     html: emailShell(
       'Your ticket is resolved',
-      `BTF has completed <strong>${input.ticketTitle}</strong> (${ticketRef}). ${hoursLine}${retainerLine} View the ticket in your portal for full details.`,
+      `BTF has completed <strong>${input.ticketTitle}</strong> (${ticketRef}). ${detailLine}`,
       'View ticket',
       url
     ),
@@ -231,17 +238,20 @@ export async function notifyClientNewRetainer(input: {
   }
 
   const packageLabel = formatPackageName(input.packageName)
-  const hours = formatHours(input.hoursTotal)
   const duration = formatPeriodRange(input.periodStart, input.periodEnd)
   const renewalDate = formatDateLong(renewalDateFromPeriodEnd(input.periodEnd))
   const url = `${appOrigin()}/portal/retainer`
+  const isFixed = input.packageName === 'fixed'
+  const body = isFixed
+    ? `Your <strong>${packageLabel}</strong> support plan is now active for <strong>${duration}</strong>, renewing on <strong>${renewalDate}</strong>. Sign in to your portal to submit requests and track progress.`
+    : `Your <strong>${packageLabel}</strong> retainer is now active with <strong>${formatHours(input.hoursTotal)}h</strong> included for this period. The current period runs <strong>${duration}</strong> and renews on <strong>${renewalDate}</strong>. Sign in to your portal to track usage and submit support requests.`
 
   const sent = await sendEmail({
     to: recipients,
-    subject: `Your ${packageLabel} retainer is active`,
+    subject: `Your ${packageLabel} plan is active`,
     html: emailShell(
-      'New retainer period',
-      `Your <strong>${packageLabel}</strong> retainer is now active with <strong>${hours}h</strong> included for this period. The current period runs <strong>${duration}</strong> and renews on <strong>${renewalDate}</strong>. Sign in to your portal to track usage and submit support requests.`,
+      isFixed ? 'New support period' : 'New retainer period',
+      body,
       'View your plan',
       url
     ),
@@ -420,6 +430,49 @@ export async function notifyStaffWorkDisputed(input: {
       sent: false,
       error:
         'Work was disputed but the team notification email could not be sent. Check ZEPTOMAIL_API_KEY and EMAIL_FROM.',
+    }
+  }
+
+  return { sent: true }
+}
+
+export async function notifyStaffTicketAssigned(input: {
+  ticketId: string
+  ticketTitle: string
+  assigneeUserId: string
+  assignerName: string
+  clientName?: string | null
+}): Promise<NotifyResult> {
+  const adminResult = tryCreateAdminClient()
+  if ('error' in adminResult) {
+    return { sent: false, error: adminResult.error }
+  }
+
+  const email = await getAuthEmailById(adminResult.client, input.assigneeUserId)
+  if (!email) {
+    return { sent: false, error: 'Assignee has no email on file' }
+  }
+
+  const url = `${appOrigin()}/admin/tickets/${input.ticketId}`
+  const ticketRef = formatTicketId(input.ticketId)
+  const clientPart = input.clientName ? ` for <strong>${input.clientName}</strong>` : ''
+
+  const sent = await sendEmail({
+    to: [email],
+    subject: `Assigned to you — ${ticketRef}`,
+    html: emailShell(
+      'Ticket assigned to you',
+      `<strong>${input.assignerName}</strong> assigned <strong>${input.ticketTitle}</strong> (${ticketRef})${clientPart} to you. Open the ticket queue to review and start work.`,
+      'Open ticket',
+      url
+    ),
+  })
+
+  if (!sent) {
+    return {
+      sent: false,
+      error:
+        'Assignment was saved but the notification email could not be sent. Check ZEPTOMAIL_API_KEY and EMAIL_FROM.',
     }
   }
 

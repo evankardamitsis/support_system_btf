@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/dashboard/PageHeader'
 import { MetricStrip } from '@/components/dashboard/MetricStrip'
 import { RetainersList } from '@/components/retainers/RetainersList'
 import { isActivePeriod } from '@/lib/retainers/packages'
+import { retainerTracksHours } from '@/lib/retainers/billing-model'
 
 export default async function AdminRetainersPage() {
   const { isAdmin } = await requireAdmin()
@@ -42,13 +43,15 @@ export default async function AdminRetainersPage() {
   }))
 
   const activeRows = rows.filter(r => r.isActive)
-  const totalSold = activeRows.reduce((s, r) => s + r.hours_total, 0)
-  const totalUsed = activeRows.reduce((s, r) => s + r.hours_used, 0)
+  const hourBasedActive = activeRows.filter(r => retainerTracksHours(r))
+  const totalSold = hourBasedActive.reduce((s, r) => s + r.hours_total, 0)
+  const totalUsed = hourBasedActive.reduce((s, r) => s + r.hours_used, 0)
   const left = totalSold - totalUsed
   const contractValue = activeRows.reduce((s, r) => s + r.period_cost, 0)
   const careCount = activeRows.filter(r => r.package_name === 'care').length
   const growCount = activeRows.filter(r => r.package_name === 'grow').length
-  const atRisk = activeRows.filter(r => {
+  const fixedCount = activeRows.filter(r => r.package_name === 'fixed').length
+  const atRisk = hourBasedActive.filter(r => {
     const pct = r.hours_total > 0 ? (r.hours_used / r.hours_total) * 100 : 0
     return pct > 85 || r.hours_used > r.hours_total
   }).length
@@ -59,7 +62,7 @@ export default async function AdminRetainersPage() {
     <div className="space-y-5">
       <PageHeader
         title="Retainers"
-        description={`Care & Grow packages per client · ${now}`}
+        description={`Care, Grow & Fixed packages per client · ${now}`}
       />
 
       <MetricStrip
@@ -76,6 +79,7 @@ export default async function AdminRetainersPage() {
           },
           { label: 'Care', value: String(careCount), hint: 'Active periods' },
           { label: 'Grow', value: String(growCount), hint: 'Active periods' },
+          { label: 'Fixed', value: String(fixedCount), hint: 'Active periods' },
           { label: 'Sold', value: `${totalSold.toFixed(0)}h`, hint: 'Active periods' },
           { label: 'Used', value: `${totalUsed.toFixed(1)}h` },
           {

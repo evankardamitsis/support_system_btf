@@ -8,6 +8,7 @@ import { MetricStrip } from '@/components/dashboard/MetricStrip'
 import { TicketsTable } from '@/components/tickets/TicketsTable'
 import { ClientRetainerSection } from '@/components/retainers/ClientRetainerSection'
 import { getRetainerForClient } from '@/lib/retainers/active'
+import { retainerTracksHours } from '@/lib/retainers/billing-model'
 import { formatPackageName } from '@/lib/retainers/packages'
 import { RETAINER_STATUS_LABELS, type RetainerLifecycleStatus } from '@/lib/retainers/status'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
@@ -37,6 +38,7 @@ export default async function AdminClientDetailPage({
 
   const openTickets = tickets?.filter(t => t.status === 'open' || t.status === 'in_progress').length ?? 0
 
+  const hoursBilling = retainerTracksHours(activeRetainer)
   const ticketRows =
     tickets?.map(t => ({
       id: t.id,
@@ -45,6 +47,7 @@ export default async function AdminClientDetailPage({
       priority: t.priority as TicketPriority,
       type: t.type,
       updated_at: t.updated_at,
+      hoursBilling,
     })) ?? []
 
   return (

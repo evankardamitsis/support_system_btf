@@ -66,6 +66,7 @@ export function TicketDetailSidebar({
   completionDisputeNote = null,
   hoursOverageNote = null,
   isAdmin = false,
+  hoursBilling = true,
   onResolve,
   onResolveOffline,
 }: {
@@ -83,6 +84,7 @@ export function TicketDetailSidebar({
   completionDisputeNote?: string | null
   hoursOverageNote?: string | null
   isAdmin?: boolean
+  hoursBilling?: boolean
   onResolve: () => void
   onResolveOffline: () => void
 }) {
@@ -103,14 +105,25 @@ export function TicketDetailSidebar({
   const extraHoursActive = isExtraHoursWorkActive(status, extraHoursActiveAt)
   const showCompleteExtraWork = canCompleteExtraHoursWork(status, extraHoursActiveAt)
   const standardResolveFlow = shouldUseStandardResolveFlow(status, extraHoursActiveAt)
-  const showSubmit = !closed && standardResolveFlow && canSubmitEstimate(estimateStatus, estimatedHours, status)
+  const showSubmit =
+    hoursBilling &&
+    !closed &&
+    standardResolveFlow &&
+    canSubmitEstimate(estimateStatus, estimatedHours, status)
   const showAwaiting =
     !closed && estimateStatus === 'pending_approval' && status !== 'resolved' && status !== 'closed'
   const showAwaitingWork = !closed && isAwaitingWorkApproval(completionStatus)
   const showSubmitWork =
-    !closed && standardResolveFlow && canSubmitWorkForCheck(estimateStatus, completionStatus, status)
+    hoursBilling &&
+    !closed &&
+    standardResolveFlow &&
+    canSubmitWorkForCheck(estimateStatus, completionStatus, status)
   const showResolve =
-    !closed && standardResolveFlow && canResolveTicket(estimateStatus, completionStatus, status)
+    hoursBilling &&
+    !closed &&
+    standardResolveFlow &&
+    canResolveTicket(estimateStatus, completionStatus, status)
+  const showFixedResolve = !hoursBilling && !closed && isAdmin
   const showDisputeNote = !closed && completionDisputeNote && completionStatus === null
   const estimateLocked = closed || isEstimateLocked(estimateStatus)
   const logged =
@@ -131,8 +144,28 @@ export function TicketDetailSidebar({
   return (
     <aside className="ticket-detail-aside">
       <section className="ticket-detail-aside-card">
-        <h3 className="ticket-detail-aside-title">Time on this ticket</h3>
+        <h3 className="ticket-detail-aside-title">
+          {hoursBilling ? 'Time on this ticket' : 'Ticket actions'}
+        </h3>
 
+        {showFixedResolve ? (
+          <div className="ticket-detail-resolve-actions flex flex-col gap-2">
+            <button
+              type="button"
+              className="dash-btn-primary btn-primary w-full cursor-pointer"
+              disabled={pending}
+              onClick={onResolve}
+            >
+              {pending ? 'Resolving…' : 'Mark resolved'}
+            </button>
+            <p className="ticket-detail-aside-note dash-meta">
+              Fixed plan — no hours to log. The client is notified when you resolve.
+            </p>
+          </div>
+        ) : null}
+
+        {hoursBilling ? (
+        <>
         <div
           className="ticket-detail-hours-grid"
           data-has-extra={closed || extraHoursActive || approvedExtraMinutes > 0 ? 'true' : undefined}
@@ -292,8 +325,10 @@ export function TicketDetailSidebar({
         ) : hoursLogged && closed ? (
           <p className="ticket-detail-aside-note dash-meta">Hours recorded for this ticket.</p>
         ) : null}
+        </>
+        ) : null}
 
-        {showDisputeNote ? (
+        {showDisputeNote && hoursBilling ? (
           <div className="ticket-work-disputed" role="status">
             <span className="ticket-work-disputed-eyebrow">Client disputed completion</span>
             <p className="ticket-work-disputed-text">{completionDisputeNote}</p>
@@ -303,7 +338,7 @@ export function TicketDetailSidebar({
           </div>
         ) : null}
 
-        {isAdmin && !closed ? (
+        {isAdmin && !closed && hoursBilling ? (
           <div className="ticket-detail-offline-resolve mt-4">
             <button
               type="button"
@@ -346,18 +381,26 @@ export function TicketDetailSidebar({
               year: 'numeric',
             })}
           </p>
-          <div className="ticket-detail-retainer-row">
-            <span className="tabular-nums">
-              {used.toFixed(1)}
-              <span className="ticket-detail-retainer-sep">/</span>
-              {total.toFixed(0)}h used
-            </span>
-            <span className="ticket-detail-retainer-left tabular-nums" data-tone={tone}>
-              {isOver ? '−' : ''}
-              {Math.abs(remaining).toFixed(1)}h left
-            </span>
-          </div>
-          <UsageBar percent={pct} tone={tone} height={5} />
+          {hoursBilling ? (
+            <>
+              <div className="ticket-detail-retainer-row">
+                <span className="tabular-nums">
+                  {used.toFixed(1)}
+                  <span className="ticket-detail-retainer-sep">/</span>
+                  {total.toFixed(0)}h used
+                </span>
+                <span className="ticket-detail-retainer-left tabular-nums" data-tone={tone}>
+                  {isOver ? '−' : ''}
+                  {Math.abs(remaining).toFixed(1)}h left
+                </span>
+              </div>
+              <UsageBar percent={pct} tone={tone} height={5} />
+            </>
+          ) : (
+            <p className="dash-meta leading-relaxed mt-2">
+              Fixed monthly plan — unlimited support requests, no hour tracking.
+            </p>
+          )}
         </section>
       ) : (
         <section className="ticket-detail-aside-card ticket-detail-aside-card--muted">
@@ -365,7 +408,9 @@ export function TicketDetailSidebar({
         </section>
       )}
 
-      {(canRequestExtraHours(status) || extraHours.length > 0 || extraHoursActive) && activeRetainer ? (
+      {hoursBilling &&
+      (canRequestExtraHours(status) || extraHours.length > 0 || extraHoursActive) &&
+      activeRetainer ? (
         <section className="ticket-detail-aside-card ticket-detail-aside-card--muted">
           {canRequestExtraHours(status) ? (
             <button

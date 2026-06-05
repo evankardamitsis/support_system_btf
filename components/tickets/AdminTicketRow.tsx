@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { ArrowUpRight } from 'lucide-react'
-import { updateTicketPriority, updateTicketStatus } from '@/app/actions/tickets'
+import { resolveTicketSimple, updateTicketPriority, updateTicketStatus } from '@/app/actions/tickets'
 import {
   formatDateTimeHuman,
   formatResolvedAtTable,
@@ -30,10 +30,12 @@ export function AdminTicketRow({
   ticket,
   hrefPrefix,
   hoursLogged,
+  hoursBilling = true,
 }: {
   ticket: TicketTableRow
   hrefPrefix: string
   hoursLogged: boolean
+  hoursBilling?: boolean
 }) {
   const router = useRouter()
   const [resolveOpen, setResolveOpen] = useState(false)
@@ -64,6 +66,16 @@ export function AdminTicketRow({
   function onStatusChange(next: TicketStatus) {
     if (closed) return
     if (next === 'resolved' && !hoursLogged && ticket.status !== 'resolved') {
+      if (!hoursBilling) {
+        startTransition(async () => {
+          const ok = await runWithToast(() => resolveTicketSimple(ticket.id), {
+            loading: 'Resolving ticket…',
+            success: 'Ticket resolved',
+          })
+          if (ok !== null) refresh()
+        })
+        return
+      }
       if (
         !canResolveTicket(
           ticket.estimate_status ?? null,
@@ -105,9 +117,9 @@ export function AdminTicketRow({
                 ariaLabel={`Status for ${ticket.title}`}
               />
             )}
-            {ticket.estimate_status === 'pending_approval' ? (
+            {hoursBilling && ticket.estimate_status === 'pending_approval' ? (
               <span className="tickets-awaiting-approval-badge">Awaiting estimate</span>
-            ) : ticket.completion_status === 'pending_approval' ? (
+            ) : hoursBilling && ticket.completion_status === 'pending_approval' ? (
               <span className="tickets-awaiting-approval-badge">Awaiting work check</span>
             ) : null}
           </div>
@@ -155,27 +167,56 @@ export function AdminTicketRow({
           </div>
         </div>
 
-        <div className="tickets-cell tickets-cell-hours" data-label="Est">
+        <div className="tickets-cell tickets-cell-assignee min-w-0" data-label="Assigned">
           <div className="tickets-cell-value">
-            {ticket.estimated_hours != null && ticket.estimated_hours > 0 ? (
-              <span className="tickets-hours-estimate tabular-nums">
-                {ticket.estimated_hours.toFixed(1)}h
-              </span>
-            ) : (
-              <span className="tickets-hours-muted">—</span>
-            )}
+            <span
+              className={`tickets-assignee-name ${ticket.assigneeName ? '' : 'tickets-assignee-name--empty'}`}
+            >
+              {ticket.assigneeName ?? 'Unassigned'}
+            </span>
           </div>
         </div>
 
-        <div className="tickets-cell tickets-cell-hours" data-label="Actual">
-          <div className="tickets-cell-value">
-            {ticket.actual_hours != null && ticket.actual_hours > 0 ? (
-              <span className="tickets-hours-actual tabular-nums">{ticket.actual_hours.toFixed(1)}h</span>
-            ) : (
-              <span className="tickets-hours-muted">—</span>
-            )}
-          </div>
-        </div>
+        {hoursBilling ? (
+          <>
+            <div className="tickets-cell tickets-cell-hours" data-label="Est">
+              <div className="tickets-cell-value">
+                {ticket.estimated_hours != null && ticket.estimated_hours > 0 ? (
+                  <span className="tickets-hours-estimate tabular-nums">
+                    {ticket.estimated_hours.toFixed(1)}h
+                  </span>
+                ) : (
+                  <span className="tickets-hours-muted">—</span>
+                )}
+              </div>
+            </div>
+
+            <div className="tickets-cell tickets-cell-hours" data-label="Actual">
+              <div className="tickets-cell-value">
+                {ticket.actual_hours != null && ticket.actual_hours > 0 ? (
+                  <span className="tickets-hours-actual tabular-nums">
+                    {ticket.actual_hours.toFixed(1)}h
+                  </span>
+                ) : (
+                  <span className="tickets-hours-muted">—</span>
+                )}
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="tickets-cell tickets-cell-hours" data-label="Est">
+              <div className="tickets-cell-value">
+                <span className="tickets-hours-muted">—</span>
+              </div>
+            </div>
+            <div className="tickets-cell tickets-cell-hours" data-label="Actual">
+              <div className="tickets-cell-value">
+                <span className="tickets-hours-muted">—</span>
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="tickets-cell tickets-cell-updated" data-label="Updated">
           <div className="tickets-cell-value">

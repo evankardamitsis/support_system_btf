@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createRetainerPeriod } from '@/app/actions/retainers'
 import { PACKAGE_LABELS, RETAINER_PACKAGES, type RetainerPackage } from '@/lib/retainers/packages'
+import { isHoursBasedPackage } from '@/lib/retainers/billing-model'
 import { runWithToast } from '@/lib/notify'
 
 export function RetainerPeriodForm({
@@ -72,27 +73,33 @@ export function RetainerPeriodForm({
           ))}
         </div>
         <p className="dash-meta mt-2 leading-relaxed">
-          Care and Grow are package names — set hours and contract value per client.
+          {isHoursBasedPackage(packageName)
+            ? 'Care and Grow include monthly hours — set hours and contract value per client.'
+            : 'Fixed is a flat monthly fee with unlimited requests — no hour tracking.'}
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="dash-label" htmlFor={`hours-${clientId}`}>
-            Monthly hours <span className="dash-label-required">*</span>
-          </label>
-          <input
-            id={`hours-${clientId}`}
-            name="hours_total"
-            type="number"
-            step="0.5"
-            min="0.5"
-            required
-            className="btf-input w-full tabular-nums"
-            placeholder="e.g. 20"
-            disabled={pending}
-          />
-        </div>
+      <div className={`grid gap-4 ${isHoursBasedPackage(packageName) ? 'grid-cols-2' : 'grid-cols-1'}`}>
+        {isHoursBasedPackage(packageName) ? (
+          <div>
+            <label className="dash-label" htmlFor={`hours-${clientId}`}>
+              Monthly hours <span className="dash-label-required">*</span>
+            </label>
+            <input
+              id={`hours-${clientId}`}
+              name="hours_total"
+              type="number"
+              step="0.5"
+              min="0.5"
+              required
+              className="btf-input w-full tabular-nums"
+              placeholder="e.g. 20"
+              disabled={pending}
+            />
+          </div>
+        ) : (
+          <input type="hidden" name="hours_total" value="0" />
+        )}
         <div>
           <label className="dash-label" htmlFor={`cost-${clientId}`}>
             Period cost <span className="dash-label-required">*</span>

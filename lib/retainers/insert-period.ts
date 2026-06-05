@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 import { notifyClientNewRetainer } from '@/lib/email/ticket-notifications'
 import { renewalDateFromPeriodEnd } from '@/lib/retainers/period'
+import { isHoursBasedPackage, packageLabel } from '@/lib/retainers/billing-model'
 import type { RetainerPackage } from '@/lib/retainers/packages'
 
 type Db = SupabaseClient<Database>
@@ -20,7 +21,8 @@ export async function insertRetainerPeriod(
   supabase: Db,
   input: InsertRetainerPeriodInput
 ): Promise<{ id: string }> {
-  const packageLabel = input.packageName === 'grow' ? 'Grow' : 'Care'
+  const label = packageLabel(input.packageName)
+  const hoursLimited = isHoursBasedPackage(input.packageName)
 
   const { data: retainer, error } = await supabase
     .from('retainers')
@@ -29,7 +31,8 @@ export async function insertRetainerPeriod(
       package_name: input.packageName,
       period_start: input.periodStart,
       period_end: input.periodEnd,
-      hours_total: input.hoursTotal,
+      hours_total: hoursLimited ? input.hoursTotal : 0,
+      hours_limited: hoursLimited,
       period_cost: Math.round(input.periodCost * 100) / 100,
     })
     .select('id')
@@ -42,7 +45,7 @@ export async function insertRetainerPeriod(
   await supabase
     .from('clients')
     .update({
-      plan_name: packageLabel,
+      plan_name: label,
       renewal_date: renewalDateFromPeriodEnd(input.periodEnd),
     })
     .eq('id', input.clientId)

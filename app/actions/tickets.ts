@@ -7,6 +7,7 @@ import { tryCreateAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth/require-admin'
 import { requireClient } from '@/lib/auth/require-client'
 import { getRetainerForClient } from '@/lib/retainers/active'
+import { clientUsesHourBilling } from '@/lib/retainers/billing-model'
 import { assertClientCanUseRetainer } from '@/lib/retainers/guards'
 import {
   getClientNotificationEmails,
@@ -15,6 +16,7 @@ import {
   notifyClientWorkReviewPending,
   notifyStaffEstimateApproved,
   notifyStaffNewTicket,
+  notifyStaffTicketAssigned,
   notifyStaffWorkApproved,
   notifyStaffWorkDisputed,
 } from '@/lib/email/ticket-notifications'
@@ -41,11 +43,62 @@ async function requireStaff() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single()
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role, full_name')
+    .eq('id', user.id)
+    .single()
   if (!profile || !['admin', 'agent'].includes(profile.role)) {
     throw new Error('Not authorized')
   }
-  return { supabase, user }
+  return { supabase, user, profile }
+}
+
+async function assertStaffAssignee(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  agentId: string
+) {
+  const { data: assignee } = await supabase
+    .from('users')
+    .select('id, role')
+    .eq('id', agentId)
+    .maybeSingle()
+  if (!assignee || !['admin', 'agent'].includes(assignee.role)) {
+    throw new Error('Assignee must be an admin or agent')
+  }
+}
+
+async function notifyAssigneeIfNeeded(input: {
+  ticketId: string
+  ticketTitle: string
+  clientId: string
+  assigneeId: string | null
+  assignerId: string
+  assignerName: string
+}) {
+  if (!input.assigneeId || input.assigneeId === input.assignerId) return
+
+  const adminResult = tryCreateAdminClient()
+  let clientName: string | null = null
+  if (!('error' in adminResult)) {
+    const { data: client } = await adminResult.client
+      .from('clients')
+      .select('name')
+      .eq('id', input.clientId)
+      .maybeSingle()
+    clientName = client?.name ?? null
+  }
+
+  const notify = await notifyStaffTicketAssigned({
+    ticketId: input.ticketId,
+    ticketTitle: input.ticketTitle,
+    assigneeUserId: input.assigneeId,
+    assignerName: input.assignerName,
+    clientName,
+  })
+  if (!notify.sent) {
+    console.error('[email] staff ticket-assigned notification failed:', notify.error)
+  }
 }
 
 async function assertTicketOpen(
@@ -81,18 +134,25 @@ function revalidateTicketPaths(ticketId: string) {
 }
 
 export async function createTicket(formData: FormData): Promise<string> {
-  const { supabase, user } = await requireStaff()
+  const { supabase, user, profile } = await requireStaff()
 
   const estRaw = formData.get('estimated_hours') as string | null
   const estimated =
     estRaw && estRaw.trim() !== '' ? parseFloat(estRaw) : null
+  const assigneeRaw = (formData.get('assigned_to') as string | null)?.trim()
+  const assignedTo = assigneeRaw && assigneeRaw.length > 0 ? assigneeRaw : null
+  if (assignedTo) await assertStaffAssignee(supabase, assignedTo)
+
+  const clientId = formData.get('client_id') as string
+  const title = formData.get('title') as string
 
   const { data: ticket, error } = await supabase
     .from('tickets')
     .insert({
-      client_id: formData.get('client_id') as string,
+      client_id: clientId,
       created_by: user.id,
-      title: formData.get('title') as string,
+      assigned_to: assignedTo,
+      title,
       description: (formData.get('description') as string) || null,
       type: ((formData.get('type') as string) || 'task') as 'bug' | 'task' | 'request' | 'question',
       priority: ((formData.get('priority') as string) || 'normal') as TicketPriority,
@@ -102,6 +162,18 @@ export async function createTicket(formData: FormData): Promise<string> {
     .single()
 
   if (error || !ticket) throw new Error(error?.message ?? 'Failed to create ticket')
+
+  if (assignedTo) {
+    await notifyAssigneeIfNeeded({
+      ticketId: ticket.id,
+      ticketTitle: title,
+      clientId,
+      assigneeId: assignedTo,
+      assignerId: user.id,
+      assignerName: profile.full_name?.trim() || 'A teammate',
+    })
+  }
+
   return ticket.id
 }
 
@@ -170,9 +242,12 @@ export async function updateTicketEstimatedHours(ticketId: string, hours: number
   await assertTicketOpen(supabase, ticketId)
   const { data: ticket } = await supabase
     .from('tickets')
-    .select('estimate_status')
+    .select('estimate_status, client_id')
     .eq('id', ticketId)
     .single()
+  if (ticket && !(await clientUsesHourBilling(supabase, ticket.client_id))) {
+    throw new Error('This client is on a fixed plan — hour tracking is not used')
+  }
   if (isEstimateLocked(ticket?.estimate_status ?? null)) {
     throw new Error('Estimate is locked after submission or client approval')
   }
@@ -197,6 +272,9 @@ export async function submitEstimateForApproval(ticketId: string) {
     .single()
 
   if (fetchErr || !ticket) throw new Error(fetchErr?.message ?? 'Ticket not found')
+  if (!(await clientUsesHourBilling(supabase, ticket.client_id))) {
+    throw new Error('This client is on a fixed plan — estimates are not used')
+  }
   if (ticket.estimate_status === 'pending_approval') {
     throw new Error('Estimate is already awaiting client approval')
   }
@@ -313,6 +391,9 @@ export async function submitWorkForClientCheck(ticketId: string) {
     .single()
 
   if (fetchErr || !ticket) throw new Error(fetchErr?.message ?? 'Ticket not found')
+  if (!(await clientUsesHourBilling(supabase, ticket.client_id))) {
+    throw new Error('This client is on a fixed plan — work approval is not used')
+  }
   if (ticket.estimate_status !== 'approved') {
     throw new Error('Client must approve the estimate before submitting work for review')
   }
@@ -518,33 +599,54 @@ export async function updateTicketStatus(ticketId: string, status: TicketStatus)
       )
       .eq('id', ticketId)
       .single()
-    if (ticket?.estimate_status !== 'approved') {
-      throw new Error('Client must approve the estimate before resolving')
+
+    const hourBilling = ticket?.client_id
+      ? await clientUsesHourBilling(supabase, ticket.client_id)
+      : true
+
+    if (hourBilling) {
+      if (ticket?.estimate_status !== 'approved') {
+        throw new Error('Client must approve the estimate before resolving')
+      }
+      if (ticket?.completion_status === 'pending_approval') {
+        throw new Error('Client must approve the completed work before resolving')
+      }
     }
-    if (ticket?.completion_status === 'pending_approval') {
-      throw new Error('Client must approve the completed work before resolving')
-    }
+
     if (ticket?.client_id) {
       await assertClientCanUseRetainer(supabase, ticket.client_id)
     }
-    const { data: existingLog } = await supabase
-      .from('hours_log')
-      .select('id')
-      .eq('ticket_id', ticketId)
-      .limit(1)
-      .maybeSingle()
-    if (!existingLog) {
-      throw new Error('Use resolve with actual hours')
+
+    if (hourBilling) {
+      const { data: existingLog } = await supabase
+        .from('hours_log')
+        .select('id')
+        .eq('ticket_id', ticketId)
+        .limit(1)
+        .maybeSingle()
+      if (!existingLog) {
+        throw new Error('Use resolve with actual hours')
+      }
     }
+
     if (ticket && ticket.status !== 'resolved') {
-      const actual = ticket.actual_hours != null ? Number(ticket.actual_hours) : null
-      if (actual != null && actual > 0) {
+      if (hourBilling) {
+        const actual = ticket.actual_hours != null ? Number(ticket.actual_hours) : null
+        if (actual != null && actual > 0) {
+          resolvedNotify = {
+            clientId: ticket.client_id,
+            title: ticket.title,
+            estimatedHours:
+              ticket.estimated_hours != null ? Number(ticket.estimated_hours) : null,
+            actualHours: actual,
+          }
+        }
+      } else {
         resolvedNotify = {
           clientId: ticket.client_id,
           title: ticket.title,
-          estimatedHours:
-            ticket.estimated_hours != null ? Number(ticket.estimated_hours) : null,
-          actualHours: actual,
+          estimatedHours: null,
+          actualHours: 0,
         }
       }
     }
@@ -569,6 +671,48 @@ export async function updateTicketStatus(ticketId: string, status: TicketStatus)
     if (!clientNotify.sent) {
       console.error('[email] client ticket-resolved notification failed:', clientNotify.error)
     }
+  }
+
+  revalidateTicketPaths(ticketId)
+}
+
+/** Resolve a ticket for fixed (non-hour) retainer clients — no hours logged. */
+export async function resolveTicketSimple(ticketId: string) {
+  const { supabase } = await requireStaff()
+
+  const { data: ticket, error: ticketErr } = await supabase
+    .from('tickets')
+    .select('id, client_id, status, title')
+    .eq('id', ticketId)
+    .single()
+
+  if (ticketErr || !ticket) throw new Error(ticketErr?.message ?? 'Ticket not found')
+  if (isTicketClosed(ticket.status)) {
+    throw new Error(TICKET_LOCKED_MESSAGE)
+  }
+
+  const hourBilling = await clientUsesHourBilling(supabase, ticket.client_id)
+  if (hourBilling) {
+    throw new Error('This client uses hour-based billing — log hours to resolve')
+  }
+
+  await assertClientCanUseRetainer(supabase, ticket.client_id)
+
+  const now = new Date().toISOString()
+  await staffPatchTicket(ticketId, {
+    status: 'resolved',
+    resolved_at: now,
+  })
+
+  const clientNotify = await notifyClientTicketResolved({
+    ticketId,
+    ticketTitle: ticket.title,
+    clientId: ticket.client_id,
+    estimatedHours: null,
+    actualHours: 0,
+  })
+  if (!clientNotify.sent) {
+    console.error('[email] client ticket-resolved notification failed:', clientNotify.error)
   }
 
   revalidateTicketPaths(ticketId)
@@ -767,13 +911,33 @@ export async function resolveTicketOffline(
 }
 
 export async function updateTicketAssignee(ticketId: string, agentId: string | null) {
-  const { supabase } = await requireStaff()
-  await assertTicketOpen(supabase, ticketId)
+  const { supabase, user, profile } = await requireStaff()
+
+  if (agentId) await assertStaffAssignee(supabase, agentId)
+
+  const { data: ticket, error: fetchErr } = await supabase
+    .from('tickets')
+    .select('id, title, client_id, assigned_to')
+    .eq('id', ticketId)
+    .single()
+  if (fetchErr || !ticket) throw new Error(fetchErr?.message ?? 'Ticket not found')
+  if (ticket.assigned_to === agentId) return
+
   const { error } = await supabase
     .from('tickets')
     .update({ assigned_to: agentId })
     .eq('id', ticketId)
   if (error) throw new Error(error.message)
+
+  await notifyAssigneeIfNeeded({
+    ticketId,
+    ticketTitle: ticket.title,
+    clientId: ticket.client_id,
+    assigneeId: agentId,
+    assignerId: user.id,
+    assignerName: profile.full_name?.trim() || 'A teammate',
+  })
+
   revalidateTicketPaths(ticketId)
 }
 

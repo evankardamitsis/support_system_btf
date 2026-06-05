@@ -3,6 +3,7 @@ import { UsageBar } from '@/components/dashboard/UsageBar'
 import { StatusFlag } from '@/components/dashboard/StatusFlag'
 import { PackageChip } from '@/components/retainers/PackageChip'
 import { formatPeriodCost } from '@/lib/retainers/packages'
+import { retainerTracksHours } from '@/lib/retainers/billing-model'
 
 export type RetainerListItem = {
   id: string
@@ -29,7 +30,7 @@ export function RetainersList({ retainers }: { retainers: RetainerListItem[] }) 
     return (
       <div className="retainers-table dash-empty">
         <p className="dash-empty-title">No retainers yet</p>
-        <p className="dash-empty-hint">Retainers appear when you set hours on a client.</p>
+        <p className="dash-empty-hint">Retainers appear when you set up a client plan.</p>
       </div>
     )
   }
@@ -49,13 +50,14 @@ export function RetainersList({ retainers }: { retainers: RetainerListItem[] }) 
 
       <div className="retainers-table-body anim-stagger-2">
         {retainers.map(r => {
+          const hoursBilling = retainerTracksHours(r)
           const used = Number(r.hours_used)
           const total = Number(r.hours_total)
           const remaining = total - used
           const pct = total > 0 ? Math.min(100, (used / total) * 100) : 0
-          const isOver = remaining < 0
-          const isDanger = pct > 85
-          const tone = retainerTone(pct, isOver)
+          const isOver = hoursBilling && remaining < 0
+          const isDanger = hoursBilling && pct > 85
+          const tone = hoursBilling ? retainerTone(pct, isOver) : 'ok'
 
           return (
             <Link
@@ -108,11 +110,15 @@ export function RetainersList({ retainers }: { retainers: RetainerListItem[] }) 
               </div>
 
               <div className="retainers-cell retainers-hours" data-label="Hours">
-                <div className="retainers-hours-value">
-                  <span className="tabular-nums">{used.toFixed(1)}</span>
-                  <span className="retainers-hours-sep">/</span>
-                  <span className="tabular-nums">{total.toFixed(0)}h</span>
-                </div>
+                {hoursBilling ? (
+                  <div className="retainers-hours-value">
+                    <span className="tabular-nums">{used.toFixed(1)}</span>
+                    <span className="retainers-hours-sep">/</span>
+                    <span className="tabular-nums">{total.toFixed(0)}h</span>
+                  </div>
+                ) : (
+                  <span className="dash-meta">Unlimited</span>
+                )}
               </div>
 
               <div
@@ -123,17 +129,25 @@ export function RetainersList({ retainers }: { retainers: RetainerListItem[] }) 
               </div>
 
               <div className="retainers-cell" data-label="Remaining">
-                <span className="retainers-remaining tabular-nums" data-tone={tone}>
-                  {isOver ? '−' : ''}
-                  {Math.abs(remaining).toFixed(1)}h
-                </span>
+                {hoursBilling ? (
+                  <span className="retainers-remaining tabular-nums" data-tone={tone}>
+                    {isOver ? '−' : ''}
+                    {Math.abs(remaining).toFixed(1)}h
+                  </span>
+                ) : (
+                  <span className="dash-meta">—</span>
+                )}
               </div>
 
               <div className="retainers-cell retainers-cell-usage" data-label="Usage">
-                <div className="retainers-usage-value">
-                  <UsageBar percent={pct} tone={tone} />
-                  <span className="retainers-pct tabular-nums">{Math.round(pct)}%</span>
-                </div>
+                {hoursBilling ? (
+                  <div className="retainers-usage-value">
+                    <UsageBar percent={pct} tone={tone} />
+                    <span className="retainers-pct tabular-nums">{Math.round(pct)}%</span>
+                  </div>
+                ) : (
+                  <span className="dash-meta">—</span>
+                )}
               </div>
 
               <div className="retainers-cell retainers-cell-arrow" aria-hidden>

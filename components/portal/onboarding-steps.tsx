@@ -8,7 +8,7 @@ export type PortalOnboardingStep = {
   placement?: 'top' | 'bottom' | 'left' | 'right' | 'center'
 }
 
-export const PORTAL_ONBOARDING_STEPS: PortalOnboardingStep[] = [
+const HOUR_BASED_ONBOARDING_STEPS: PortalOnboardingStep[] = [
   {
     id: 'welcome',
     title: 'Welcome to your support portal',
@@ -100,3 +100,52 @@ export const PORTAL_ONBOARDING_STEPS: PortalOnboardingStep[] = [
     placement: 'center',
   },
 ]
+
+const FIXED_PLAN_ONBOARDING_STEPS: PortalOnboardingStep[] = [
+  {
+    id: 'welcome',
+    title: 'Welcome to your support portal',
+    body: (
+      <>
+        This short tour shows what you can do here —{' '}
+        <span className="portal-onboarding-kw portal-onboarding-kw--action">submit requests</span> and{' '}
+        <span className="portal-onboarding-kw portal-onboarding-kw--status">follow progress</span> on your{' '}
+        <span className="portal-onboarding-kw portal-onboarding-kw--plan">fixed support plan</span>.
+      </>
+    ),
+    placement: 'center',
+  },
+  ...HOUR_BASED_ONBOARDING_STEPS.filter(
+    s => s.id !== 'welcome' && s.id !== 'estimates' && s.id !== 'nav-plan' && s.id !== 'done'
+  ),
+  {
+    id: 'nav-plan',
+    title: 'My Plan',
+    body: (
+      <>
+        Check your <span className="portal-onboarding-kw portal-onboarding-kw--plan">fixed monthly plan</span> and{' '}
+        <span className="portal-onboarding-kw portal-onboarding-kw--plan">current billing period</span>.
+      </>
+    ),
+    target: '[data-onboarding="nav-plan"]',
+    placement: 'right',
+  },
+  {
+    id: 'done',
+    title: 'You are all set',
+    body: (
+      <>
+        <span className="portal-onboarding-kw portal-onboarding-kw--action">Submit a request</span> whenever you need help. We will notify you by email when{' '}
+        <span className="portal-onboarding-kw portal-onboarding-kw--status">tickets are resolved</span>.
+      </>
+    ),
+    placement: 'center',
+  },
+]
+
+export function getPortalOnboardingSteps(hoursBilling: boolean): PortalOnboardingStep[] {
+  return hoursBilling ? HOUR_BASED_ONBOARDING_STEPS : FIXED_PLAN_ONBOARDING_STEPS
+}
+
+/** @deprecated Use getPortalOnboardingSteps — defaults to hour-based steps */
+export const PORTAL_ONBOARDING_STEPS = HOUR_BASED_ONBOARDING_STEPS

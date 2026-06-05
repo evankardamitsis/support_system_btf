@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { ensureClientProfile } from '@/lib/auth/ensure-client-profile'
 import { PortalDashboardShell } from '@/components/portal/DashboardShell'
+import { clientUsesHourBilling } from '@/lib/retainers/billing-model'
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -38,11 +39,16 @@ export default async function PortalLayout({ children }: { children: React.React
     }
   }
 
+  const hoursBilling = profile?.client_id
+    ? await clientUsesHourBilling(supabase, profile.client_id)
+    : true
+
   return (
     <PortalDashboardShell
       userName={profile?.full_name ?? undefined}
       userEmail={user.email}
       onboardingCompleted={!!profile?.portal_onboarding_completed_at}
+      hoursBilling={hoursBilling}
     >
       {children}
     </PortalDashboardShell>
