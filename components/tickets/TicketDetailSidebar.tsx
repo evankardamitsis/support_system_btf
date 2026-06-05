@@ -9,6 +9,7 @@ import {
 } from '@/app/actions/tickets'
 import { completeExtraHoursWork, submitExtraHours } from '@/app/actions/extra-hours'
 import { UsageBar } from '@/components/dashboard/UsageBar'
+import { useResolveCelebration } from '@/components/admin/ResolveCelebrationProvider'
 import { runWithToast } from '@/lib/notify'
 import { isTicketClosed } from '@/lib/tickets/closed'
 import {
@@ -86,6 +87,7 @@ export function TicketDetailSidebar({
   onResolveOffline: () => void
 }) {
   const router = useRouter()
+  const celebrate = useResolveCelebration()
   const [pending, startTransition] = useTransition()
   const [showMoreLog, setShowMoreLog] = useState(false)
 
@@ -277,7 +279,10 @@ export function TicketDetailSidebar({
                         ? `Resolved — ${data.billedHours}h extra billed to retainer`
                         : 'Extra work completed — ticket resolved',
                   })
-                  if (result !== null) refresh()
+                  if (result !== null) {
+                    celebrate()
+                    refresh()
+                  }
                 })
               }
             >

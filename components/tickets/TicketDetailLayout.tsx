@@ -11,6 +11,7 @@ import { StatusPill } from '@/components/ui/StatusPill'
 import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { EditableStatusPill } from './EditableStatusPill'
 import { EditablePriorityPill } from './EditablePriorityPill'
+import { useResolveCelebration } from '@/components/admin/ResolveCelebrationProvider'
 import { ResolveHoursModal } from './ResolveHoursModal'
 import { ResolveOfflineModal } from './ResolveOfflineModal'
 import { TicketDetailSidebar, type ExtraHoursItem } from './TicketDetailSidebar'
@@ -85,6 +86,7 @@ export function TicketDetailLayout({
   isAdmin?: boolean
 }) {
   const router = useRouter()
+  const celebrate = useResolveCelebration()
   const [resolveOpen, setResolveOpen] = useState(false)
   const [resolveOfflineOpen, setResolveOfflineOpen] = useState(false)
   const [pending, startTransition] = useTransition()
@@ -107,7 +109,10 @@ export function TicketDetailLayout({
               ? `Resolved — ${data.billedHours}h extra billed to retainer`
               : 'Extra work completed — ticket resolved',
         })
-        if (result !== null) refresh()
+        if (result !== null) {
+          celebrate()
+          refresh()
+        }
       })
       return
     }

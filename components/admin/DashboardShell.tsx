@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { ResolveCelebrationProvider } from '@/components/admin/ResolveCelebrationProvider'
 import { AdminSidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 
@@ -15,6 +16,7 @@ export function DashboardShell({ children, userName, userEmail, userRole }: Dash
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
+    <ResolveCelebrationProvider>
     <div data-theme="dashboard" className="flex flex-col h-screen overflow-hidden dash-shell">
       <TopBar userName={userName} userEmail={userEmail} onMenuClick={() => setSidebarOpen(true)} />
 
@@ -47,5 +49,6 @@ export function DashboardShell({ children, userName, userEmail, userRole }: Dash
         </main>
       </div>
     </div>
+    </ResolveCelebrationProvider>
   )
 }

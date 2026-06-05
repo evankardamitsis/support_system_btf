@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { resolveTicketOffline } from '@/app/actions/tickets'
+import { useResolveCelebration } from '@/components/admin/ResolveCelebrationProvider'
 import { runWithToast } from '@/lib/notify'
 import { requiresHoursOverageNote } from '@/lib/tickets/hours-overage'
 import { ResolveOverageNoteField } from './ResolveOverageNoteField'
@@ -23,6 +24,7 @@ function ResolveOfflineForm({
   const [overageNote, setOverageNote] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+  const celebrate = useResolveCelebration()
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -49,6 +51,7 @@ function ResolveOfflineForm({
       }
       setError(null)
       onClose()
+      celebrate()
     })
   }
 

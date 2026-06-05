@@ -159,7 +159,7 @@ export function PortalOnboarding({
     <div className="portal-onboarding" role="dialog" aria-modal="true" aria-labelledby="portal-onboarding-title">
       <button
         type="button"
-        className="portal-onboarding-backdrop"
+        className={`portal-onboarding-backdrop${spotlight ? ' portal-onboarding-backdrop--spotlight' : ''}`}
         aria-label="Skip tour"
         onClick={finish}
       />
