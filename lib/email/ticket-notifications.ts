@@ -107,7 +107,7 @@ export async function notifyClientEstimatePending(input: {
     return {
       sent: false,
       error:
-        'Estimate is waiting on the client, but the notification email could not be sent. Check BREVO_API_KEY and EMAIL_FROM, or ask the client to open the portal.',
+        'Estimate is waiting on the client, but the notification email could not be sent. Check ZEPTOMAIL_API_KEY and EMAIL_FROM, or ask the client to open the portal.',
     }
   }
 

@@ -12,13 +12,19 @@ function parseSender(from: string): Sender {
   return { name: 'BTF Support', email: from.trim() }
 }
 
-/** Brevo (Sendinblue) — free tier: 300 emails/day */
+function zeptoAuthHeader(apiKey: string): string {
+  const trimmed = apiKey.trim()
+  if (trimmed.toLowerCase().startsWith('zoho-enczapikey')) return trimmed
+  return `Zoho-enczapikey ${trimmed}`
+}
+
+/** ZeptoMail (Zoho) — free tier: 10,000 emails/month */
 export async function sendEmail({ to, subject, html }: SendEmailInput): Promise<boolean> {
-  const apiKey = process.env.BREVO_API_KEY
+  const apiKey = process.env.ZEPTOMAIL_API_KEY
   const from = process.env.EMAIL_FROM
 
   if (!apiKey) {
-    console.warn('[email] BREVO_API_KEY not set — skipping:', subject)
+    console.warn('[email] ZEPTOMAIL_API_KEY not set — skipping:', subject)
     return false
   }
   if (!from) {
@@ -27,26 +33,28 @@ export async function sendEmail({ to, subject, html }: SendEmailInput): Promise<
   }
 
   const sender = parseSender(from)
-  const recipients = (Array.isArray(to) ? to : [to]).map(email => ({ email }))
+  const recipients = (Array.isArray(to) ? to : [to]).map(email => ({
+    email_address: { address: email },
+  }))
 
-  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+  const res = await fetch('https://api.zeptomail.com/v1.1/email', {
     method: 'POST',
     headers: {
-      'api-key': apiKey,
+      Authorization: zeptoAuthHeader(apiKey),
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
     body: JSON.stringify({
-      sender,
+      from: { address: sender.email, name: sender.name },
       to: recipients,
       subject,
-      htmlContent: html,
+      htmlbody: html,
     }),
   })
 
   if (!res.ok) {
     const body = await res.text().catch(() => '')
-    console.error('[email] Brevo send failed:', res.status, body)
+    console.error('[email] ZeptoMail send failed:', res.status, body)
     return false
   }
 
