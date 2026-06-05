@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { CommentThread } from '@/components/tickets/CommentThread'
+import { EstimateApprovalPanel } from '@/components/tickets/EstimateApprovalPanel'
 import { TicketCommentForm } from '@/components/tickets/TicketCommentForm'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
@@ -34,6 +35,10 @@ export default async function PortalTicketDetailPage({
 
   const { data: ticket } = await supabase.from('tickets').select('*').eq('id', id).single()
   if (!ticket) notFound()
+
+  const estimatedHours =
+    ticket.estimated_hours != null ? Number(ticket.estimated_hours) : null
+  const pendingApproval = ticket.estimate_status === 'pending_approval'
 
   const { data: comments } = await supabase
     .from('ticket_comments')
@@ -86,6 +91,14 @@ export default async function PortalTicketDetailPage({
             </div>
           </div>
 
+          {pendingApproval && estimatedHours != null && estimatedHours > 0 ? (
+            <EstimateApprovalPanel
+              ticketId={ticket.id}
+              estimatedHours={estimatedHours}
+              priority={ticket.priority as TicketPriority}
+            />
+          ) : null}
+
           <div className="dash-panel">
             <div className="dash-card-section px-5 py-3">
               <h2 className="dash-section-title">Activity</h2>
@@ -109,6 +122,9 @@ export default async function PortalTicketDetailPage({
             {[
               { label: 'Type', value: ticket.type },
               { label: 'Priority', value: ticket.priority },
+              ...(estimatedHours != null
+                ? [{ label: 'Estimate', value: `${estimatedHours.toFixed(2).replace(/\.00$/, '')}h` }]
+                : []),
               { label: 'Opened', value: new Date(ticket.created_at).toLocaleDateString('en-GB') },
               { label: 'Updated', value: relativeTime(ticket.updated_at) },
             ].map(({ label, value }) => (

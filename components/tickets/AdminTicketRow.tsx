@@ -19,7 +19,8 @@ import { EditableStatusPill } from './EditableStatusPill'
 import { EditablePriorityPill } from './EditablePriorityPill'
 import { ResolveHoursModal } from './ResolveHoursModal'
 import type { TicketTableRow } from './TicketsTable'
-import { formatTicketPriority, formatTicketStatus, runWithToast } from '@/lib/notify'
+import { canResolveWithEstimate, isEstimateLocked } from '@/lib/tickets/estimate'
+import { formatTicketPriority, formatTicketStatus, notifyError, runWithToast } from '@/lib/notify'
 import type { TicketPriority, TicketStatus } from '@/lib/types'
 
 export function AdminTicketRow({
@@ -37,6 +38,7 @@ export function AdminTicketRow({
   const accent = priorityAccent[ticket.priority] ?? priorityAccent.normal
   const recent = isRecentlyUpdated(ticket.updated_at)
   const href = `${hrefPrefix}/${ticket.id}`
+  const estimateLocked = isEstimateLocked(ticket.estimate_status ?? null)
 
   function refresh() {
     router.refresh()
@@ -67,6 +69,10 @@ export function AdminTicketRow({
 
   function onStatusChange(next: TicketStatus) {
     if (next === 'resolved' && !hoursLogged && ticket.status !== 'resolved') {
+      if (!canResolveWithEstimate(ticket.estimate_status ?? null, ticket.status)) {
+        notifyError('Submit the estimate and get client approval before resolving')
+        return
+      }
       setResolveOpen(true)
       return
     }
@@ -98,7 +104,7 @@ export function AdminTicketRow({
           <EditablePriorityPill
             value={ticket.priority}
             onChange={onPriorityChange}
-            disabled={pending}
+            disabled={pending || estimateLocked}
             ariaLabel={`Priority for ${ticket.title}`}
           />
         </div>
@@ -137,6 +143,7 @@ export function AdminTicketRow({
             defaultValue={ticket.estimated_hours ?? ''}
             placeholder="Est"
             aria-label={`Estimated hours for ${ticket.title}`}
+            disabled={estimateLocked}
             onBlur={e => onEstimateBlur(e.target.value)}
             onClick={e => e.stopPropagation()}
           />

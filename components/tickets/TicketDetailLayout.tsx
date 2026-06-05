@@ -13,7 +13,12 @@ import { ResolveHoursModal } from './ResolveHoursModal'
 import { TicketDetailSidebar } from './TicketDetailSidebar'
 import { DeleteTicketButton } from './DeleteTicketButton'
 import { formatTicketId } from '@/lib/tickets/display'
-import { formatTicketPriority, formatTicketStatus, runWithToast } from '@/lib/notify'
+import {
+  canResolveWithEstimate,
+  isEstimateLocked,
+  type EstimateStatus,
+} from '@/lib/tickets/estimate'
+import { formatTicketPriority, formatTicketStatus, notifyError, runWithToast } from '@/lib/notify'
 import type { TicketPriority, TicketStatus } from '@/lib/types'
 
 type RetainerOption = {
@@ -36,6 +41,7 @@ export function TicketDetailLayout({
   createdAt,
   updatedAt,
   description,
+  estimateStatus,
   estimatedHours,
   actualHours,
   hoursLogged,
@@ -55,6 +61,7 @@ export function TicketDetailLayout({
   createdAt: string
   updatedAt: string
   description: string | null
+  estimateStatus: EstimateStatus
   estimatedHours: number | null
   actualHours: number | null
   hoursLogged: boolean
@@ -71,8 +78,14 @@ export function TicketDetailLayout({
     router.refresh()
   }
 
+  const priorityLocked = isEstimateLocked(estimateStatus)
+
   function onStatusChange(next: TicketStatus) {
     if (next === 'resolved' && !hoursLogged && status !== 'resolved') {
+      if (!canResolveWithEstimate(estimateStatus, status)) {
+        notifyError('Submit the estimate and get client approval before resolving')
+        return
+      }
       setResolveOpen(true)
       return
     }
@@ -154,7 +167,7 @@ export function TicketDetailLayout({
                     if (ok !== null) refresh()
                   })
                 }
-                disabled={pending}
+                disabled={pending || priorityLocked}
                 ariaLabel="Change ticket priority"
               />
             </div>
@@ -175,6 +188,7 @@ export function TicketDetailLayout({
         <TicketDetailSidebar
           ticketId={ticketId}
           status={status}
+          estimateStatus={estimateStatus}
           estimatedHours={estimatedHours}
           actualHours={actualHours}
           hoursLogged={hoursLogged}

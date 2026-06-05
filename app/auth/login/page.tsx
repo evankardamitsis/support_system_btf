@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { getPostLoginPath } from '@/lib/auth/post-login'
 import { PasswordField } from '@/components/auth/PasswordField'
+import { SignInButton } from '@/components/auth/SignInButton'
 import { AuthError } from '@/components/auth/AuthMessage'
 
 const inputStyle = {
@@ -134,19 +135,7 @@ export default async function LoginPage({
 
             {params.error ? <AuthError message={params.error} /> : null}
 
-            <button
-              type="submit"
-              className="btn-primary w-full py-4 text-sm tracking-[0.12em] uppercase cursor-pointer font-medium"
-              style={{
-                fontFamily: 'var(--font-dm-mono)',
-                background: 'var(--accent)',
-                color: 'var(--bg)',
-                border: 'none',
-                borderRadius: 0,
-              }}
-            >
-              Sign in →
-            </button>
+            <SignInButton />
           </form>
         </div>
 

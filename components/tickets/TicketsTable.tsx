@@ -21,6 +21,7 @@ export type TicketTableRow = {
   clientName?: string | null
   estimated_hours?: number | null
   actual_hours?: number | null
+  estimate_status?: 'pending_approval' | 'approved' | null
 }
 
 export function TicketsTable({

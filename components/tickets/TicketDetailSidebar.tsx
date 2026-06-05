@@ -2,10 +2,16 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
-import { updateTicketEstimatedHours } from '@/app/actions/tickets'
+import { submitEstimateForApproval, updateTicketEstimatedHours } from '@/app/actions/tickets'
 import { logHours } from '@/app/actions/hours'
 import { UsageBar } from '@/components/dashboard/UsageBar'
 import { runWithToast } from '@/lib/notify'
+import {
+  canResolveWithEstimate,
+  canSubmitEstimate,
+  isEstimateLocked,
+  type EstimateStatus,
+} from '@/lib/tickets/estimate'
 import type { TicketStatus } from '@/lib/types'
 
 type RetainerOption = {
@@ -19,6 +25,7 @@ type RetainerOption = {
 export function TicketDetailSidebar({
   ticketId,
   status,
+  estimateStatus,
   estimatedHours,
   actualHours,
   hoursLogged,
@@ -29,6 +36,7 @@ export function TicketDetailSidebar({
 }: {
   ticketId: string
   status: TicketStatus
+  estimateStatus: EstimateStatus
   estimatedHours: number | null
   actualHours: number | null
   hoursLogged: boolean
@@ -49,7 +57,10 @@ export function TicketDetailSidebar({
   const isDanger = pct > 85
   const tone = isOver ? 'over' : isDanger ? 'warn' : 'ok'
 
-  const canResolve = status !== 'resolved' && status !== 'closed'
+  const showSubmit = canSubmitEstimate(estimateStatus, estimatedHours, status)
+  const showAwaiting = estimateStatus === 'pending_approval' && status !== 'resolved' && status !== 'closed'
+  const showResolve = canResolveWithEstimate(estimateStatus, status)
+  const estimateLocked = isEstimateLocked(estimateStatus)
   const logged =
     actualHours != null && actualHours > 0 ? `${actualHours.toFixed(1)}h` : '—'
 
@@ -75,7 +86,7 @@ export function TicketDetailSidebar({
               className="btf-input w-full text-sm tabular-nums"
               defaultValue={estimatedHours ?? ''}
               placeholder="—"
-              disabled={pending}
+              disabled={pending || estimateLocked}
               onBlur={e => {
                 const raw = e.target.value
                 const next = raw.trim() === '' ? null : parseFloat(raw)
@@ -104,7 +115,28 @@ export function TicketDetailSidebar({
           </div>
         </div>
 
-        {canResolve ? (
+        {showSubmit ? (
+          <button
+            type="button"
+            className="dash-btn-primary btn-primary w-full cursor-pointer mt-4"
+            disabled={pending}
+            onClick={() =>
+              startTransition(async () => {
+                const ok = await runWithToast(() => submitEstimateForApproval(ticketId), {
+                  loading: 'Sending estimate to client…',
+                  success: 'Estimate sent — waiting for client approval',
+                })
+                if (ok !== null) refresh()
+              })
+            }
+          >
+            {pending ? 'Submitting…' : 'Submit estimate'}
+          </button>
+        ) : showAwaiting ? (
+          <p className="ticket-detail-aside-note dash-meta mt-4">
+            Awaiting client approval on estimate and priority.
+          </p>
+        ) : showResolve ? (
           <button
             type="button"
             className="dash-btn-primary btn-primary w-full cursor-pointer mt-4"

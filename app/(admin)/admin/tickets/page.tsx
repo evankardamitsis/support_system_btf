@@ -26,7 +26,7 @@ export default async function AdminTicketsPage({
     supabase
       .from('tickets')
       .select(
-        'id, client_id, status, priority, title, type, created_at, updated_at, estimated_hours, actual_hours, clients(name)'
+        'id, client_id, status, priority, title, type, created_at, updated_at, estimated_hours, actual_hours, estimate_status, clients(name)'
       )
       .order('updated_at', { ascending: false }),
     supabase.from('clients').select('id, name').order('name'),
@@ -73,6 +73,7 @@ export default async function AdminTicketsPage({
     updated_at: t.updated_at,
     estimated_hours: t.estimated_hours != null ? Number(t.estimated_hours) : null,
     actual_hours: t.actual_hours != null ? Number(t.actual_hours) : null,
+    estimate_status: t.estimate_status ?? null,
     clientName: (t.clients as unknown as { name: string } | null)?.name ?? null,
   }))
 

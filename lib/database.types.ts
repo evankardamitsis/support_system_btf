@@ -124,6 +124,9 @@ export interface Database {
           resolved_at: string | null
           estimated_hours: number | null
           actual_hours: number | null
+          estimate_status: 'pending_approval' | 'approved' | null
+          estimate_submitted_at: string | null
+          estimate_approved_at: string | null
         }
         Insert: {
           id?: string
@@ -140,6 +143,9 @@ export interface Database {
           resolved_at?: string | null
           estimated_hours?: number | null
           actual_hours?: number | null
+          estimate_status?: 'pending_approval' | 'approved' | null
+          estimate_submitted_at?: string | null
+          estimate_approved_at?: string | null
         }
         Update: {
           id?: string
@@ -156,6 +162,9 @@ export interface Database {
           resolved_at?: string | null
           estimated_hours?: number | null
           actual_hours?: number | null
+          estimate_status?: 'pending_approval' | 'approved' | null
+          estimate_submitted_at?: string | null
+          estimate_approved_at?: string | null
         }
         Relationships: []
       }
