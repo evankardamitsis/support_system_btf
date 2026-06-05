@@ -53,7 +53,7 @@ export async function getClientNotificationEmails(clientId: string): Promise<str
   return [...found]
 }
 
-async function emailsForStaff(): Promise<string[]> {
+export async function getStaffNotificationEmails(): Promise<string[]> {
   const adminResult = tryCreateAdminClient()
   if ('error' in adminResult) return []
 
@@ -65,7 +65,8 @@ async function emailsForStaff(): Promise<string[]> {
   const emails: string[] = []
   for (const profile of profiles ?? []) {
     const { data } = await adminResult.client.auth.admin.getUserById(profile.id)
-    if (data?.user?.email) emails.push(data.user.email)
+    const email = data?.user?.email?.trim()
+    if (email) emails.push(email)
   }
   return [...new Set(emails)]
 }
@@ -119,22 +120,38 @@ export async function notifyStaffEstimateApproved(input: {
   ticketTitle: string
   estimatedHours: number
   priority: string
-}): Promise<void> {
-  const recipients = await emailsForStaff()
-  if (!recipients.length) return
+}): Promise<NotifyResult> {
+  const recipients = await getStaffNotificationEmails()
+  if (!recipients.length) {
+    return {
+      sent: false,
+      error: 'No admin or agent emails found — ensure staff users have signed up with email',
+    }
+  }
 
   const url = `${appOrigin()}/admin/tickets/${input.ticketId}`
   const hours = input.estimatedHours.toFixed(2).replace(/\.00$/, '')
   const priority = formatTicketPriority(input.priority)
+  const ticketRef = formatTicketId(input.ticketId)
 
-  await sendEmail({
+  const sent = await sendEmail({
     to: recipients,
-    subject: `Estimate approved — ${formatTicketId(input.ticketId)}`,
+    subject: `Client approved estimate — ${ticketRef}`,
     html: emailShell(
-      'Ticket estimate approved',
-      `The client approved <strong>${hours}h</strong> at <strong>${priority}</strong> priority for <strong>${input.ticketTitle}</strong>. You can resolve and log actual hours when work is done.`,
+      'Client approved the estimate',
+      `The client approved <strong>${hours}h</strong> at <strong>${priority}</strong> priority for <strong>${input.ticketTitle}</strong> (${ticketRef}). Work can continue — resolve and log actual hours when done.`,
       'Open ticket',
       url
     ),
   })
+
+  if (!sent) {
+    return {
+      sent: false,
+      error:
+        'Estimate was approved but the team notification email could not be sent. Check ZEPTOMAIL_API_KEY and EMAIL_FROM.',
+    }
+  }
+
+  return { sent: true }
 }

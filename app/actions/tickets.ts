@@ -235,12 +235,15 @@ export async function approveTicketEstimate(ticketId: string) {
   if (error) throw new Error(error.message)
 
   const hours = ticket.estimated_hours != null ? Number(ticket.estimated_hours) : 0
-  await notifyStaffEstimateApproved({
+  const staffNotify = await notifyStaffEstimateApproved({
     ticketId,
     ticketTitle: ticket.title,
     estimatedHours: hours,
     priority: ticket.priority,
   })
+  if (!staffNotify.sent) {
+    console.error('[email] staff estimate-approved notification failed:', staffNotify.error)
+  }
 
   revalidateTicketPaths(ticketId)
 }
