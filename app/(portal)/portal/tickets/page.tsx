@@ -67,14 +67,19 @@ export default async function PortalTicketsPage({
         title="My tickets"
         description="See where each request stands — click a row for the full thread."
         action={
-          <DashButton href="/portal/tickets/new">
-            <Plus size={15} />
-            New request
-          </DashButton>
+          <span data-onboarding="new-request" className="inline-flex">
+            <DashButton href="/portal/tickets/new">
+              <Plus size={15} />
+              New request
+            </DashButton>
+          </span>
         }
       />
 
-      <section className="tickets-workspace anim-fade-up anim-fade-up-3">
+      <section
+        className="tickets-workspace anim-fade-up anim-fade-up-3"
+        data-onboarding="ticket-list"
+      >
         <TicketsTableToolbar
           basePath="/portal/tickets"
           tabs={filterTabs.map(tab => ({

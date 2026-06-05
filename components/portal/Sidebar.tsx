@@ -4,8 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const nav = [
-  { label: 'My Tickets', href: '/portal/tickets' },
-  { label: 'My Plan', href: '/portal/retainer' },
+  { label: 'My Tickets', href: '/portal/tickets', onboarding: 'nav-tickets' },
+  { label: 'My Plan', href: '/portal/retainer', onboarding: 'nav-plan' },
 ]
 
 function initials(name?: string, email?: string) {
@@ -20,10 +20,12 @@ export function PortalSidebar({
   userName,
   userEmail,
   onClose,
+  onShowTour,
 }: {
   userName?: string
   userEmail?: string
   onClose?: () => void
+  onShowTour?: () => void
 }) {
   const pathname = usePathname()
   const ini = initials(userName, userEmail)
@@ -44,13 +46,14 @@ export function PortalSidebar({
       <nav className="flex-1 px-3 py-4 overflow-y-auto">
         <p className="dash-nav-label">My portal</p>
         <div className="space-y-0.5">
-          {nav.map(({ label, href }) => {
+          {nav.map(({ label, href, onboarding }) => {
             const active = pathname === href || pathname.startsWith(href + '/')
             return (
               <Link
                 key={href}
                 href={href}
                 onClick={onClose}
+                data-onboarding={onboarding}
                 className={`dash-nav-link ${active ? 'is-active' : ''}`}
               >
                 <span className="dash-nav-text">{label}</span>
@@ -58,6 +61,19 @@ export function PortalSidebar({
             )
           })}
         </div>
+
+        {onShowTour ? (
+          <button
+            type="button"
+            className="portal-tour-again-btn"
+            onClick={() => {
+              onShowTour()
+              onClose?.()
+            }}
+          >
+            Show tour again
+          </button>
+        ) : null}
       </nav>
 
       <div className="px-3 pb-4">

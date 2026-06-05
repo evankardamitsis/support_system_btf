@@ -18,6 +18,7 @@ export interface Database {
           role: 'admin' | 'agent' | 'client'
           client_id: string | null
           full_name: string | null
+          portal_onboarding_completed_at: string | null
           created_at: string
         }
         Insert: {
@@ -25,6 +26,7 @@ export interface Database {
           role: 'admin' | 'agent' | 'client'
           client_id?: string | null
           full_name?: string | null
+          portal_onboarding_completed_at?: string | null
           created_at?: string
         }
         Update: {
@@ -32,6 +34,7 @@ export interface Database {
           role?: 'admin' | 'agent' | 'client'
           client_id?: string | null
           full_name?: string | null
+          portal_onboarding_completed_at?: string | null
           created_at?: string
         }
         Relationships: []

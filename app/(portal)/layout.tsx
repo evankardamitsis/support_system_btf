@@ -10,7 +10,7 @@ export default async function PortalLayout({ children }: { children: React.React
 
   let { data: profile } = await supabase
     .from('users')
-    .select('role, full_name, client_id')
+    .select('role, full_name, client_id, portal_onboarding_completed_at')
     .eq('id', user.id)
     .maybeSingle()
 
@@ -25,10 +25,16 @@ export default async function PortalLayout({ children }: { children: React.React
         `/auth/login?error=${encodeURIComponent('No portal access for this account.')}`
       )
     }
-    profile = {
+    const { data: ensuredProfile } = await supabase
+      .from('users')
+      .select('role, full_name, client_id, portal_onboarding_completed_at')
+      .eq('id', user.id)
+      .single()
+    profile = ensuredProfile ?? {
       role: 'client',
       full_name: ensured.full_name,
       client_id: ensured.client_id,
+      portal_onboarding_completed_at: null,
     }
   }
 
@@ -36,6 +42,7 @@ export default async function PortalLayout({ children }: { children: React.React
     <PortalDashboardShell
       userName={profile?.full_name ?? undefined}
       userEmail={user.email}
+      onboardingCompleted={!!profile?.portal_onboarding_completed_at}
     >
       {children}
     </PortalDashboardShell>
