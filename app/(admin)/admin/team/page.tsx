@@ -7,18 +7,7 @@ import { requireAdmin } from '@/lib/auth/require-admin'
 
 export default async function AdminTeamPage() {
   const { isAdmin } = await requireAdmin()
-
-  let members: Awaited<ReturnType<typeof getTeamDirectory>>['members'] = []
-  let pendingInvites: Awaited<ReturnType<typeof getTeamDirectory>>['pendingInvites'] = []
-  let loadError: string | null = null
-
-  try {
-    const directory = await getTeamDirectory()
-    members = directory.members
-    pendingInvites = directory.pendingInvites
-  } catch (err) {
-    loadError = err instanceof Error ? err.message : 'Could not load team directory'
-  }
+  const { members, pendingInvites, error: loadError } = await getTeamDirectory()
 
   const adminCount = members.filter(m => m.role === 'admin').length
   const memberCount = members.filter(m => m.role === 'agent').length

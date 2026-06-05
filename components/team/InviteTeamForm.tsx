@@ -23,17 +23,18 @@ export function InviteTeamForm() {
     const formData = new FormData(form)
     formData.set('role', role)
 
-    try {
-      const url = await inviteTeamMember(formData)
-      setLink(url)
-      setRole('agent')
-      form.reset()
-      router.refresh()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not create invite')
-    } finally {
-      setPending(false)
+    const result = await inviteTeamMember(formData)
+    setPending(false)
+
+    if (!result.ok) {
+      setError(result.error)
+      return
     }
+
+    setLink(result.url)
+    setRole('agent')
+    form.reset()
+    router.refresh()
   }
 
   return (

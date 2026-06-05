@@ -67,7 +67,7 @@ export default async function RegisterPage({
 
     if (authError || !authData.user) {
       const msg = authError?.message ?? 'Signup failed'
-      if (/already registered/i.test(msg)) {
+      if (/already (registered|exists)/i.test(msg)) {
         redirect(`/auth/register?token=${token}&check_email=1`)
       }
       redirect(`/auth/register?token=${token}&error=${encodeURIComponent(msg)}`)

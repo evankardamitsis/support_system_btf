@@ -17,15 +17,21 @@ export function PendingInviteActions({
   const [pending, startTransition] = useTransition()
 
   function revoke() {
-    if (!confirm('Revoke this invite? They will not be able to use the link anymore.')) return
+    if (
+      !confirm(
+        'Revoke this invite? The link will stop working and any unfinished signup for this email will be cleared so you can invite them again.'
+      )
+    ) {
+      return
+    }
     setError(null)
     startTransition(async () => {
-      try {
-        await revokeStaffInvite(inviteId)
-        router.refresh()
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Could not revoke invite')
+      const result = await revokeStaffInvite(inviteId)
+      if (!result.ok) {
+        setError(result.error)
+        return
       }
+      router.refresh()
     })
   }
 

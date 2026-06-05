@@ -1,11 +1,22 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { tryCreateAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth/require-admin'
-import { parseStaffRole, type StaffRole } from '@/lib/team/roles'
-import { authUserExists, getAuthEmailById } from '@/lib/team/auth-users'
+import { parseStaffRole } from '@/lib/team/roles'
+import {
+  clearIncompleteStaffSignup,
+  findAuthUserByEmail,
+  getAuthEmailById,
+} from '@/lib/team/auth-users'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/database.types'
+import type { StaffRole } from '@/lib/team/roles'
+import type {
+  InviteTeamMemberResult,
+  RevokeStaffInviteResult,
+  TeamDirectoryResult,
+} from '@/lib/team/action-results'
 
 function getAppOrigin(): string {
   return process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
@@ -27,22 +38,16 @@ function staffInvitesSetupError(error: { message: string; code?: string }): stri
   return null
 }
 
-export async function inviteTeamMember(formData: FormData): Promise<string> {
-  const { user, isAdmin } = await requireAdmin()
-  if (!isAdmin || !user) throw new Error('Only admins can invite team members')
+function failInvite(error: string): InviteTeamMemberResult {
+  return { ok: false, error }
+}
 
-  const email = (formData.get('email') as string)?.trim().toLowerCase()
-  const fullName = (formData.get('full_name') as string)?.trim()
-  const role = parseStaffRole(formData.get('role') as string)
-
-  if (!email || !fullName) throw new Error('Email and name are required')
-
-  const admin = createAdminClient()
-
-  if (await authUserExists(admin, email)) {
-    throw new Error('A user with this email already exists')
-  }
-
+async function reusePendingInvite(
+  admin: SupabaseClient<Database>,
+  email: string,
+  fullName: string,
+  role: StaffRole
+): Promise<InviteTeamMemberResult | null> {
   const { data: pending, error: pendingError } = await admin
     .from('staff_invite_tokens')
     .select('id, token, full_name, role')
@@ -52,23 +57,78 @@ export async function inviteTeamMember(formData: FormData): Promise<string> {
     .maybeSingle()
 
   if (pendingError) {
-    throw new Error(staffInvitesSetupError(pendingError) ?? pendingError.message)
+    return failInvite(staffInvitesSetupError(pendingError) ?? pendingError.message)
   }
 
-  if (pending) {
-    if (pending.full_name !== fullName || pending.role !== role) {
-      const { error: updateError } = await admin
-        .from('staff_invite_tokens')
-        .update({ full_name: fullName, role })
-        .eq('id', pending.id)
+  if (!pending?.token) return null
 
-      if (updateError) {
-        throw new Error(updateError.message)
-      }
+  if (pending.full_name !== fullName || pending.role !== role) {
+    const { error: updateError } = await admin
+      .from('staff_invite_tokens')
+      .update({ full_name: fullName, role })
+      .eq('id', pending.id)
+
+    if (updateError) {
+      return failInvite(updateError.message)
     }
-    revalidatePath('/admin/team')
-    return staffInviteUrl(pending.token)
   }
+
+  return { ok: true, url: staffInviteUrl(pending.token) }
+}
+
+export async function inviteTeamMember(formData: FormData): Promise<InviteTeamMemberResult> {
+  const { user, isAdmin } = await requireAdmin()
+  if (!isAdmin || !user) {
+    return failInvite('Only admins can invite team members')
+  }
+
+  const email = (formData.get('email') as string)?.trim().toLowerCase()
+  const fullName = (formData.get('full_name') as string)?.trim()
+  const role = parseStaffRole(formData.get('role') as string)
+
+  if (!email || !fullName) {
+    return failInvite('Email and name are required')
+  }
+
+  const adminResult = tryCreateAdminClient()
+  if ('error' in adminResult) {
+    return failInvite(adminResult.error)
+  }
+  const admin = adminResult.client
+
+  const authUser = await findAuthUserByEmail(admin, email)
+  if (authUser) {
+    const { data: profile } = await admin
+      .from('users')
+      .select('role, full_name')
+      .eq('id', authUser.id)
+      .maybeSingle()
+
+    if (profile?.role === 'admin' || profile?.role === 'agent') {
+      const name = profile.full_name?.trim() || 'This user'
+      return failInvite(`${name} is already on the team. They can sign in at /auth/login.`)
+    }
+
+    if (profile?.role === 'client') {
+      return failInvite('This email belongs to a client portal account, not staff.')
+    }
+
+    const reusedAfterSignup = await reusePendingInvite(admin, email, fullName, role)
+    if (reusedAfterSignup) return reusedAfterSignup
+
+    if (authUser.email_confirmed_at) {
+      return failInvite(
+        'An account already exists for this email. Ask them to sign in at /auth/login.'
+      )
+    }
+
+    return failInvite(
+      'Signup was started for this email but not confirmed yet. Ask them to check their inbox for the confirmation link.'
+    )
+  }
+
+  const reused = await reusePendingInvite(admin, email, fullName, role)
+  if (reused) return reused
 
   const { data: token, error } = await admin
     .from('staff_invite_tokens')
@@ -82,91 +142,124 @@ export async function inviteTeamMember(formData: FormData): Promise<string> {
     .single()
 
   if (error || !token?.token) {
-    throw new Error(staffInvitesSetupError(error ?? { message: 'Failed to create invite' }) ?? error?.message ?? 'Failed to create invite')
+    return failInvite(
+      staffInvitesSetupError(error ?? { message: 'Failed to create invite' }) ??
+        error?.message ??
+        'Failed to create invite'
+    )
   }
 
-  revalidatePath('/admin/team')
-  return staffInviteUrl(token.token)
+  return { ok: true, url: staffInviteUrl(token.token) }
 }
 
-export async function getTeamDirectory(): Promise<{
-  members: Array<{
-    id: string
-    email: string
-    full_name: string | null
-    role: StaffRole
-    created_at: string
-  }>
-  pendingInvites: Array<{
-    id: string
-    email: string
-    full_name: string
-    role: StaffRole
-    expires_at: string
-    created_at: string
-    invite_url: string
-  }>
-}> {
-  const supabase = await createClient()
-  const admin = createAdminClient()
-
-  const [{ data: profiles, error: profilesError }, { data: invites, error: invitesError }] =
-    await Promise.all([
-      supabase
-        .from('users')
-        .select('id, role, full_name, created_at')
-        .in('role', ['admin', 'agent'])
-        .order('created_at', { ascending: true }),
-      supabase
-        .from('staff_invite_tokens')
-        .select('id, email, full_name, role, expires_at, created_at, token')
-        .eq('used', false)
-        .gt('expires_at', new Date().toISOString())
-        .order('created_at', { ascending: false }),
-    ])
-
-  if (profilesError) throw new Error(profilesError.message)
-
-  if (invitesError) {
-    throw new Error(staffInvitesSetupError(invitesError) ?? invitesError.message)
+export async function getTeamDirectory(): Promise<TeamDirectoryResult> {
+  const empty: TeamDirectoryResult = {
+    members: [],
+    pendingInvites: [],
+    error: null,
   }
 
-  const members = await Promise.all(
-    (profiles ?? []).map(async p => ({
-      id: p.id,
-      email: (await getAuthEmailById(admin, p.id)) ?? '—',
-      full_name: p.full_name,
-      role: parseStaffRole(p.role),
-      created_at: p.created_at ?? '',
-    }))
-  )
+  try {
+    const supabase = await createClient()
+    const adminResult = tryCreateAdminClient()
+    if ('error' in adminResult) {
+      return { ...empty, error: adminResult.error }
+    }
+    const admin = adminResult.client
 
-  const pendingInvites =
-    invites?.map(i => ({
-      id: i.id,
-      email: i.email,
-      full_name: i.full_name,
-      role: parseStaffRole(i.role),
-      expires_at: i.expires_at,
-      created_at: i.created_at ?? '',
-      invite_url: staffInviteUrl(i.token),
-    })) ?? []
+    const [{ data: profiles, error: profilesError }, { data: invites, error: invitesError }] =
+      await Promise.all([
+        supabase
+          .from('users')
+          .select('id, role, full_name, created_at')
+          .in('role', ['admin', 'agent'])
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('staff_invite_tokens')
+          .select('id, email, full_name, role, expires_at, created_at, token')
+          .eq('used', false)
+          .gt('expires_at', new Date().toISOString())
+          .order('created_at', { ascending: false }),
+      ])
 
-  return { members, pendingInvites }
+    if (profilesError) {
+      return { ...empty, error: profilesError.message }
+    }
+
+    if (invitesError) {
+      return {
+        ...empty,
+        error: staffInvitesSetupError(invitesError) ?? invitesError.message,
+      }
+    }
+
+    const members = await Promise.all(
+      (profiles ?? []).map(async p => ({
+        id: p.id,
+        email: (await getAuthEmailById(admin, p.id)) ?? '—',
+        full_name: p.full_name,
+        role: parseStaffRole(p.role),
+        created_at: p.created_at ?? '',
+      }))
+    )
+
+    const pendingInvites =
+      invites?.map(i => ({
+        id: i.id,
+        email: i.email,
+        full_name: i.full_name,
+        role: parseStaffRole(i.role),
+        expires_at: i.expires_at,
+        created_at: i.created_at ?? '',
+        invite_url: staffInviteUrl(i.token),
+      })) ?? []
+
+    return { members, pendingInvites, error: null }
+  } catch (err) {
+    return {
+      ...empty,
+      error: err instanceof Error ? err.message : 'Could not load team directory',
+    }
+  }
 }
 
-export async function revokeStaffInvite(inviteId: string): Promise<void> {
+export async function revokeStaffInvite(inviteId: string): Promise<RevokeStaffInviteResult> {
   const { isAdmin } = await requireAdmin()
-  if (!isAdmin) throw new Error('Only admins can revoke invites')
+  if (!isAdmin) {
+    return { ok: false, error: 'Only admins can revoke invites' }
+  }
 
-  const admin = createAdminClient()
-  const { error } = await admin
+  const adminResult = tryCreateAdminClient()
+  if ('error' in adminResult) {
+    return { ok: false, error: adminResult.error }
+  }
+  const admin = adminResult.client
+
+  const { data: invite, error: fetchError } = await admin
+    .from('staff_invite_tokens')
+    .select('id, email')
+    .eq('id', inviteId)
+    .eq('used', false)
+    .maybeSingle()
+
+  if (fetchError) {
+    return { ok: false, error: fetchError.message }
+  }
+  if (!invite) {
+    return { ok: false, error: 'Invite not found or already used' }
+  }
+
+  const { error: deleteError } = await admin
     .from('staff_invite_tokens')
     .delete()
     .eq('id', inviteId)
     .eq('used', false)
 
-  if (error) throw new Error(error.message)
+  if (deleteError) {
+    return { ok: false, error: deleteError.message }
+  }
 
-  revalidatePath('/admin/team')
+  await clearIncompleteStaffSignup(admin, invite.email)
+
+  return { ok: true }
 }
