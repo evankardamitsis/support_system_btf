@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { tryCreateAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth/require-admin'
+import { requireClient } from '@/lib/auth/require-client'
 import { getRetainerForClient } from '@/lib/retainers/active'
 import { assertClientCanUseRetainer } from '@/lib/retainers/guards'
 import {
@@ -105,31 +106,22 @@ export async function createTicket(formData: FormData): Promise<string> {
 }
 
 export async function createPortalTicket(formData: FormData): Promise<string> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { supabase, user, clientId } = await requireClient()
 
-  const { data: profile } = await supabase
-    .from('users')
-    .select('client_id')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.client_id) {
-    throw new Error('No client account linked')
-  }
-
-  await assertClientCanUseRetainer(supabase, profile.client_id)
+  await assertClientCanUseRetainer(supabase, clientId)
 
   const title = formData.get('title') as string
   const type = formData.get('type') as 'bug' | 'task' | 'request' | 'question'
 
-  const { data: ticket, error } = await supabase
+  const adminResult = tryCreateAdminClient()
+  if ('error' in adminResult) {
+    throw new Error(adminResult.error)
+  }
+
+  const { data: ticket, error } = await adminResult.client
     .from('tickets')
     .insert({
-      client_id: profile.client_id,
+      client_id: clientId,
       created_by: user.id,
       title,
       description: (formData.get('description') as string) || null,
@@ -144,7 +136,7 @@ export async function createPortalTicket(formData: FormData): Promise<string> {
     ticketId: ticket.id,
     ticketTitle: title,
     ticketType: type,
-    clientId: profile.client_id,
+    clientId,
   })
   if (!staffNotify.sent) {
     console.error('[email] staff new-ticket notification failed:', staffNotify.error)

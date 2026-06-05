@@ -1,27 +1,14 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/dashboard/PageHeader'
+import { requirePortalClient } from '@/lib/auth/portal-context'
 import { NewTicketForm } from './NewTicketForm'
 import { getClientRetainerStatus } from '@/lib/retainers/guards'
 import { canUseRetainerHours, retainerStatusMessage } from '@/lib/retainers/status'
 
 export default async function NewTicketPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
+  const { supabase, clientId } = await requirePortalClient()
 
-  const { data: profile } = await supabase
-    .from('users')
-    .select('client_id')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile?.client_id) redirect('/auth/login')
-
-  const status = await getClientRetainerStatus(supabase, profile.client_id)
+  const status = await getClientRetainerStatus(supabase, clientId)
   const canSubmit = canUseRetainerHours(status)
 
   return (

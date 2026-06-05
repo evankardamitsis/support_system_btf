@@ -1,5 +1,4 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { requirePortalClient } from '@/lib/auth/portal-context'
 import { PageHeader } from '@/components/dashboard/PageHeader'
 import { MetricStrip } from '@/components/dashboard/MetricStrip'
 import { UsageBar } from '@/components/dashboard/UsageBar'
@@ -14,18 +13,11 @@ import {
 } from '@/lib/retainers/status'
 
 export default async function RetainerPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/auth/login')
-
-  const { data: profile } = await supabase.from('users').select('client_id').eq('id', user.id).single()
-  if (!profile?.client_id) redirect('/auth/login')
+  const { supabase, clientId } = await requirePortalClient()
 
   const [retainer, retainerStatus] = await Promise.all([
-    getRetainerForClient(supabase, profile.client_id, { includePackage: true }),
-    getClientRetainerStatus(supabase, profile.client_id),
+    getRetainerForClient(supabase, clientId, { includePackage: true }),
+    getClientRetainerStatus(supabase, clientId),
   ])
 
   const lifecycleBlocked = !canUseRetainerHours(retainerStatus)

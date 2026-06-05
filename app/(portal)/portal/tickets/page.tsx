@@ -1,5 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
 import { PageHeader } from '@/components/dashboard/PageHeader'
+import { requirePortalClient } from '@/lib/auth/portal-context'
 import { DashButton } from '@/components/dashboard/DashButton'
 import { TicketsTable } from '@/components/tickets/TicketsTable'
 import { TicketsTableToolbar } from '@/components/tickets/TicketsTableToolbar'
@@ -19,23 +19,14 @@ export default async function PortalTicketsPage({
   searchParams: Promise<{ status?: string }>
 }) {
   const filters = await searchParams
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  const { data: profile } = await supabase
-    .from('users')
-    .select('client_id')
-    .eq('id', user!.id)
-    .single()
+  const { supabase, clientId } = await requirePortalClient()
 
   const { data: all } = await supabase
     .from('tickets')
     .select(
       'id, title, status, priority, type, created_at, updated_at, resolved_at, estimate_status, completion_status'
     )
-    .eq('client_id', profile!.client_id!)
+    .eq('client_id', clientId)
     .order('updated_at', { ascending: false })
 
   const counts = {
