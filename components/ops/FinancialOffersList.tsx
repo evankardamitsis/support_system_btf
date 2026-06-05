@@ -2,11 +2,13 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { CheckCircle2, Download, Mail, Trash2 } from 'lucide-react'
+import Link from 'next/link'
+import { CheckCircle2, Download, FolderKanban, Mail, Trash2 } from 'lucide-react'
 import {
   acceptFinancialOffer,
   deleteFinancialOffer,
 } from '@/app/actions/financial-offers'
+import { CreateProjectFromOfferPanel } from '@/components/ops/projects/CreateProjectFromOfferPanel'
 import { FinancialOfferEmailPanel } from '@/components/ops/FinancialOfferEmailPanel'
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import { formatOfferCurrency } from '@/lib/ops/financial-offer/calculate'
@@ -17,13 +19,16 @@ import { runWithToast } from '@/lib/notify'
 export function FinancialOffersList({
   offers,
   isAdmin,
+  offerProjectIds = {},
 }: {
   offers: FinancialOfferRecord[]
   isAdmin: boolean
+  offerProjectIds?: Record<string, string>
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [emailPanelOfferId, setEmailPanelOfferId] = useState<string | null>(null)
+  const [projectPanelOfferId, setProjectPanelOfferId] = useState<string | null>(null)
   const [deleteOffer, setDeleteOffer] = useState<FinancialOfferRecord | null>(null)
 
   if (offers.length === 0) {
@@ -143,6 +148,33 @@ export function FinancialOffersList({
                       <CheckCircle2 size={15} />
                     </button>
                   ) : null}
+                  {isAdmin && offer.status === 'accepted' ? (
+                    offerProjectIds[offer.id] ? (
+                      <Link
+                        href={`/admin/ops/projects/${offerProjectIds[offer.id]}`}
+                        className="financial-offers-action"
+                        aria-label={`Open project for ${offer.clientName}`}
+                        title="Open project"
+                      >
+                        <FolderKanban size={15} />
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        className={`financial-offers-action cursor-pointer${
+                          projectPanelOfferId === offer.id ? ' financial-offers-action--active' : ''
+                        }`}
+                        aria-label={`Create project for ${offer.clientName}`}
+                        title="Create project"
+                        disabled={pending}
+                        onClick={() =>
+                          setProjectPanelOfferId(prev => (prev === offer.id ? null : offer.id))
+                        }
+                      >
+                        <FolderKanban size={15} />
+                      </button>
+                    )
+                  ) : null}
                   {isAdmin ? (
                     <button
                       type="button"
@@ -162,6 +194,13 @@ export function FinancialOffersList({
                 <FinancialOfferEmailPanel
                   offer={offer}
                   onClose={() => setEmailPanelOfferId(null)}
+                />
+              ) : null}
+              {projectPanelOfferId === offer.id ? (
+                <CreateProjectFromOfferPanel
+                  offerId={offer.id}
+                  clientName={offer.clientName}
+                  onClose={() => setProjectPanelOfferId(null)}
                 />
               ) : null}
             </div>

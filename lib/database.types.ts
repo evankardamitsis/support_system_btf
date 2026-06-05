@@ -471,6 +471,180 @@ export interface Database {
         }
         Relationships: []
       }
+      ops_project_phases: {
+        Row: {
+          id: string
+          project_id: string
+          name: string
+          sort_order: number
+          status: 'pending' | 'in_progress' | 'done'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          name: string
+          sort_order?: number
+          status?: 'pending' | 'in_progress' | 'done'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          name?: string
+          sort_order?: number
+          status?: 'pending' | 'in_progress' | 'done'
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ops_project_phases_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'ops_projects'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ops_project_tasks: {
+        Row: {
+          id: string
+          project_id: string
+          phase_id: string | null
+          parent_id: string | null
+          title: string
+          description: string | null
+          status: 'backlog' | 'in_progress' | 'review' | 'done'
+          assignee_id: string | null
+          priority: 'low' | 'normal' | 'high'
+          due_date: string | null
+          sort_order: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          phase_id?: string | null
+          parent_id?: string | null
+          title: string
+          description?: string | null
+          status?: 'backlog' | 'in_progress' | 'review' | 'done'
+          assignee_id?: string | null
+          priority?: 'low' | 'normal' | 'high'
+          due_date?: string | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          phase_id?: string | null
+          parent_id?: string | null
+          title?: string
+          description?: string | null
+          status?: 'backlog' | 'in_progress' | 'review' | 'done'
+          assignee_id?: string | null
+          priority?: 'low' | 'normal' | 'high'
+          due_date?: string | null
+          sort_order?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ops_project_tasks_parent_id_fkey'
+            columns: ['parent_id']
+            isOneToOne: false
+            referencedRelation: 'ops_project_tasks'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ops_project_tasks_phase_id_fkey'
+            columns: ['phase_id']
+            isOneToOne: false
+            referencedRelation: 'ops_project_phases'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ops_project_tasks_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'ops_projects'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ops_projects: {
+        Row: {
+          id: string
+          name: string
+          client_id: string | null
+          is_internal: boolean
+          financial_offer_id: string | null
+          template_key: 'blank' | 'e_shop' | 'digital_ads' | 'email_marketing' | null
+          status: 'active' | 'on_hold' | 'completed' | 'archived'
+          lead_id: string | null
+          description: string | null
+          start_date: string | null
+          target_date: string | null
+          created_by: string
+          created_at: string
+          updated_at: string
+          deleted_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          client_id?: string | null
+          is_internal?: boolean
+          financial_offer_id?: string | null
+          template_key?: 'blank' | 'e_shop' | 'digital_ads' | 'email_marketing' | null
+          status?: 'active' | 'on_hold' | 'completed' | 'archived'
+          lead_id?: string | null
+          description?: string | null
+          start_date?: string | null
+          target_date?: string | null
+          created_by: string
+          created_at?: string
+          updated_at?: string
+          deleted_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          client_id?: string | null
+          is_internal?: boolean
+          financial_offer_id?: string | null
+          template_key?: 'blank' | 'e_shop' | 'digital_ads' | 'email_marketing' | null
+          status?: 'active' | 'on_hold' | 'completed' | 'archived'
+          lead_id?: string | null
+          description?: string | null
+          start_date?: string | null
+          target_date?: string | null
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+          deleted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ops_projects_client_id_fkey'
+            columns: ['client_id']
+            isOneToOne: false
+            referencedRelation: 'clients'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ops_projects_financial_offer_id_fkey'
+            columns: ['financial_offer_id']
+            isOneToOne: true
+            referencedRelation: 'financial_offers'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       financial_offers: {
         Row: {
           id: string

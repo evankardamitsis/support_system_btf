@@ -33,6 +33,7 @@ export const ADMIN_PRODUCT_AREAS: Record<AdminProductArea, AdminProductAreaConfi
     homeHref: '/admin/ops/financial-offers',
     nav: [
       { label: 'Financial offers', href: '/admin/ops/financial-offers' },
+      { label: 'Projects', href: '/admin/ops/projects', adminOnly: true },
       { label: 'Company', href: '/admin/ops/company' },
     ],
   },
