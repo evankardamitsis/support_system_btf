@@ -1,211 +1,68 @@
-import { formatHoursShort } from '@/lib/tickets/display'
+import {
+  buildPortalHoursBreakdown,
+  type PortalHoursBreakdown,
+} from '@/lib/tickets/portal-hours-breakdown'
+import type { TicketStatus } from '@/lib/types'
 
-type PortalTicketHoursSummaryProps = {
-  variant: 'hero' | 'aside'
+export type PortalTicketHoursInput = {
   closed: boolean
+  status: TicketStatus
   estimatedHours: number | null
   actualHours: number | null
   approvedExtraMinutes: number
+  pendingExtraMinutes: number
+  extraHoursActiveAt: string | null
+  estimateStatus: 'pending_approval' | 'approved' | null
   hoursOverageNote?: string | null
 }
 
-function getDiscrepancy(
-  estimatedHours: number,
-  actualHours: number
-): { tone: 'over' | 'under'; label: string } | null {
-  const delta = Math.round((actualHours - estimatedHours) * 100) / 100
-  if (Math.abs(delta) <= 0.01) return null
-  if (delta > 0) {
-    return { tone: 'over', label: `${formatHoursShort(delta)} over estimate` }
-  }
-  return { tone: 'under', label: `${formatHoursShort(Math.abs(delta))} under estimate` }
-}
-
-function HoursOverageNote({
-  note,
-  layout,
-}: {
-  note: string
-  layout: 'hero' | 'aside'
-}) {
-  if (layout === 'hero') {
-    return (
-      <div className="portal-ticket-hours-overage-note">
-        <span className="portal-ticket-hours-overage-label">Why more time was needed</span>
-        <p className="portal-ticket-hours-overage-body">{note}</p>
-      </div>
-    )
-  }
+function HoursBreakdownPanel({ breakdown }: { breakdown: PortalHoursBreakdown }) {
+  const isLoggedPrimary = breakdown.headline.label === 'Logged'
 
   return (
-    <div className="portal-ticket-hours-aside-overage">
-      <span className="portal-ticket-hours-aside-overage-label">Why more time was needed</span>
-      <p className="portal-ticket-hours-aside-overage-body">{note}</p>
-    </div>
+    <section
+      className="portal-ticket-hours-panel"
+      data-primary={isLoggedPrimary ? 'logged' : 'est'}
+      aria-label="Hours breakdown"
+    >
+      <span className="portal-ticket-hours-panel-eyebrow">Time on this ticket</span>
+      <p className="portal-ticket-hours-panel-headline tabular-nums">{breakdown.headline.value}</p>
+      <p className="portal-ticket-hours-panel-headline-label">{breakdown.headline.label}</p>
+
+      {breakdown.rows.length > 0 ? (
+        <dl className="portal-ticket-hours-breakdown">
+          {breakdown.rows.map(row => (
+            <div key={row.label} className="portal-ticket-hours-breakdown-row">
+              <dt>{row.label}</dt>
+              <dd className="tabular-nums" data-tone={row.tone ?? 'default'}>
+                {row.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+
+      {breakdown.note ? (
+        <div className="portal-ticket-hours-note">
+          <span className="portal-ticket-hours-note-label">{breakdown.note.label}</span>
+          <p className="portal-ticket-hours-note-body">{breakdown.note.body}</p>
+        </div>
+      ) : null}
+
+      {breakdown.hint ? (
+        <p className="portal-ticket-hours-hint dash-meta">{breakdown.hint}</p>
+      ) : null}
+    </section>
   )
 }
 
-function SecondaryHoursInfo({
-  estimatedHours,
-  actualHours,
-  approvedExtraMinutes,
-  hoursOverageNote,
-  layout,
-}: {
-  estimatedHours: number | null
-  actualHours: number | null
-  approvedExtraMinutes: number
-  hoursOverageNote?: string | null
-  layout: 'hero' | 'aside'
-}) {
-  const hasEstimate = estimatedHours != null && estimatedHours > 0
-  const hasLogged = actualHours != null && actualHours > 0
-  const extraHours = approvedExtraMinutes > 0 ? approvedExtraMinutes / 60 : 0
-  const discrepancy =
-    hasEstimate && hasLogged ? getDiscrepancy(estimatedHours, actualHours) : null
+export function PortalTicketHoursSummary(props: PortalTicketHoursInput) {
+  const breakdown = buildPortalHoursBreakdown({
+    ...props,
+    hoursOverageNote: props.hoursOverageNote ?? null,
+  })
 
-  const showOverageNote =
-    discrepancy?.tone === 'over' && hoursOverageNote != null && hoursOverageNote.trim() !== ''
+  if (!breakdown) return null
 
-  if (!hasEstimate && extraHours <= 0 && !showOverageNote) return null
-
-  if (layout === 'hero') {
-    return (
-      <div className="portal-ticket-hours-secondary">
-        {hasEstimate ? (
-          <p className="portal-ticket-hours-est">
-            <span className="portal-ticket-hours-est-label">Est</span>
-            <span className="tabular-nums">{formatHoursShort(estimatedHours)}</span>
-          </p>
-        ) : null}
-        {discrepancy ? (
-          <p className="portal-ticket-hours-discrepancy" data-tone={discrepancy.tone}>
-            {discrepancy.label}
-          </p>
-        ) : null}
-        {extraHours > 0 ? (
-          <p className="portal-ticket-hours-extra">
-            <span className="portal-ticket-hours-est-label">Extra</span>
-            <span className="tabular-nums">{formatHoursShort(extraHours)}</span>
-          </p>
-        ) : null}
-        {showOverageNote ? <HoursOverageNote note={hoursOverageNote!} layout="hero" /> : null}
-      </div>
-    )
-  }
-
-  return (
-    <>
-    <dl className="portal-ticket-hours-aside-breakdown">
-      {hasEstimate ? (
-        <div className="portal-ticket-hours-aside-row">
-          <dt>Est</dt>
-          <dd className="tabular-nums">{formatHoursShort(estimatedHours)}</dd>
-        </div>
-      ) : null}
-      {discrepancy ? (
-        <div className="portal-ticket-hours-aside-row portal-ticket-hours-aside-row--discrepancy">
-          <dt>Difference</dt>
-          <dd className="tabular-nums" data-tone={discrepancy.tone}>
-            {discrepancy.label}
-          </dd>
-        </div>
-      ) : null}
-      {extraHours > 0 ? (
-        <div className="portal-ticket-hours-aside-row">
-          <dt>Extra</dt>
-          <dd className="tabular-nums">{formatHoursShort(extraHours)}</dd>
-        </div>
-      ) : null}
-    </dl>
-    {showOverageNote ? <HoursOverageNote note={hoursOverageNote!} layout="aside" /> : null}
-    </>
-  )
-}
-
-export function PortalTicketHoursSummary({
-  variant,
-  closed,
-  estimatedHours,
-  actualHours,
-  approvedExtraMinutes,
-  hoursOverageNote = null,
-}: PortalTicketHoursSummaryProps) {
-  const hasLogged = actualHours != null && actualHours > 0
-  const hasEstimate = estimatedHours != null && estimatedHours > 0
-
-  if (closed && hasLogged) {
-    if (variant === 'hero') {
-      return (
-        <section className="portal-ticket-hours-hero" aria-label="Time on this ticket">
-          <span className="portal-ticket-hours-hero-eyebrow">Time on this ticket</span>
-          <p className="portal-ticket-hours-hero-value tabular-nums">
-            {formatHoursShort(actualHours)}
-          </p>
-          <p className="portal-ticket-hours-hero-label">Logged</p>
-          <SecondaryHoursInfo
-            estimatedHours={estimatedHours}
-            actualHours={actualHours}
-            approvedExtraMinutes={approvedExtraMinutes}
-            hoursOverageNote={hoursOverageNote}
-            layout="hero"
-          />
-        </section>
-      )
-    }
-
-    return (
-      <section className="portal-ticket-hours-aside" aria-label="Time on this ticket">
-        <span className="portal-ticket-hours-aside-eyebrow">Logged</span>
-        <p className="portal-ticket-hours-aside-value tabular-nums">
-          {formatHoursShort(actualHours)}
-        </p>
-        <SecondaryHoursInfo
-          estimatedHours={estimatedHours}
-          actualHours={actualHours}
-          approvedExtraMinutes={approvedExtraMinutes}
-          hoursOverageNote={hoursOverageNote}
-          layout="aside"
-        />
-      </section>
-    )
-  }
-
-  if (hasEstimate) {
-    if (variant === 'hero') {
-      return (
-        <section
-          className="portal-ticket-hours-hero portal-ticket-hours-hero--estimate-only"
-          aria-label="Time on this ticket"
-        >
-          <span className="portal-ticket-hours-hero-eyebrow">Time on this ticket</span>
-          <p className="portal-ticket-hours-hero-value portal-ticket-hours-hero-value--est tabular-nums">
-            {formatHoursShort(estimatedHours)}
-          </p>
-          <p className="portal-ticket-hours-hero-label">Est</p>
-          {!closed ? (
-            <p className="portal-ticket-hours-hero-hint dash-meta">
-              Logged hours will appear here once the ticket is resolved.
-            </p>
-          ) : null}
-        </section>
-      )
-    }
-
-    return (
-      <section className="portal-ticket-hours-aside portal-ticket-hours-aside--estimate">
-        <span className="portal-ticket-hours-aside-eyebrow">Est</span>
-        <p className="portal-ticket-hours-aside-value tabular-nums">
-          {formatHoursShort(estimatedHours)}
-        </p>
-        {!closed ? (
-          <p className="portal-ticket-hours-aside-hint dash-meta">
-            Logged hours appear here once the ticket is resolved.
-          </p>
-        ) : null}
-      </section>
-    )
-  }
-
-  return null
+  return <HoursBreakdownPanel breakdown={breakdown} />
 }

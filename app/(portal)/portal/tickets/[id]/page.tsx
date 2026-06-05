@@ -75,6 +75,10 @@ export default async function PortalTicketDetailPage({
     (sum, row) => sum + row.minutes,
     0
   )
+  const pendingExtraMinutes = (pendingExtraHours ?? []).reduce(
+    (sum, row) => sum + row.minutes,
+    0
+  )
 
   return (
     <div className="space-y-6">
@@ -121,11 +125,14 @@ export default async function PortalTicketDetailPage({
               </h1>
             </div>
             <PortalTicketHoursSummary
-              variant="hero"
               closed={closed}
+              status={ticket.status as TicketStatus}
               estimatedHours={estimatedHours}
               actualHours={actualHours}
               approvedExtraMinutes={approvedExtraMinutes}
+              pendingExtraMinutes={pendingExtraMinutes}
+              extraHoursActiveAt={ticket.extra_hours_active_at ?? null}
+              estimateStatus={ticket.estimate_status ?? null}
               hoursOverageNote={ticket.hours_overage_note}
             />
             {ticket.description ? (
@@ -160,14 +167,6 @@ export default async function PortalTicketDetailPage({
             <h3 className="dash-section-title">Details</h3>
           </div>
           <div className="px-4 py-4 flex flex-col gap-3">
-            <PortalTicketHoursSummary
-              variant="aside"
-              closed={closed}
-              estimatedHours={estimatedHours}
-              actualHours={actualHours}
-              approvedExtraMinutes={approvedExtraMinutes}
-              hoursOverageNote={ticket.hours_overage_note}
-            />
             {[
               { label: 'Type', value: ticket.type },
               { label: 'Priority', value: ticket.priority },
