@@ -10,6 +10,7 @@ import {
   formatRelativeTime,
   priorityAccent,
   isRecentlyUpdated,
+  ticketRowAwaitingApprovalClass,
   ticketRowStatusClass,
 } from '@/lib/tickets/display'
 import { EditableStatusPill } from './EditableStatusPill'
@@ -36,7 +37,8 @@ export function AdminTicketRow({
   const recent = isRecentlyUpdated(ticket.updated_at)
   const href = `${hrefPrefix}/${ticket.id}`
   const estimateLocked = isEstimateLocked(ticket.estimate_status ?? null)
-  const statusRowClass = ticketRowStatusClass(ticket.status)
+  const statusRowClass =
+    ticketRowStatusClass(ticket.status) + ticketRowAwaitingApprovalClass(ticket.estimate_status)
 
   function refresh() {
     router.refresh()
@@ -82,6 +84,9 @@ export function AdminTicketRow({
             disabled={pending}
             ariaLabel={`Status for ${ticket.title}`}
           />
+          {ticket.estimate_status === 'pending_approval' ? (
+            <span className="tickets-awaiting-approval-badge">Awaiting approval</span>
+          ) : null}
         </div>
 
         <div className="tickets-cell tickets-cell-priority tickets-cell--control">

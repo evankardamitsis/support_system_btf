@@ -33,3 +33,10 @@ export function ticketRowStatusClass(status: TicketStatus): string {
   if (status === 'waiting_on_client') return ' tickets-row--status-waiting'
   return ''
 }
+
+export function ticketRowAwaitingApprovalClass(
+  estimateStatus?: 'pending_approval' | 'approved' | null
+): string {
+  if (estimateStatus === 'pending_approval') return ' tickets-row--awaiting-approval'
+  return ''
+}

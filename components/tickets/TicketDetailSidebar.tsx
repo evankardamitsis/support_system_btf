@@ -133,9 +133,12 @@ export function TicketDetailSidebar({
             {pending ? 'Submitting…' : 'Submit estimate'}
           </button>
         ) : showAwaiting ? (
-          <p className="ticket-detail-aside-note dash-meta mt-4">
-            Awaiting client approval on estimate and priority.
-          </p>
+          <div className="ticket-estimate-awaiting" role="status">
+            <span className="ticket-estimate-awaiting-eyebrow">Awaiting client</span>
+            <p className="ticket-estimate-awaiting-text">
+              Client must approve the estimate and priority before work continues.
+            </p>
+          </div>
         ) : showResolve ? (
           <button
             type="button"

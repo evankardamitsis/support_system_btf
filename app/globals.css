@@ -1442,6 +1442,21 @@
   border-left-color: #fb923c;
 }
 
+[data-theme="dashboard"] .tickets-row--awaiting-approval {
+  background: rgba(251, 146, 60, 0.24);
+  border-left-color: #fb923c;
+}
+
+[data-theme="dashboard"] .tickets-row--awaiting-approval:hover,
+[data-theme="dashboard"] .tickets-row--static.tickets-row--awaiting-approval:hover {
+  background: rgba(251, 146, 60, 0.32);
+  border-left-color: #fb923c;
+}
+
+[data-theme="dashboard"] .tickets-row--awaiting-approval .tickets-subject-title {
+  color: #fdba74;
+}
+
 [data-theme="dashboard"] .tickets-row--needs-approval {
   background: color-mix(in srgb, var(--accent) 7%, transparent);
   border-left-color: var(--accent);
@@ -1451,7 +1466,8 @@
   background: color-mix(in srgb, var(--accent) 11%, transparent);
 }
 
-[data-theme="dashboard"] .tickets-approve-badge {
+[data-theme="dashboard"] .tickets-approve-badge,
+[data-theme="dashboard"] .tickets-awaiting-approval-badge {
   display: inline-flex;
   align-items: center;
   margin-top: 0.35rem;
@@ -1460,10 +1476,18 @@
   font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--bg);
-  background: var(--accent);
   font-family: var(--font-dm-mono);
   line-height: 1.3;
+}
+
+[data-theme="dashboard"] .tickets-approve-badge {
+  color: var(--bg);
+  background: var(--accent);
+}
+
+[data-theme="dashboard"] .tickets-awaiting-approval-badge {
+  color: #0e0e0e;
+  background: #fb923c;
 }
 
 [data-theme="dashboard"] .tickets-cell-status {
@@ -2869,6 +2893,34 @@
 
 [data-theme="dashboard"] .ticket-detail-aside-note {
   margin-top: 0.75rem;
+}
+
+[data-theme="dashboard"] .ticket-estimate-awaiting {
+  margin-top: 1rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid rgba(251, 146, 60, 0.45);
+  border-left: 3px solid #fb923c;
+  background: rgba(251, 146, 60, 0.16);
+}
+
+[data-theme="dashboard"] .ticket-estimate-awaiting-eyebrow {
+  display: block;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #fb923c;
+  font-family: var(--font-dm-mono);
+  margin-bottom: 0.35rem;
+}
+
+[data-theme="dashboard"] .ticket-estimate-awaiting-text {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  font-weight: 500;
+  color: #fdba74;
+  font-family: var(--font-geist);
 }
 
 [data-theme="dashboard"] .ticket-detail-retainer-period {
