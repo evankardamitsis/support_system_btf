@@ -10,7 +10,9 @@ import {
 } from "@/lib/team/auth-users";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
+import { createClient } from "@/lib/supabase/server";
 import { sendClientTeamInviteEmail } from "@/lib/email/client-team-invite";
+import { sendSignupConfirmationEmail } from "@/lib/auth/signup-confirmation";
 import type {
   ClientTeamDirectoryResult,
   InviteClientTeamMemberResult,
@@ -203,8 +205,16 @@ export async function inviteClientTeamMember(
       );
     }
 
+    const supabase = await createClient();
+    const confirmError = await sendSignupConfirmationEmail(supabase, email);
+    if (confirmError) {
+      return failInvite(
+        `Signup was started but the confirmation email could not be resent (${confirmError}). Use their invite link and choose “Resend confirmation email”.`,
+      );
+    }
+
     return failInvite(
-      "Signup was started for this email but not confirmed yet. Ask them to check their inbox for the confirmation link.",
+      "Signup was started for this email. We've resent the Supabase confirmation email — ask them to check their inbox (and spam).",
     );
   }
 

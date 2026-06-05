@@ -6,8 +6,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { PasswordField } from '@/components/auth/PasswordField'
 import { AuthError } from '@/components/auth/AuthMessage'
 import { EmailConfirmationMessage } from '@/components/auth/EmailConfirmationMessage'
+import { resendClientTeamSignupConfirmation } from '@/app/actions/register-client'
 import { finalizeRegistration } from '@/lib/auth/finalize-registration'
-import { getSignupEmailRedirectTo } from '@/lib/auth/redirect-url'
+import { registerInvitedAuthUser } from '@/lib/auth/signup-confirmation'
+import { ResendConfirmationButton } from '@/components/auth/ResendConfirmationButton'
 
 export default async function RegisterClientPage({
   searchParams,
@@ -51,27 +53,25 @@ export default async function RegisterClientPage({
       redirect(`/auth/register-client?token=${token}&error=Token+invalid+or+expired`)
     }
 
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    const admin = createAdminClient()
+    const authResult = await registerInvitedAuthUser({
+      supabase,
+      admin,
       email: inv.email,
       password,
-      options: {
-        data: { full_name: inv.full_name },
-        emailRedirectTo: getSignupEmailRedirectTo(),
-      },
+      fullName: inv.full_name,
     })
 
-    if (authError || !authData.user) {
-      const msg = authError?.message ?? 'Signup failed'
-      if (/already (registered|exists)/i.test(msg)) {
-        redirect(`/auth/register-client?token=${token}&check_email=1`)
+    if (!authResult.ok) {
+      if (authResult.alreadyConfirmed) {
+        redirect(`/auth/register-client?token=${token}&error=${encodeURIComponent(authResult.error)}`)
       }
-      redirect(`/auth/register-client?token=${token}&error=${encodeURIComponent(msg)}`)
+      redirect(`/auth/register-client?token=${token}&error=${encodeURIComponent(authResult.error)}`)
     }
 
-    const admin = createAdminClient()
     const { error: profileError } = await admin.from('users').upsert(
       {
-        id: authData.user.id,
+        id: authResult.userId,
         role: 'client',
         client_id: inv.client_id,
         full_name: inv.full_name,
@@ -83,7 +83,7 @@ export default async function RegisterClientPage({
       redirect(`/auth/register-client?token=${token}&error=${encodeURIComponent(profileError.message)}`)
     }
 
-    if (authData.session) {
+    if (authResult.session) {
       await finalizeRegistration(supabase)
       redirect('/portal/tickets')
     }
@@ -177,7 +177,12 @@ export default async function RegisterClientPage({
                 </Link>
               </div>
             ) : showCheckEmail && invite?.email ? (
-              <EmailConfirmationMessage email={invite.email} clientName={clientName} />
+              <>
+                <EmailConfirmationMessage email={invite.email} clientName={clientName} />
+                <ResendConfirmationButton
+                  action={() => resendClientTeamSignupConfirmation(token as string)}
+                />
+              </>
             ) : (
               <form action={register} className="flex flex-col gap-6">
                 <div className="flex flex-col gap-2.5">
