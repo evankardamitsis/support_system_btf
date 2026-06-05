@@ -144,6 +144,7 @@ export interface Database {
           completion_approved_at: string | null
           completion_dispute_note: string | null
           completion_disputed_at: string | null
+          extra_hours_active_at: string | null
         }
         Insert: {
           id?: string
@@ -168,6 +169,7 @@ export interface Database {
           completion_approved_at?: string | null
           completion_dispute_note?: string | null
           completion_disputed_at?: string | null
+          extra_hours_active_at?: string | null
         }
         Update: {
           id?: string
@@ -192,6 +194,7 @@ export interface Database {
           completion_approved_at?: string | null
           completion_dispute_note?: string | null
           completion_disputed_at?: string | null
+          extra_hours_active_at?: string | null
         }
         Relationships: []
       }

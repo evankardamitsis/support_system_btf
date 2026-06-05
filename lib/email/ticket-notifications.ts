@@ -560,7 +560,7 @@ export async function notifyStaffExtraHoursApproved(input: {
     subject: `Client approved extra hours — ${ticketRef}`,
     html: emailShell(
       'Client approved extra hours',
-      `The client approved <strong>${hours}h</strong> of additional time on <strong>${input.ticketTitle}</strong> (${ticketRef}). The hours have been billed to the selected retainer period.`,
+      `The client approved <strong>${hours}h</strong> of additional time on <strong>${input.ticketTitle}</strong> (${ticketRef}). The hours are billed to the current retainer period and the ticket is back in progress for the extra work.`,
       'View ticket',
       url
     ),

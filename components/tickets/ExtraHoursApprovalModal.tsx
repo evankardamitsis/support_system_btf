@@ -45,7 +45,7 @@ export function ExtraHoursApprovalModal({
     startTransition(async () => {
       const ok = await runWithToast(() => approveExtraHours(id), {
         loading: 'Approving extra hours…',
-        success: `${hoursLabel} approved and billed to your retainer`,
+        success: `${hoursLabel} approved — BTF will continue the extra work`,
       })
       if (ok !== null) {
         setRemaining(prev => {

@@ -9,8 +9,10 @@ import {
   notifyClientExtraHoursPending,
   notifyStaffExtraHoursApproved,
 } from '@/lib/email/ticket-notifications'
+import { getRetainerForClient } from '@/lib/retainers/active'
 import { assertClientCanUseRetainer } from '@/lib/retainers/guards'
 import { isTicketClosed } from '@/lib/tickets/closed'
+import { canCompleteExtraHoursWork, canRequestExtraHours } from '@/lib/tickets/extra-hours'
 
 async function requireStaff() {
   const supabase = await createClient()
@@ -35,12 +37,7 @@ function revalidateExtraHoursPaths(ticketId: string) {
   revalidatePath('/admin/clients')
 }
 
-export async function submitExtraHours(
-  ticketId: string,
-  retainerId: string,
-  minutes: number,
-  note?: string
-) {
+export async function submitExtraHours(ticketId: string, minutes: number, note?: string) {
   const { supabase, user } = await requireStaff()
 
   if (!minutes || minutes <= 0 || Number.isNaN(minutes)) {
@@ -54,21 +51,16 @@ export async function submitExtraHours(
     .single()
 
   if (ticketErr || !ticket) throw new Error(ticketErr?.message ?? 'Ticket not found')
-  if (!isTicketClosed(ticket.status)) {
+  if (!canRequestExtraHours(ticket.status)) {
     throw new Error('Extra hours can only be requested on resolved or closed tickets')
   }
 
-  const { data: retainer } = await supabase
-    .from('retainers')
-    .select('id, client_id')
-    .eq('id', retainerId)
-    .single()
-
-  if (!retainer || retainer.client_id !== ticket.client_id) {
-    throw new Error('Invalid billing period for this client')
-  }
-
   await assertClientCanUseRetainer(supabase, ticket.client_id)
+
+  const retainer = await getRetainerForClient(supabase, ticket.client_id)
+  if (!retainer) {
+    throw new Error('No active retainer period for this client — add a retainer before requesting extra hours')
+  }
 
   const clientEmails = await getClientNotificationEmails(ticket.client_id)
   if (!clientEmails.length) {
@@ -77,9 +69,14 @@ export async function submitExtraHours(
     )
   }
 
-  const { error } = await supabase.from('ticket_extra_hours').insert({
+  const adminResult = tryCreateAdminClient()
+  if ('error' in adminResult) {
+    throw new Error(adminResult.error)
+  }
+
+  const { error } = await adminResult.client.from('ticket_extra_hours').insert({
     ticket_id: ticketId,
-    retainer_id: retainerId,
+    retainer_id: retainer.id,
     agent_id: user.id,
     minutes,
     note: note?.trim() || null,
@@ -95,7 +92,7 @@ export async function submitExtraHours(
     hours: Math.round((minutes / 60) * 100) / 100,
   })
   if (!notify.sent) {
-    throw new Error(notify.error)
+    console.error('[email] client extra-hours notification failed:', notify.error)
   }
 
   revalidateExtraHoursPaths(ticketId)
@@ -178,6 +175,17 @@ export async function approveExtraHours(extraHoursId: string) {
 
   if (updateErr) throw new Error(updateErr.message)
 
+  const { error: ticketUpdateErr } = await admin
+    .from('tickets')
+    .update({
+      status: 'in_progress',
+      extra_hours_active_at: now,
+    })
+    .eq('id', request.ticket_id)
+    .in('status', ['resolved', 'closed'])
+
+  if (ticketUpdateErr) throw new Error(ticketUpdateErr.message)
+
   const staffNotify = await notifyStaffExtraHoursApproved({
     ticketId: request.ticket_id,
     ticketTitle: ticket.title,
@@ -188,4 +196,40 @@ export async function approveExtraHours(extraHoursId: string) {
   }
 
   revalidateExtraHoursPaths(request.ticket_id)
+}
+
+export async function completeExtraHoursWork(ticketId: string) {
+  const { supabase } = await requireStaff()
+
+  const { data: ticket, error: ticketErr } = await supabase
+    .from('tickets')
+    .select('id, status, extra_hours_active_at')
+    .eq('id', ticketId)
+    .single()
+
+  if (ticketErr || !ticket) throw new Error(ticketErr?.message ?? 'Ticket not found')
+  if (!canCompleteExtraHoursWork(ticket.status, ticket.extra_hours_active_at)) {
+    throw new Error('This ticket is not in an active extra-hours work cycle')
+  }
+
+  const adminResult = tryCreateAdminClient()
+  if ('error' in adminResult) {
+    throw new Error(adminResult.error)
+  }
+
+  const now = new Date().toISOString()
+  const { error } = await adminResult.client
+    .from('tickets')
+    .update({
+      status: 'resolved',
+      extra_hours_active_at: null,
+      resolved_at: now,
+    })
+    .eq('id', ticketId)
+    .eq('status', 'in_progress')
+    .not('extra_hours_active_at', 'is', null)
+
+  if (error) throw new Error(error.message)
+
+  revalidateExtraHoursPaths(ticketId)
 }

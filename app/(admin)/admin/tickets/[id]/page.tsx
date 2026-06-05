@@ -32,27 +32,32 @@ export default async function AdminTicketDetailPage({
     .single()
   if (!ticket) notFound()
 
-  const [{ data: comments }, { data: retainers }, { data: hourLog }, { data: extraHoursRows }] =
-    await Promise.all([
+  const [
+    { data: comments },
+    { data: hourLog },
+    { data: extraHoursRows, error: extraHoursError },
+    { data: clientRetainers },
+  ] = await Promise.all([
     supabase
       .from('ticket_comments')
       .select('id, body, author_id, is_internal, created_at')
       .eq('ticket_id', id)
       .order('created_at', { ascending: true }),
-    supabase
-      .from('retainers')
-      .select('id, period_start, period_end, hours_total, hours_used')
-      .eq('client_id', ticket.client_id)
-      .order('period_start', { ascending: false }),
     supabase.from('hours_log').select('id').eq('ticket_id', id).limit(1).maybeSingle(),
     supabase
       .from('ticket_extra_hours')
-      .select(
-        'id, minutes, note, status, submitted_at, approved_at, retainers(period_start, period_end)'
-      )
+      .select('id, minutes, note, status, submitted_at, approved_at, retainer_id')
       .eq('ticket_id', id)
       .order('submitted_at', { ascending: false }),
+    supabase
+      .from('retainers')
+      .select('id, period_start, period_end')
+      .eq('client_id', ticket.client_id),
   ])
+
+  if (extraHoursError) {
+    console.error('[extra-hours] load failed:', extraHoursError.message)
+  }
 
   const [activeRetainer, enrichedComments, staffForMentions] = await Promise.all([
     getRetainerForClient(supabase, ticket.client_id),
@@ -69,11 +74,11 @@ export default async function AdminTicketDetailPage({
   const messageCount = enrichedComments.length
   const staffNames = staffForMentions.map(s => s.name)
   const closed = isTicketClosed(ticket.status as TicketStatus)
+  const retainerPeriods = new Map(
+    (clientRetainers ?? []).map(r => [r.id, { period_start: r.period_start, period_end: r.period_end }])
+  )
   const extraHours = (extraHoursRows ?? []).map(row => {
-    const retainer = row.retainers as unknown as {
-      period_start: string
-      period_end: string
-    } | null
+    const retainer = retainerPeriods.get(row.retainer_id)
     return {
       id: row.id,
       minutes: row.minutes,
@@ -111,9 +116,8 @@ export default async function AdminTicketDetailPage({
         actualHours={actualHours}
         hoursLogged={hoursLogged}
         activeRetainer={activeRetainer}
-        retainers={retainers ?? []}
-        defaultRetainerId={activeRetainer?.id}
         extraHours={extraHours}
+        extraHoursActiveAt={ticket.extra_hours_active_at ?? null}
         isAdmin={isAdmin}
       >
         <section className="ticket-detail-activity dash-panel">

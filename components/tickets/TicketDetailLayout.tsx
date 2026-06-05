@@ -15,7 +15,9 @@ import { ResolveHoursModal } from './ResolveHoursModal'
 import { TicketDetailSidebar, type ExtraHoursItem } from './TicketDetailSidebar'
 import { DeleteTicketButton } from './DeleteTicketButton'
 import { formatDateTimeHuman, formatTicketId } from '@/lib/tickets/display'
+import { completeExtraHoursWork } from '@/app/actions/extra-hours'
 import { canEditTicketPriority, isTicketClosed } from '@/lib/tickets/closed'
+import { isExtraHoursWorkActive, shouldUseStandardResolveFlow } from '@/lib/tickets/extra-hours'
 import type { CompletionStatus } from '@/lib/tickets/completion'
 import { canResolveTicket } from '@/lib/tickets/completion'
 import {
@@ -51,9 +53,8 @@ export function TicketDetailLayout({
   actualHours,
   hoursLogged,
   activeRetainer,
-  retainers,
-  defaultRetainerId,
   extraHours = [],
+  extraHoursActiveAt = null,
   completionDisputeNote = null,
   isAdmin = false,
 }: {
@@ -75,9 +76,8 @@ export function TicketDetailLayout({
   actualHours: number | null
   hoursLogged: boolean
   activeRetainer: RetainerOption | null
-  retainers: RetainerOption[]
-  defaultRetainerId?: string | null
   extraHours?: ExtraHoursItem[]
+  extraHoursActiveAt?: string | null
   completionDisputeNote?: string | null
   isAdmin?: boolean
 }) {
@@ -94,7 +94,22 @@ export function TicketDetailLayout({
 
   function onStatusChange(next: TicketStatus) {
     if (closed) return
-    if (next === 'resolved' && !hoursLogged && status !== 'resolved') {
+    if (isExtraHoursWorkActive(status, extraHoursActiveAt) && next === 'resolved') {
+      startTransition(async () => {
+        const ok = await runWithToast(() => completeExtraHoursWork(ticketId), {
+          loading: 'Updating ticket…',
+          success: 'Extra work completed — ticket resolved',
+        })
+        if (ok !== null) refresh()
+      })
+      return
+    }
+    if (
+      next === 'resolved' &&
+      shouldUseStandardResolveFlow(status, extraHoursActiveAt) &&
+      !hoursLogged &&
+      status !== 'resolved'
+    ) {
       if (!canResolveTicket(estimateStatus, completionStatus, status)) {
         notifyError('Complete estimate and work approvals before resolving')
         return
@@ -233,9 +248,8 @@ export function TicketDetailLayout({
           actualHours={actualHours}
           hoursLogged={hoursLogged}
           activeRetainer={activeRetainer}
-          retainers={retainers}
-          defaultRetainerId={defaultRetainerId}
           extraHours={extraHours}
+          extraHoursActiveAt={extraHoursActiveAt}
           completionDisputeNote={completionDisputeNote}
           onResolve={() => setResolveOpen(true)}
         />

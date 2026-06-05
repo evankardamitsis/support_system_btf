@@ -7,7 +7,7 @@ import {
   submitWorkForClientCheck,
   updateTicketEstimatedHours,
 } from '@/app/actions/tickets'
-import { submitExtraHours } from '@/app/actions/extra-hours'
+import { completeExtraHoursWork, submitExtraHours } from '@/app/actions/extra-hours'
 import { UsageBar } from '@/components/dashboard/UsageBar'
 import { runWithToast } from '@/lib/notify'
 import { isTicketClosed } from '@/lib/tickets/closed'
@@ -22,6 +22,12 @@ import {
   isEstimateLocked,
   type EstimateStatus,
 } from '@/lib/tickets/estimate'
+import {
+  canCompleteExtraHoursWork,
+  canRequestExtraHours,
+  isExtraHoursWorkActive,
+  shouldUseStandardResolveFlow,
+} from '@/lib/tickets/extra-hours'
 import { formatDateTimeHuman } from '@/lib/tickets/display'
 import type { TicketStatus } from '@/lib/types'
 
@@ -54,9 +60,8 @@ export function TicketDetailSidebar({
   actualHours,
   hoursLogged,
   activeRetainer,
-  retainers,
-  defaultRetainerId,
   extraHours = [],
+  extraHoursActiveAt = null,
   completionDisputeNote = null,
   onResolve,
 }: {
@@ -69,9 +74,8 @@ export function TicketDetailSidebar({
   actualHours: number | null
   hoursLogged: boolean
   activeRetainer: RetainerOption | null
-  retainers: RetainerOption[]
-  defaultRetainerId?: string | null
   extraHours?: ExtraHoursItem[]
+  extraHoursActiveAt?: string | null
   completionDisputeNote?: string | null
   onResolve: () => void
 }) {
@@ -88,12 +92,17 @@ export function TicketDetailSidebar({
   const tone = isOver ? 'over' : isDanger ? 'warn' : 'ok'
 
   const closed = isTicketClosed(status)
-  const showSubmit = !closed && canSubmitEstimate(estimateStatus, estimatedHours, status)
+  const extraHoursActive = isExtraHoursWorkActive(status, extraHoursActiveAt)
+  const showCompleteExtraWork = canCompleteExtraHoursWork(status, extraHoursActiveAt)
+  const standardResolveFlow = shouldUseStandardResolveFlow(status, extraHoursActiveAt)
+  const showSubmit = !closed && standardResolveFlow && canSubmitEstimate(estimateStatus, estimatedHours, status)
   const showAwaiting =
     !closed && estimateStatus === 'pending_approval' && status !== 'resolved' && status !== 'closed'
   const showAwaitingWork = !closed && isAwaitingWorkApproval(completionStatus)
-  const showSubmitWork = !closed && canSubmitWorkForCheck(estimateStatus, completionStatus, status)
-  const showResolve = !closed && canResolveTicket(estimateStatus, completionStatus, status)
+  const showSubmitWork =
+    !closed && standardResolveFlow && canSubmitWorkForCheck(estimateStatus, completionStatus, status)
+  const showResolve =
+    !closed && standardResolveFlow && canResolveTicket(estimateStatus, completionStatus, status)
   const showDisputeNote = !closed && completionDisputeNote && completionStatus === null
   const estimateLocked = closed || isEstimateLocked(estimateStatus)
   const logged =
@@ -118,7 +127,7 @@ export function TicketDetailSidebar({
 
         <div
           className="ticket-detail-hours-grid"
-          data-has-extra={closed ? 'true' : undefined}
+          data-has-extra={closed || extraHoursActive || approvedExtraMinutes > 0 ? 'true' : undefined}
         >
           <div className="ticket-detail-hours-field">
             <label className="ticket-detail-control-label" htmlFor="detail-estimate">
@@ -159,7 +168,7 @@ export function TicketDetailSidebar({
               {logged}
             </span>
           </div>
-          {closed ? (
+          {closed || extraHoursActive || approvedExtraMinutes > 0 ? (
             <div className="ticket-detail-hours-readout">
               <span className="ticket-detail-control-label">Extra</span>
               <span
@@ -233,7 +242,29 @@ export function TicketDetailSidebar({
               </button>
             ) : null}
           </div>
-        ) : hoursLogged ? (
+        ) : showCompleteExtraWork ? (
+          <div className="ticket-detail-resolve-actions mt-4 flex flex-col gap-2">
+            <p className="ticket-detail-aside-note dash-meta">
+              Extra hours approved — complete the additional work, then mark the ticket resolved.
+            </p>
+            <button
+              type="button"
+              className="dash-btn-primary btn-primary w-full cursor-pointer"
+              disabled={pending}
+              onClick={() =>
+                startTransition(async () => {
+                  const ok = await runWithToast(() => completeExtraHoursWork(ticketId), {
+                    loading: 'Updating ticket…',
+                    success: 'Extra work completed — ticket resolved',
+                  })
+                  if (ok !== null) refresh()
+                })
+              }
+            >
+              {pending ? 'Saving…' : 'Mark resolved'}
+            </button>
+          </div>
+        ) : hoursLogged && closed ? (
           <p className="ticket-detail-aside-note dash-meta">Hours recorded for this ticket.</p>
         ) : null}
 
@@ -293,17 +324,27 @@ export function TicketDetailSidebar({
         </section>
       )}
 
-      {closed && retainers.length > 0 ? (
+      {(canRequestExtraHours(status) || extraHours.length > 0 || extraHoursActive) && activeRetainer ? (
         <section className="ticket-detail-aside-card ticket-detail-aside-card--muted">
-          <button
-            type="button"
-            className="ticket-detail-more-toggle"
-            onClick={() => setShowMoreLog(v => !v)}
-            aria-expanded={showMoreLog}
-          >
-            <span>Request extra time</span>
-            <span aria-hidden>{showMoreLog ? '−' : '+'}</span>
-          </button>
+          {canRequestExtraHours(status) ? (
+            <button
+              type="button"
+              className="ticket-detail-more-toggle"
+              onClick={() => setShowMoreLog(v => !v)}
+              aria-expanded={showMoreLog}
+            >
+              <span>Request extra time</span>
+              <span aria-hidden>{showMoreLog ? '−' : '+'}</span>
+            </button>
+          ) : (
+            <h3 className="ticket-detail-aside-title">Extra hours</h3>
+          )}
+
+          {extraHoursActive ? (
+            <p className="ticket-detail-aside-note dash-meta">
+              Ticket reopened for approved extra-hours work.
+            </p>
+          ) : null}
 
           {extraHours.length > 0 ? (
             <ul className="ticket-extra-hours-list">
@@ -335,21 +376,19 @@ export function TicketDetailSidebar({
             </p>
           ) : null}
 
-          {showMoreLog ? (
+          {canRequestExtraHours(status) && showMoreLog ? (
             <form
               className="ticket-detail-more-form"
               onSubmit={e => {
                 e.preventDefault()
                 const formData = new FormData(e.currentTarget)
-                const retainerId = formData.get('retainer_id') as string
                 const hours = parseFloat(formData.get('hours') as string)
-                if (!retainerId || !hours) return
+                if (!hours) return
                 startTransition(async () => {
                   const ok = await runWithToast(
                     () =>
                       submitExtraHours(
                         ticketId,
-                        retainerId,
                         Math.round(hours * 60),
                         (formData.get('note') as string) || undefined
                       ),
@@ -368,22 +407,19 @@ export function TicketDetailSidebar({
             >
               <p className="dash-meta leading-relaxed">
                 Request additional hours on this resolved ticket. The client must approve before
-                time is billed to the selected retainer period.
+                time is billed to the current retainer period (
+                {new Date(activeRetainer.period_start).toLocaleDateString('en-GB', {
+                  day: 'numeric',
+                  month: 'short',
+                })}
+                {' – '}
+                {new Date(activeRetainer.period_end).toLocaleDateString('en-GB', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+                ).
               </p>
-              <select
-                name="retainer_id"
-                required
-                className="dash-select w-full text-sm"
-                defaultValue={defaultRetainerId ?? ''}
-              >
-                <option value="">Billing period…</option>
-                {retainers.map(r => (
-                  <option key={r.id} value={r.id}>
-                    {new Date(r.period_start).toLocaleDateString('en-GB')} (
-                    {Number(r.hours_used).toFixed(1)}/{Number(r.hours_total).toFixed(1)}h)
-                  </option>
-                ))}
-              </select>
               <input
                 name="hours"
                 type="number"
