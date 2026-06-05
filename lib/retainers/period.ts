@@ -23,3 +23,10 @@ export function currentBillingPeriod(billingCycleDay = 1): {
   const fmt = (d: Date) => d.toISOString().slice(0, 10)
   return { period_start: fmt(start), period_end: fmt(end) }
 }
+
+/** First day of the next billing period (renewal date). */
+export function renewalDateFromPeriodEnd(periodEnd: string): string {
+  const d = new Date(`${periodEnd}T12:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + 1)
+  return d.toISOString().slice(0, 10)
+}

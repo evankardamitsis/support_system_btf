@@ -4,7 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { tryCreateAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth/require-admin'
-import { currentBillingPeriod } from '@/lib/retainers/period'
+import { notifyClientNewRetainer } from '@/lib/email/ticket-notifications'
+import { currentBillingPeriod, renewalDateFromPeriodEnd } from '@/lib/retainers/period'
 import type { RetainerPackage } from '@/lib/retainers/packages'
 
 export type DeleteClientResult = { ok: true } | { ok: false; error: string }
@@ -48,7 +49,7 @@ export async function createClientAction(formData: FormData): Promise<string> {
       : currentBillingPeriod(billingCycleDay)
 
     if (period_start && period_end) {
-      await supabase.from('retainers').insert({
+      const { error: retainerErr } = await supabase.from('retainers').insert({
         client_id: client.id,
         package_name: packageName,
         period_start,
@@ -56,6 +57,23 @@ export async function createClientAction(formData: FormData): Promise<string> {
         hours_total: hoursTotal,
         period_cost: Number.isNaN(periodCost) ? 0 : Math.round(periodCost * 100) / 100,
       })
+      if (retainerErr) throw new Error(retainerErr.message)
+
+      await supabase
+        .from('clients')
+        .update({ renewal_date: renewalDateFromPeriodEnd(period_end) })
+        .eq('id', client.id)
+
+      const clientNotify = await notifyClientNewRetainer({
+        clientId: client.id,
+        packageName,
+        hoursTotal,
+        periodStart: period_start,
+        periodEnd: period_end,
+      })
+      if (!clientNotify.sent) {
+        console.error('[email] client new-retainer notification failed:', clientNotify.error)
+      }
     }
   }
 

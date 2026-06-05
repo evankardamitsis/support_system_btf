@@ -1,3 +1,6 @@
+import { getRetainerForClient } from '@/lib/retainers/active'
+import { renewalDateFromPeriodEnd } from '@/lib/retainers/period'
+import { formatPackageName } from '@/lib/retainers/packages'
 import { tryCreateAdminClient } from '@/lib/supabase/admin'
 import { formatTicketId } from '@/lib/tickets/display'
 import { formatTicketPriority } from '@/lib/notify'
@@ -5,6 +8,66 @@ import { sendEmail } from '@/lib/email/send'
 
 function appOrigin(): string {
   return process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+}
+
+function formatHours(hours: number): string {
+  return hours.toFixed(2).replace(/\.00$/, '')
+}
+
+function resolvedHoursMessage(estimatedHours: number | null, actualHours: number): string {
+  const actual = formatHours(actualHours)
+  if (estimatedHours == null || estimatedHours <= 0) {
+    return `Actual time logged: <strong>${actual}h</strong>.`
+  }
+  const estimate = formatHours(estimatedHours)
+  const diff = actualHours - estimatedHours
+  if (Math.abs(diff) < 0.01) {
+    return `Actual time logged: <strong>${actual}h</strong> — matching the approved estimate of ${estimate}h.`
+  }
+  const diffLabel = formatHours(Math.abs(diff))
+  if (diff > 0) {
+    return `Actual time logged: <strong>${actual}h</strong> — <strong>${diffLabel}h more</strong> than the approved estimate of ${estimate}h.`
+  }
+  return `Actual time logged: <strong>${actual}h</strong> — <strong>${diffLabel}h less</strong> than the approved estimate of ${estimate}h.`
+}
+
+function formatDateLong(dateStr: string): string {
+  return new Date(`${dateStr}T12:00:00Z`).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
+function formatPeriodRange(periodStart: string, periodEnd: string): string {
+  const start = new Date(periodStart).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+  })
+  const end = new Date(periodEnd).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
+  return `${start} – ${end}`
+}
+
+function retainerRemainingMessage(input: {
+  hoursTotal: number
+  hoursUsed: number
+  periodStart: string
+  periodEnd: string
+}): string {
+  const total = Number(input.hoursTotal)
+  const used = Number(input.hoursUsed)
+  const remaining = total - used
+  const period = formatPeriodRange(input.periodStart, input.periodEnd)
+  const remainingLabel = formatHours(Math.abs(remaining))
+
+  if (remaining < -0.01) {
+    return `For your current retainer period (${period}), you are <strong>${remainingLabel}h over</strong> the ${formatHours(total)}h allowance (${formatHours(used)}h used).`
+  }
+  return `For your current retainer period (${period}), you have <strong>${remainingLabel}h remaining</strong> of your ${formatHours(total)}h allowance (${formatHours(used)}h used).`
 }
 
 function emailShell(title: string, body: string, ctaLabel: string, ctaUrl: string): string {
@@ -109,6 +172,104 @@ export async function notifyClientEstimatePending(input: {
       sent: false,
       error:
         'Estimate is waiting on the client, but the notification email could not be sent. Check ZEPTOMAIL_API_KEY (Send Mail Token), ZEPTOMAIL_API_URL (.eu for EU accounts), and EMAIL_FROM.',
+    }
+  }
+
+  return { sent: true }
+}
+
+export async function notifyClientTicketResolved(input: {
+  ticketId: string
+  ticketTitle: string
+  clientId: string
+  estimatedHours: number | null
+  actualHours: number
+}): Promise<NotifyResult> {
+  const recipients = await getClientNotificationEmails(input.clientId)
+  if (!recipients.length) {
+    return {
+      sent: false,
+      error: 'No client email on file — add an email on the client record or invite a portal user',
+    }
+  }
+
+  const url = `${appOrigin()}/portal/tickets/${input.ticketId}`
+  const ticketRef = formatTicketId(input.ticketId)
+  const hoursLine = resolvedHoursMessage(input.estimatedHours, input.actualHours)
+
+  let retainerLine = ''
+  const adminResult = tryCreateAdminClient()
+  if (!('error' in adminResult)) {
+    const retainer = await getRetainerForClient(adminResult.client, input.clientId)
+    if (retainer) {
+      retainerLine = ` ${retainerRemainingMessage({
+        hoursTotal: retainer.hours_total,
+        hoursUsed: retainer.hours_used,
+        periodStart: retainer.period_start,
+        periodEnd: retainer.period_end,
+      })}`
+    }
+  }
+
+  const sent = await sendEmail({
+    to: recipients,
+    subject: `Ticket resolved — ${ticketRef}`,
+    html: emailShell(
+      'Your ticket is resolved',
+      `BTF has completed <strong>${input.ticketTitle}</strong> (${ticketRef}). ${hoursLine}${retainerLine} View the ticket in your portal for full details.`,
+      'View ticket',
+      url
+    ),
+  })
+
+  if (!sent) {
+    return {
+      sent: false,
+      error:
+        'Ticket was resolved but the client notification email could not be sent. Check ZEPTOMAIL_API_KEY, ZEPTOMAIL_API_URL, and EMAIL_FROM.',
+    }
+  }
+
+  return { sent: true }
+}
+
+export async function notifyClientNewRetainer(input: {
+  clientId: string
+  packageName: string
+  hoursTotal: number
+  periodStart: string
+  periodEnd: string
+}): Promise<NotifyResult> {
+  const recipients = await getClientNotificationEmails(input.clientId)
+  if (!recipients.length) {
+    return {
+      sent: false,
+      error: 'No client email on file — add an email on the client record or invite a portal user',
+    }
+  }
+
+  const packageLabel = formatPackageName(input.packageName)
+  const hours = formatHours(input.hoursTotal)
+  const duration = formatPeriodRange(input.periodStart, input.periodEnd)
+  const renewalDate = formatDateLong(renewalDateFromPeriodEnd(input.periodEnd))
+  const url = `${appOrigin()}/portal/retainer`
+
+  const sent = await sendEmail({
+    to: recipients,
+    subject: `Your ${packageLabel} retainer is active`,
+    html: emailShell(
+      'New retainer period',
+      `Your <strong>${packageLabel}</strong> retainer is now active with <strong>${hours}h</strong> included for this period. The current period runs <strong>${duration}</strong> and renews on <strong>${renewalDate}</strong>. Sign in to your portal to track usage and submit support requests.`,
+      'View your plan',
+      url
+    ),
+  })
+
+  if (!sent) {
+    return {
+      sent: false,
+      error:
+        'Retainer was saved but the client notification email could not be sent. Check ZEPTOMAIL_API_KEY, ZEPTOMAIL_API_URL, and EMAIL_FROM.',
     }
   }
 

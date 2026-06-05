@@ -5,6 +5,7 @@ import { ArrowUpRight } from 'lucide-react'
 import { AdminTicketRow } from './AdminTicketRow'
 import {
   formatDateTimeHuman,
+  formatResolvedAtTable,
   formatTicketId,
   formatRelativeTime,
   priorityAccent,
@@ -113,11 +114,12 @@ export function TicketsTable({
 
               <div className="tickets-cell tickets-cell-updated">
                 {t.resolved_at && (t.status === 'resolved' || t.status === 'closed') ? (
-                  <time dateTime={t.resolved_at} className="tickets-resolved-at">
-                    <span className="tickets-resolved-label">Resolved</span>
-                    <span className="tickets-resolved-time">
-                      {formatDateTimeHuman(t.resolved_at)}
-                    </span>
+                  <time
+                    dateTime={t.resolved_at}
+                    className="tickets-updated tickets-resolved-at"
+                    title={formatDateTimeHuman(t.resolved_at)}
+                  >
+                    {formatResolvedAtTable(t.resolved_at)}
                   </time>
                 ) : (
                   <time

@@ -9,6 +9,7 @@ import { getRetainerForClient } from '@/lib/retainers/active'
 import {
   getClientNotificationEmails,
   notifyClientEstimatePending,
+  notifyClientTicketResolved,
   notifyStaffEstimateApproved,
   notifyStaffNewTicket,
 } from '@/lib/email/ticket-notifications'
@@ -265,10 +266,17 @@ export async function approveTicketEstimate(ticketId: string) {
 export async function updateTicketStatus(ticketId: string, status: TicketStatus) {
   const { supabase } = await requireStaff()
 
+  let resolvedNotify: {
+    clientId: string
+    title: string
+    estimatedHours: number | null
+    actualHours: number
+  } | null = null
+
   if (status === 'resolved') {
     const { data: ticket } = await supabase
       .from('tickets')
-      .select('estimate_status')
+      .select('estimate_status, status, title, client_id, estimated_hours, actual_hours')
       .eq('id', ticketId)
       .single()
     if (ticket?.estimate_status !== 'approved') {
@@ -283,7 +291,20 @@ export async function updateTicketStatus(ticketId: string, status: TicketStatus)
     if (!existingLog) {
       throw new Error('Use resolve with actual hours')
     }
+    if (ticket && ticket.status !== 'resolved') {
+      const actual = ticket.actual_hours != null ? Number(ticket.actual_hours) : null
+      if (actual != null && actual > 0) {
+        resolvedNotify = {
+          clientId: ticket.client_id,
+          title: ticket.title,
+          estimatedHours:
+            ticket.estimated_hours != null ? Number(ticket.estimated_hours) : null,
+          actualHours: actual,
+        }
+      }
+    }
   }
+
   const patch: { status: TicketStatus; resolved_at?: string | null } = { status }
   if (status === 'resolved' || status === 'closed') {
     patch.resolved_at = new Date().toISOString()
@@ -292,6 +313,20 @@ export async function updateTicketStatus(ticketId: string, status: TicketStatus)
   }
   const { error } = await supabase.from('tickets').update(patch).eq('id', ticketId)
   if (error) throw new Error(error.message)
+
+  if (resolvedNotify) {
+    const clientNotify = await notifyClientTicketResolved({
+      ticketId,
+      ticketTitle: resolvedNotify.title,
+      clientId: resolvedNotify.clientId,
+      estimatedHours: resolvedNotify.estimatedHours,
+      actualHours: resolvedNotify.actualHours,
+    })
+    if (!clientNotify.sent) {
+      console.error('[email] client ticket-resolved notification failed:', clientNotify.error)
+    }
+  }
+
   revalidateTicketPaths(ticketId)
 }
 
@@ -304,7 +339,7 @@ export async function resolveTicketWithHours(ticketId: string, actualHours: numb
 
   const { data: ticket, error: ticketErr } = await supabase
     .from('tickets')
-    .select('id, client_id, status, estimate_status')
+    .select('id, client_id, status, estimate_status, title, estimated_hours')
     .eq('id', ticketId)
     .single()
 
@@ -349,6 +384,20 @@ export async function resolveTicketWithHours(ticketId: string, actualHours: numb
     .eq('id', ticketId)
 
   if (updateErr) throw new Error(updateErr.message)
+
+  const roundedActual = Math.round(actualHours * 100) / 100
+  const clientNotify = await notifyClientTicketResolved({
+    ticketId,
+    ticketTitle: ticket.title,
+    clientId: ticket.client_id,
+    estimatedHours:
+      ticket.estimated_hours != null ? Number(ticket.estimated_hours) : null,
+    actualHours: roundedActual,
+  })
+  if (!clientNotify.sent) {
+    console.error('[email] client ticket-resolved notification failed:', clientNotify.error)
+  }
+
   revalidateTicketPaths(ticketId)
 }
 

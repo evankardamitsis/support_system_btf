@@ -14,6 +14,14 @@ export function formatDateTimeHuman(dateStr: string): string {
   })
 }
 
+/** Compact resolved timestamp for table cells */
+export function formatResolvedAtTable(dateStr: string): string {
+  const d = new Date(dateStr)
+  const datePart = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  const timePart = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  return `${datePart} · ${timePart}`
+}
+
 export function formatRelativeTime(dateStr: string) {
   const m = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000)
   if (m < 1) return 'just now'

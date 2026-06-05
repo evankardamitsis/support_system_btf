@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { currentBillingPeriod } from '@/lib/retainers/period'
+import { notifyClientNewRetainer } from '@/lib/email/ticket-notifications'
+import { currentBillingPeriod, renewalDateFromPeriodEnd } from '@/lib/retainers/period'
 import type { RetainerPackage } from '@/lib/retainers/packages'
 
 function parsePackage(raw: string | null): RetainerPackage {
@@ -54,7 +55,24 @@ export async function createRetainerPeriod(formData: FormData): Promise<string> 
 
   if (error || !retainer) throw new Error(error?.message ?? 'Failed to create retainer period')
 
-  await supabase.from('clients').update({ plan_name: packageLabel }).eq('id', clientId)
+  await supabase
+    .from('clients')
+    .update({
+      plan_name: packageLabel,
+      renewal_date: renewalDateFromPeriodEnd(period_end),
+    })
+    .eq('id', clientId)
+
+  const clientNotify = await notifyClientNewRetainer({
+    clientId,
+    packageName,
+    hoursTotal,
+    periodStart: period_start,
+    periodEnd: period_end,
+  })
+  if (!clientNotify.sent) {
+    console.error('[email] client new-retainer notification failed:', clientNotify.error)
+  }
 
   revalidatePath(`/admin/clients/${clientId}`)
   revalidatePath('/admin/retainers')
