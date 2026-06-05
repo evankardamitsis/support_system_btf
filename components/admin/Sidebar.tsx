@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { SidebarBrand } from '@/components/dashboard/SidebarBrand'
 
 interface AdminSidebarProps {
   userName?: string
@@ -31,6 +32,8 @@ export function AdminSidebar({ userName, userEmail, userRole, onClose }: AdminSi
 
   return (
     <aside className="dash-sidebar flex flex-col h-full select-none relative">
+      <SidebarBrand variant="admin" onNavigate={onClose} />
+
       {onClose ? (
         <button
           type="button"

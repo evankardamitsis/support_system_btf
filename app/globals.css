@@ -567,6 +567,45 @@
   border-right: 1px solid var(--border);
 }
 
+[data-theme="dashboard"] .dash-sidebar-brand {
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 1rem 3rem 0.875rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+[data-theme="dashboard"] .dash-sidebar-brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  transition: opacity 140ms ease;
+}
+
+[data-theme="dashboard"] .dash-sidebar-brand-link:hover {
+  opacity: 0.85;
+}
+
+[data-theme="dashboard"] .dash-sidebar-logo {
+  width: auto;
+  height: 13px;
+}
+
+[data-theme="dashboard"] .dash-sidebar-tag {
+  font-size: 0.625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-family: var(--font-dm-mono);
+  color: var(--text-2);
+}
+
+@media (max-width: 1023px) {
+  [data-theme="dashboard"] .dash-sidebar-brand {
+    display: flex;
+  }
+}
+
 [data-theme="dashboard"] .dash-topbar {
   min-height: 3.5rem;
   background: var(--dash-chrome);
@@ -1993,21 +2032,29 @@
   border-top: none;
 }
 
-/* ─── Mobile table cards (tickets) ──────────────────────────────────────────── */
+/* ─── Mobile table cards (tickets) — compact 2-line rows ───────────────────── */
 @media (max-width: 720px) {
   [data-theme="dashboard"] .tickets-table-header {
     display: none;
   }
 
   [data-theme="dashboard"] .tickets-grid.tickets-row {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
-    padding: 0.875rem 1rem 1rem;
-    padding-right: 2.75rem;
+    display: grid;
+    align-items: center;
+    gap: 0.25rem 0.375rem;
+    padding: 0.5rem 1.75rem 0.5rem 0.625rem;
     min-height: 0;
     position: relative;
+  }
+
+  [data-theme="dashboard"] .tickets-grid--portal.tickets-row {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+  }
+
+  [data-theme="dashboard"] .tickets-grid--admin.tickets-row {
+    grid-template-columns: auto auto auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
   }
 
   [data-theme="dashboard"] .tickets-cell {
@@ -2015,57 +2062,57 @@
     min-width: 0;
   }
 
-  [data-theme="dashboard"] .tickets-cell[data-label] {
-    display: grid;
-    grid-template-columns: 5.25rem 1fr;
-    gap: 0.5rem 0.75rem;
-    align-items: center;
-    min-height: 2.25rem;
-  }
-
   [data-theme="dashboard"] .tickets-cell[data-label]::before {
-    content: attr(data-label);
-    font-size: 0.625rem;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-3);
-    font-family: var(--font-dm-mono);
+    display: none;
   }
 
   [data-theme="dashboard"] .tickets-cell-value {
-    justify-self: end;
-    text-align: right;
+    justify-self: auto;
+    text-align: left;
     min-width: 0;
   }
 
   [data-theme="dashboard"] .tickets-cell-value--stack {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.35rem;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    justify-content: flex-start;
   }
 
+  [data-theme="dashboard"] .tickets-approve-badge,
+  [data-theme="dashboard"] .tickets-awaiting-approval-badge {
+    margin-top: 0;
+    padding: 0.1rem 0.35rem;
+    font-size: 0.5625rem;
+  }
+
+  /* Line 1: title (chevron pinned top-right) */
   [data-theme="dashboard"] .tickets-cell-subject {
-    order: -1;
+    grid-column: 1 / -1;
+    grid-row: 1;
     display: block;
-    padding-bottom: 0.625rem;
-    margin-bottom: 0.125rem;
-    border-bottom: 1px solid var(--border);
+    padding: 0;
+    margin: 0;
+    border: none;
   }
 
   [data-theme="dashboard"] .tickets-subject-title {
+    font-size: 0.8125rem;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
     white-space: normal;
-    overflow: visible;
-    text-overflow: unset;
-    line-height: 1.4;
-    padding-right: 0.5rem;
+    padding-right: 0;
   }
 
   [data-theme="dashboard"] .tickets-subject-meta {
-    flex-wrap: wrap;
-    white-space: normal;
-    margin-top: 0.35rem;
+    margin-top: 0.15rem;
+    font-size: 0.625rem;
+    flex-wrap: nowrap;
+    white-space: nowrap;
   }
 
   [data-theme="dashboard"] .tickets-subject-client {
@@ -2074,34 +2121,97 @@
 
   [data-theme="dashboard"] .tickets-cell-action {
     position: absolute;
-    top: 0.875rem;
-    right: 0.75rem;
+    top: 0.5rem;
+    right: 0.5rem;
     padding: 0;
-    min-height: 2.75rem;
-    min-width: 2.75rem;
-    display: flex;
-    align-items: flex-start;
-    justify-content: flex-end;
+    min-height: unset;
+    min-width: unset;
   }
 
   [data-theme="dashboard"] .tickets-row-chevron {
-    opacity: 1;
-    width: 1.125rem;
-    height: 1.125rem;
+    opacity: 0.7;
+    width: 0.9375rem;
+    height: 0.9375rem;
+  }
+
+  /* Line 2: status · priority · hours · updated */
+  [data-theme="dashboard"] .tickets-cell-status {
+    grid-row: 2;
+    grid-column: 1;
+    padding-left: 0;
+  }
+
+  [data-theme="dashboard"] .tickets-cell-priority {
+    grid-row: 2;
+    grid-column: 2;
+  }
+
+  [data-theme="dashboard"] .tickets-cell-client {
+    display: none;
+  }
+
+  [data-theme="dashboard"] .tickets-cell-hours[data-label='Est'] {
+    grid-row: 2;
+    grid-column: 3;
+  }
+
+  [data-theme="dashboard"] .tickets-cell-hours[data-label='Actual'] {
+    grid-row: 2;
+    grid-column: 4;
+  }
+
+  [data-theme="dashboard"] .tickets-grid--portal .tickets-cell-updated {
+    grid-row: 2;
+    grid-column: 3;
+  }
+
+  [data-theme="dashboard"] .tickets-grid--admin .tickets-cell-updated {
+    grid-row: 2;
+    grid-column: 5;
+  }
+
+  [data-theme="dashboard"] .tickets-cell-hours[data-label='Est'] + .tickets-cell-hours[data-label='Actual']::before {
+    content: '/';
+    margin-right: 0.2rem;
+    color: var(--text-3);
+    font-family: var(--font-dm-mono);
+    font-size: 0.6875rem;
+  }
+
+  [data-theme="dashboard"] .tickets-cell-hours .tickets-hours-estimate,
+  [data-theme="dashboard"] .tickets-cell-hours .tickets-hours-actual,
+  [data-theme="dashboard"] .tickets-cell-hours .tickets-hours-muted {
+    font-size: 0.6875rem;
+  }
+
+  [data-theme="dashboard"] .tickets-cell-updated {
+    justify-self: end;
+    min-width: 0;
+  }
+
+  [data-theme="dashboard"] .tickets-cell-updated .tickets-cell-value {
+    text-align: right;
+  }
+
+  [data-theme="dashboard"] .tickets-updated,
+  [data-theme="dashboard"] .tickets-updated-recent,
+  [data-theme="dashboard"] .tickets-resolved-at {
+    font-size: 0.6875rem;
   }
 
   [data-theme="dashboard"] .tickets-cell--control .pill-select {
-    min-height: 2.75rem;
+    min-height: unset;
   }
 
   [data-theme="dashboard"] .tickets-cell--control .pill-select-input {
-    min-height: 2.75rem;
-    min-width: 6.5rem;
+    min-height: 2rem;
+    min-width: 0;
   }
 
   [data-theme="dashboard"] .tickets-hours-log-btn {
-    min-height: 2.25rem;
-    padding: 0.35rem 0.5rem;
+    min-height: unset;
+    padding: 0.15rem 0.35rem;
+    font-size: 0.5625rem;
   }
 
   [data-theme="dashboard"] .tickets-toolbar {
@@ -2188,6 +2298,14 @@
 
 [data-theme="dashboard"] .anim-stagger-2 > .anim-fade-up:nth-child(n + 6) {
   animation-delay: 220ms;
+}
+
+[data-theme="dashboard"] .metric-strip-wrap {
+  width: 100%;
+}
+
+[data-theme="dashboard"] .metric-strip-toggle {
+  display: none;
 }
 
 [data-theme="dashboard"] .metric-strip {
@@ -2622,6 +2740,10 @@
   font-family: var(--font-geist);
 }
 
+[data-theme="dashboard"] .retainers-client-meta {
+  display: none;
+}
+
 [data-theme="dashboard"] .retainers-row:hover .retainers-client-name {
   color: var(--accent);
 }
@@ -2969,76 +3091,239 @@
   }
 
   [data-theme="dashboard"] .retainers-col-grid.retainers-row {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.5rem;
-    min-height: 0;
-    padding: 1rem 1.125rem;
-    position: relative;
-    padding-right: 1.125rem;
-  }
-
-  [data-theme="dashboard"] .retainers-cell-client {
-    order: -1;
-    padding-bottom: 0.5rem;
-    margin-bottom: 0.125rem;
-    border-bottom: 1px solid var(--border);
-  }
-
-  [data-theme="dashboard"] .retainers-cell[data-label] {
     display: grid;
-    grid-template-columns: 5.5rem 1fr;
-    gap: 0.5rem 0.75rem;
+    grid-template-columns: auto auto auto minmax(2.5rem, 1fr);
+    grid-template-rows: auto auto;
     align-items: center;
-    min-height: 2rem;
+    gap: 0.25rem 0.375rem;
+    min-height: 0;
+    padding: 0.5rem 1.75rem 0.5rem 0.625rem;
+    position: relative;
+  }
+
+  [data-theme="dashboard"] .retainers-cell {
     padding: 0;
   }
 
   [data-theme="dashboard"] .retainers-cell[data-label]::before {
-    content: attr(data-label);
-    font-size: 0.625rem;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-3);
-    font-family: var(--font-dm-mono);
-  }
-
-  [data-theme="dashboard"] .retainers-cell[data-label] > * {
-    justify-self: end;
-    text-align: right;
-    min-width: 0;
-  }
-
-  [data-theme="dashboard"] .retainers-hours-value,
-  [data-theme="dashboard"] .retainers-usage-value {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    justify-content: flex-end;
-    width: 100%;
-  }
-
-  [data-theme="dashboard"] .retainers-usage-value {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.35rem;
-  }
-
-  [data-theme="dashboard"] .retainers-usage-value .retainers-pct {
-    text-align: right;
-  }
-
-  [data-theme="dashboard"] .retainers-cell-usage {
-    width: 100%;
-  }
-
-  [data-theme="dashboard"] .retainers-cell-arrow {
     display: none;
   }
 
-  [data-theme="dashboard"] .metric-strip {
+  /* Line 1: client + period meta + badge */
+  [data-theme="dashboard"] .retainers-cell-client {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.5rem;
+    padding: 0;
+    margin: 0;
+    border: none;
+  }
+
+  [data-theme="dashboard"] .retainers-client-name {
+    font-size: 0.8125rem;
+    line-height: 1.3;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  [data-theme="dashboard"] .retainers-client-meta {
+    display: block;
+    width: 100%;
+    margin: 0;
+    font-size: 0.625rem;
+    color: var(--text-3);
+    font-family: var(--font-dm-mono);
+    line-height: 1.3;
+  }
+
+  [data-theme="dashboard"] .retainers-cell-client .status-flag,
+  [data-theme="dashboard"] .retainers-cell-client .retainers-active-badge {
+    margin-top: 0;
+    flex-shrink: 0;
+    font-size: 0.5625rem;
+    padding: 0.1rem 0.35rem;
+  }
+
+  [data-theme="dashboard"] .retainers-cell-arrow {
+    display: flex;
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0;
+    align-items: flex-start;
+    justify-content: flex-end;
+  }
+
+  [data-theme="dashboard"] .retainers-row .entity-card-arrow {
+    opacity: 0.7;
+    transform: none;
+    font-size: 0.9375rem;
+  }
+
+  /* Line 2: package · hours · remaining · usage */
+  [data-theme="dashboard"] .retainers-cell[data-label='Package'] {
+    grid-row: 2;
+    grid-column: 1;
+  }
+
+  [data-theme="dashboard"] .retainers-cell[data-label='Period'],
+  [data-theme="dashboard"] .retainers-cell[data-label='Cost'] {
+    display: none;
+  }
+
+  [data-theme="dashboard"] .retainers-cell[data-label='Hours'] {
+    grid-row: 2;
+    grid-column: 2;
+  }
+
+  [data-theme="dashboard"] .retainers-hours {
+    font-size: 0.6875rem;
+  }
+
+  [data-theme="dashboard"] .retainers-hours-value {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.1rem;
+  }
+
+  [data-theme="dashboard"] .retainers-cell[data-label='Remaining'] {
+    grid-row: 2;
+    grid-column: 3;
+  }
+
+  [data-theme="dashboard"] .retainers-remaining {
+    font-size: 0.6875rem;
+    font-weight: 600;
+  }
+
+  [data-theme="dashboard"] .retainers-cell-usage {
+    grid-row: 2;
+    grid-column: 4;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  [data-theme="dashboard"] .retainers-usage-value {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.35rem;
+    width: 100%;
+    min-width: 0;
+  }
+
+  [data-theme="dashboard"] .retainers-cell-usage .usage-bar {
+    flex: 1;
+    min-width: 1.5rem;
+    height: 4px;
+  }
+
+  [data-theme="dashboard"] .retainers-pct {
+    width: auto;
+    flex-shrink: 0;
+    font-size: 0.625rem;
+  }
+
+  [data-theme="dashboard"] .metric-strip-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-1);
+    font-family: var(--font-geist);
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 140ms ease, background 140ms ease;
+  }
+
+  [data-theme="dashboard"] .metric-strip-toggle:hover {
+    border-color: var(--border-2);
+    background: var(--surface-2);
+  }
+
+  [data-theme="dashboard"] .metric-strip-toggle-label {
+    flex-shrink: 0;
+    font-size: 0.625rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-family: var(--font-dm-mono);
+  }
+
+  [data-theme="dashboard"] .metric-strip-toggle-preview {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.125rem 0.35rem;
+    font-family: var(--font-dm-mono);
+  }
+
+  [data-theme="dashboard"] .metric-strip-toggle-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+
+  [data-theme="dashboard"] .metric-strip-toggle-chip-value {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-1);
+    font-variant-numeric: tabular-nums;
+  }
+
+  [data-theme="dashboard"] .metric-strip-toggle-chip-label {
+    font-size: 0.625rem;
+    color: var(--text-3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 5.5rem;
+  }
+
+  [data-theme="dashboard"] .metric-strip-toggle-sep {
+    color: var(--text-3);
+    margin-right: 0.1rem;
+  }
+
+  [data-theme="dashboard"] .metric-strip-toggle-more {
+    font-size: 0.625rem;
+    color: var(--text-3);
+    letter-spacing: 0.04em;
+  }
+
+  [data-theme="dashboard"] .metric-strip-toggle-icon {
+    flex-shrink: 0;
+    color: var(--text-2);
+    transition: transform 180ms ease;
+  }
+
+  [data-theme="dashboard"] .metric-strip-wrap.is-open .metric-strip-toggle-icon {
+    transform: rotate(180deg);
+  }
+
+  [data-theme="dashboard"] .metric-strip-wrap:not(.is-open) .metric-strip {
+    display: none;
+  }
+
+  [data-theme="dashboard"] .metric-strip-wrap.is-open .metric-strip {
+    display: grid;
+    margin-top: 0.5rem;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.5rem;
   }

@@ -65,6 +65,7 @@ export default async function RetainerPage() {
           </div>
 
           <MetricStrip
+            foldLabel="Hours"
             items={[
               { label: 'Used', value: `${hoursUsed.toFixed(1)}h` },
               {

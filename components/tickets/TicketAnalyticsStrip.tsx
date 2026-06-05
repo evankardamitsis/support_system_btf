@@ -10,6 +10,7 @@ export function TicketAnalyticsStrip({ analytics }: { analytics: TicketAnalytics
   return (
     <MetricStrip
       className="ticket-analytics-strip"
+      foldLabel="Ticket stats"
       items={[
         {
           label: 'Open now',

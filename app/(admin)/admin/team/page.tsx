@@ -23,6 +23,7 @@ export default async function AdminTeamPage() {
         <p className="ticket-modal-error leading-relaxed">{loadError}</p>
       ) : (
         <MetricStrip
+          foldLabel="Team"
           items={[
             { label: 'Admins', value: String(adminCount) },
             { label: 'Members', value: String(memberCount) },

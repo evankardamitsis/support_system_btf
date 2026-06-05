@@ -63,6 +63,7 @@ export default async function AdminRetainersPage() {
       />
 
       <MetricStrip
+        foldLabel="Retainers"
         items={[
           {
             label: 'Active contract',

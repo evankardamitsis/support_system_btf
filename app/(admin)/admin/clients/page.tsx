@@ -46,6 +46,7 @@ export default async function AdminClientsPage() {
       />
 
       <MetricStrip
+        foldLabel="Clients"
         items={[
           { label: 'Total accounts', value: String(list.length) },
           { label: 'Care / Grow', value: String(withPlan), hint: 'Package set' },

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { SidebarBrand } from '@/components/dashboard/SidebarBrand'
 
 const nav = [
   { label: 'My Tickets', href: '/portal/tickets', onboarding: 'nav-tickets' },
@@ -32,6 +33,8 @@ export function PortalSidebar({
 
   return (
     <aside className="dash-sidebar flex flex-col h-full relative">
+      <SidebarBrand variant="portal" onNavigate={onClose} />
+
       {onClose ? (
         <button
           type="button"

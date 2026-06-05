@@ -70,6 +70,7 @@ export default async function AdminClientDetailPage({
       </header>
 
       <MetricStrip
+        foldLabel="Client"
         items={[
           {
             label: 'Package',
