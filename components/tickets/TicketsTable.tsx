@@ -25,6 +25,7 @@ export type TicketTableRow = {
   estimated_hours?: number | null
   actual_hours?: number | null
   estimate_status?: 'pending_approval' | 'approved' | null
+  completion_status?: 'pending_approval' | 'approved' | null
 }
 
 export function TicketsTable({
@@ -81,7 +82,9 @@ export function TicketsTable({
           const accent = priorityAccent[t.priority] ?? priorityAccent.normal
           const recent = isRecentlyUpdated(t.updated_at)
           const href = `${hrefPrefix}/${t.id}`
-          const needsApproval = t.estimate_status === 'pending_approval'
+          const needsEstimateApproval = t.estimate_status === 'pending_approval'
+          const needsWorkApproval = t.completion_status === 'pending_approval'
+          const needsApproval = needsEstimateApproval || needsWorkApproval
 
           return (
             <Link
@@ -93,8 +96,10 @@ export function TicketsTable({
               <div className="tickets-cell tickets-cell-status" data-label="Status">
                 <div className="tickets-cell-value tickets-cell-value--stack">
                   <StatusPill status={t.status} />
-                  {needsApproval ? (
+                  {needsEstimateApproval ? (
                     <span className="tickets-approve-badge">Approve estimate</span>
+                  ) : needsWorkApproval ? (
+                    <span className="tickets-approve-badge">Approve work</span>
                   ) : null}
                 </div>
               </div>

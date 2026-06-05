@@ -7,14 +7,18 @@ import {
   updateTicketPriority,
   updateTicketStatus,
 } from '@/app/actions/tickets'
+import { StatusPill } from '@/components/ui/StatusPill'
+import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { EditableStatusPill } from './EditableStatusPill'
 import { EditablePriorityPill } from './EditablePriorityPill'
 import { ResolveHoursModal } from './ResolveHoursModal'
 import { TicketDetailSidebar } from './TicketDetailSidebar'
 import { DeleteTicketButton } from './DeleteTicketButton'
 import { formatDateTimeHuman, formatTicketId } from '@/lib/tickets/display'
+import { isTicketClosed } from '@/lib/tickets/closed'
+import type { CompletionStatus } from '@/lib/tickets/completion'
+import { canResolveTicket } from '@/lib/tickets/completion'
 import {
-  canResolveWithEstimate,
   isEstimateLocked,
   type EstimateStatus,
 } from '@/lib/tickets/estimate'
@@ -43,6 +47,7 @@ export function TicketDetailLayout({
   resolvedAt,
   description,
   estimateStatus,
+  completionStatus,
   estimatedHours,
   actualHours,
   hoursLogged,
@@ -64,6 +69,7 @@ export function TicketDetailLayout({
   resolvedAt: string | null
   description: string | null
   estimateStatus: EstimateStatus
+  completionStatus: CompletionStatus
   estimatedHours: number | null
   actualHours: number | null
   hoursLogged: boolean
@@ -80,12 +86,14 @@ export function TicketDetailLayout({
     router.refresh()
   }
 
+  const closed = isTicketClosed(status)
   const priorityLocked = isEstimateLocked(estimateStatus)
 
   function onStatusChange(next: TicketStatus) {
+    if (closed) return
     if (next === 'resolved' && !hoursLogged && status !== 'resolved') {
-      if (!canResolveWithEstimate(estimateStatus, status)) {
-        notifyError('Submit the estimate and get client approval before resolving')
+      if (!canResolveTicket(estimateStatus, completionStatus, status)) {
+        notifyError('Complete estimate and work approvals before resolving')
         return
       }
       setResolveOpen(true)
@@ -160,29 +168,37 @@ export function TicketDetailLayout({
           >
             <div className="ticket-detail-control">
               <span className="ticket-detail-control-label">Status</span>
-              <EditableStatusPill
-                value={status}
-                onChange={onStatusChange}
-                disabled={pending}
-                ariaLabel="Change ticket status"
-              />
+              {closed ? (
+                <StatusPill status={status} />
+              ) : (
+                <EditableStatusPill
+                  value={status}
+                  onChange={onStatusChange}
+                  disabled={pending}
+                  ariaLabel="Change ticket status"
+                />
+              )}
             </div>
             <div className="ticket-detail-control">
               <span className="ticket-detail-control-label">Priority</span>
-              <EditablePriorityPill
-                value={priority}
-                onChange={next =>
-                  startTransition(async () => {
-                    const ok = await runWithToast(() => updateTicketPriority(ticketId, next), {
-                      loading: 'Updating priority…',
-                      success: `Priority set to ${formatTicketPriority(next)}`,
+              {closed ? (
+                <PriorityBadge priority={priority} />
+              ) : (
+                <EditablePriorityPill
+                  value={priority}
+                  onChange={next =>
+                    startTransition(async () => {
+                      const ok = await runWithToast(() => updateTicketPriority(ticketId, next), {
+                        loading: 'Updating priority…',
+                        success: `Priority set to ${formatTicketPriority(next)}`,
+                      })
+                      if (ok !== null) refresh()
                     })
-                    if (ok !== null) refresh()
-                  })
-                }
-                disabled={pending || priorityLocked}
-                ariaLabel="Change ticket priority"
-              />
+                  }
+                  disabled={pending || priorityLocked}
+                  ariaLabel="Change ticket priority"
+                />
+              )}
             </div>
           </div>
         </div>
@@ -203,6 +219,7 @@ export function TicketDetailLayout({
           status={status}
           resolvedAt={resolvedAt}
           estimateStatus={estimateStatus}
+          completionStatus={completionStatus}
           estimatedHours={estimatedHours}
           actualHours={actualHours}
           hoursLogged={hoursLogged}

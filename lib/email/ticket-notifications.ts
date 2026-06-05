@@ -327,6 +327,81 @@ export async function notifyStaffNewTicket(input: {
   return { sent: true }
 }
 
+export async function notifyClientWorkReviewPending(input: {
+  ticketId: string
+  ticketTitle: string
+  clientId: string
+}): Promise<NotifyResult> {
+  const recipients = await getClientNotificationEmails(input.clientId)
+  if (!recipients.length) {
+    return {
+      sent: false,
+      error: 'No client email on file — add an email on the client record or invite a portal user',
+    }
+  }
+
+  const url = `${appOrigin()}/portal/tickets/${input.ticketId}`
+  const ticketRef = formatTicketId(input.ticketId)
+
+  const sent = await sendEmail({
+    to: recipients,
+    subject: `Action required: review completed work — ${ticketRef}`,
+    html: emailShell(
+      'Review completed work',
+      `BTF has finished work on <strong>${input.ticketTitle}</strong> (${ticketRef}). Sign in to your support portal to review what was done and approve it before we close the ticket and log final hours.`,
+      'Open portal & review',
+      url
+    ),
+  })
+
+  if (!sent) {
+    return {
+      sent: false,
+      error:
+        'Work is waiting on the client, but the notification email could not be sent. Check ZEPTOMAIL_API_KEY, ZEPTOMAIL_API_URL, and EMAIL_FROM.',
+    }
+  }
+
+  return { sent: true }
+}
+
+export async function notifyStaffWorkApproved(input: {
+  ticketId: string
+  ticketTitle: string
+}): Promise<NotifyResult> {
+  const recipients = await getStaffNotificationEmails()
+  if (!recipients.length) {
+    return {
+      sent: false,
+      error: 'No admin or agent emails found — ensure staff users have signed up with email',
+    }
+  }
+
+  const url = `${appOrigin()}/admin/tickets/${input.ticketId}`
+  const ticketRef = formatTicketId(input.ticketId)
+
+  const sent = await sendEmail({
+    to: recipients,
+    subject: `Client approved completed work — ${ticketRef}`,
+    html: emailShell(
+      'Client approved the work',
+      `The client signed off on completed work for <strong>${input.ticketTitle}</strong> (${ticketRef}). You can now resolve the ticket and log actual hours.`,
+      'Resolve ticket',
+      url
+    ),
+  })
+
+  if (!sent) {
+    return {
+      sent: false,
+      error:
+        'Work was approved but the team notification email could not be sent. Check ZEPTOMAIL_API_KEY and EMAIL_FROM.',
+    }
+  }
+
+  return { sent: true }
+}
+
 export async function notifyStaffEstimateApproved(input: {
   ticketId: string
   ticketTitle: string

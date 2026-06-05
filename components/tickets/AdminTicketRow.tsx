@@ -15,11 +15,15 @@ import {
   ticketRowAwaitingApprovalClass,
   ticketRowStatusClass,
 } from '@/lib/tickets/display'
+import { StatusPill } from '@/components/ui/StatusPill'
+import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { EditableStatusPill } from './EditableStatusPill'
 import { EditablePriorityPill } from './EditablePriorityPill'
 import { ResolveHoursModal } from './ResolveHoursModal'
 import type { TicketTableRow } from './TicketsTable'
-import { canResolveWithEstimate, isEstimateLocked } from '@/lib/tickets/estimate'
+import { isTicketClosed } from '@/lib/tickets/closed'
+import { canResolveTicket } from '@/lib/tickets/completion'
+import { isEstimateLocked } from '@/lib/tickets/estimate'
 import { formatTicketPriority, formatTicketStatus, notifyError, runWithToast } from '@/lib/notify'
 import type { TicketPriority, TicketStatus } from '@/lib/types'
 
@@ -39,8 +43,10 @@ export function AdminTicketRow({
   const recent = isRecentlyUpdated(ticket.updated_at)
   const href = `${hrefPrefix}/${ticket.id}`
   const estimateLocked = isEstimateLocked(ticket.estimate_status ?? null)
+  const closed = isTicketClosed(ticket.status)
   const statusRowClass =
-    ticketRowStatusClass(ticket.status) + ticketRowAwaitingApprovalClass(ticket.estimate_status)
+    ticketRowStatusClass(ticket.status) +
+    ticketRowAwaitingApprovalClass(ticket.estimate_status, ticket.completion_status)
 
   function refresh() {
     router.refresh()
@@ -56,9 +62,16 @@ export function AdminTicketRow({
   }
 
   function onStatusChange(next: TicketStatus) {
+    if (closed) return
     if (next === 'resolved' && !hoursLogged && ticket.status !== 'resolved') {
-      if (!canResolveWithEstimate(ticket.estimate_status ?? null, ticket.status)) {
-        notifyError('Submit the estimate and get client approval before resolving')
+      if (
+        !canResolveTicket(
+          ticket.estimate_status ?? null,
+          ticket.completion_status ?? null,
+          ticket.status
+        )
+      ) {
+        notifyError('Complete estimate and work approvals before resolving')
         return
       }
       setResolveOpen(true)
@@ -81,26 +94,36 @@ export function AdminTicketRow({
       >
         <div className="tickets-cell tickets-cell-status tickets-cell--control" data-label="Status">
           <div className="tickets-cell-value tickets-cell-value--stack">
-            <EditableStatusPill
-              value={ticket.status}
-              onChange={onStatusChange}
-              disabled={pending}
-              ariaLabel={`Status for ${ticket.title}`}
-            />
+            {closed ? (
+              <StatusPill status={ticket.status} />
+            ) : (
+              <EditableStatusPill
+                value={ticket.status}
+                onChange={onStatusChange}
+                disabled={pending}
+                ariaLabel={`Status for ${ticket.title}`}
+              />
+            )}
             {ticket.estimate_status === 'pending_approval' ? (
-              <span className="tickets-awaiting-approval-badge">Awaiting approval</span>
+              <span className="tickets-awaiting-approval-badge">Awaiting estimate</span>
+            ) : ticket.completion_status === 'pending_approval' ? (
+              <span className="tickets-awaiting-approval-badge">Awaiting work check</span>
             ) : null}
           </div>
         </div>
 
         <div className="tickets-cell tickets-cell-priority tickets-cell--control" data-label="Priority">
           <div className="tickets-cell-value">
-            <EditablePriorityPill
-              value={ticket.priority}
-              onChange={onPriorityChange}
-              disabled={pending || estimateLocked}
-              ariaLabel={`Priority for ${ticket.title}`}
-            />
+            {closed ? (
+              <PriorityBadge priority={ticket.priority} />
+            ) : (
+              <EditablePriorityPill
+                value={ticket.priority}
+                onChange={onPriorityChange}
+                disabled={pending || estimateLocked}
+                ariaLabel={`Priority for ${ticket.title}`}
+              />
+            )}
           </div>
         </div>
 
@@ -147,14 +170,6 @@ export function AdminTicketRow({
           <div className="tickets-cell-value">
             {ticket.actual_hours != null && ticket.actual_hours > 0 ? (
               <span className="tickets-hours-actual tabular-nums">{ticket.actual_hours.toFixed(1)}h</span>
-            ) : ticket.status === 'resolved' || ticket.status === 'closed' ? (
-              <button
-                type="button"
-                className="tickets-hours-log-btn"
-                onClick={() => setResolveOpen(true)}
-              >
-                Log hrs
-              </button>
             ) : (
               <span className="tickets-hours-muted">—</span>
             )}

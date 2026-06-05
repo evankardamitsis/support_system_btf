@@ -5,6 +5,7 @@ import { CommentThread } from '@/components/tickets/CommentThread'
 import { TicketCommentForm } from '@/components/tickets/TicketCommentForm'
 import { TicketDetailLayout } from '@/components/tickets/TicketDetailLayout'
 import { getRetainerForClient } from '@/lib/retainers/active'
+import { isTicketClosed } from '@/lib/tickets/closed'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
 export default async function AdminTicketDetailPage({
@@ -52,6 +53,7 @@ export default async function AdminTicketDetailPage({
   const clientName = (ticket.clients as unknown as { name: string } | null)?.name ?? null
 
   const messageCount = (comments ?? []).length
+  const closed = isTicketClosed(ticket.status as TicketStatus)
 
   return (
     <div className="ticket-detail w-full">
@@ -72,6 +74,7 @@ export default async function AdminTicketDetailPage({
         resolvedAt={ticket.resolved_at}
         description={ticket.description}
         estimateStatus={ticket.estimate_status ?? null}
+        completionStatus={ticket.completion_status ?? null}
         estimatedHours={estimatedHours}
         actualHours={actualHours}
         hoursLogged={hoursLogged}
@@ -92,10 +95,14 @@ export default async function AdminTicketDetailPage({
             <CommentThread comments={comments ?? []} showInternal />
           </div>
 
-          <div className="ticket-detail-reply">
-            <p className="ticket-detail-reply-label">Add to thread</p>
-            <TicketCommentForm ticketId={ticket.id} variant="admin" />
-          </div>
+          {closed ? (
+            <p className="ticket-detail-reply dash-meta px-5 pb-5">This ticket is closed.</p>
+          ) : (
+            <div className="ticket-detail-reply">
+              <p className="ticket-detail-reply-label">Add to thread</p>
+              <TicketCommentForm ticketId={ticket.id} variant="admin" />
+            </div>
+          )}
         </section>
       </TicketDetailLayout>
     </div>

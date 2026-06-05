@@ -3364,13 +3364,27 @@
   }
 
   [data-theme="dashboard"] .ticket-detail-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     width: 100%;
-    gap: 0.75rem 1rem;
+    gap: 0.5rem 0.75rem;
   }
 
   [data-theme="dashboard"] .ticket-detail-control {
-    flex: 1 1 calc(50% - 0.5rem);
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.375rem;
     min-width: 0;
+  }
+
+  [data-theme="dashboard"] .ticket-detail-control-label {
+    flex-shrink: 0;
+  }
+
+  [data-theme="dashboard"] .ticket-detail-control .pill-select {
+    min-width: 0;
+    max-width: 100%;
   }
 
   [data-theme="dashboard"] .ticket-detail-hours-grid {
@@ -3465,6 +3479,13 @@
   text-transform: uppercase;
   color: var(--text-2);
   font-family: var(--font-dm-mono);
+}
+
+[data-theme="dashboard"] .portal-ticket-header-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 [data-theme="dashboard"] .ticket-detail-brief {

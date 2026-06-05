@@ -53,8 +53,11 @@ export function ticketRowStatusClass(status: TicketStatus): string {
 }
 
 export function ticketRowAwaitingApprovalClass(
-  estimateStatus?: 'pending_approval' | 'approved' | null
+  estimateStatus?: 'pending_approval' | 'approved' | null,
+  completionStatus?: 'pending_approval' | 'approved' | null
 ): string {
-  if (estimateStatus === 'pending_approval') return ' tickets-row--awaiting-approval'
+  if (estimateStatus === 'pending_approval' || completionStatus === 'pending_approval') {
+    return ' tickets-row--awaiting-approval'
+  }
   return ''
 }

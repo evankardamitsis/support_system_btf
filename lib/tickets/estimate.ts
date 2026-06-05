@@ -1,3 +1,4 @@
+import type { CompletionStatus } from '@/lib/tickets/completion'
 import type { TicketStatus } from '@/lib/types'
 
 export type EstimateStatus = 'pending_approval' | 'approved' | null
@@ -14,10 +15,13 @@ export function canSubmitEstimate(
 
 export function canResolveWithEstimate(
   estimateStatus: EstimateStatus,
-  status: TicketStatus
+  status: TicketStatus,
+  completionStatus: CompletionStatus = null
 ): boolean {
   if (status === 'resolved' || status === 'closed') return false
-  return estimateStatus === 'approved'
+  if (estimateStatus !== 'approved') return false
+  if (completionStatus === 'pending_approval') return false
+  return true
 }
 
 export function isEstimateLocked(estimateStatus: EstimateStatus): boolean {

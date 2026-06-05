@@ -2,12 +2,22 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
-import { submitEstimateForApproval, updateTicketEstimatedHours } from '@/app/actions/tickets'
+import {
+  submitEstimateForApproval,
+  submitWorkForClientCheck,
+  updateTicketEstimatedHours,
+} from '@/app/actions/tickets'
 import { logHours } from '@/app/actions/hours'
 import { UsageBar } from '@/components/dashboard/UsageBar'
 import { runWithToast } from '@/lib/notify'
+import { isTicketClosed } from '@/lib/tickets/closed'
 import {
-  canResolveWithEstimate,
+  canResolveTicket,
+  canSubmitWorkForCheck,
+  isAwaitingWorkApproval,
+  type CompletionStatus,
+} from '@/lib/tickets/completion'
+import {
   canSubmitEstimate,
   isEstimateLocked,
   type EstimateStatus,
@@ -28,6 +38,7 @@ export function TicketDetailSidebar({
   status,
   resolvedAt,
   estimateStatus,
+  completionStatus,
   estimatedHours,
   actualHours,
   hoursLogged,
@@ -40,6 +51,7 @@ export function TicketDetailSidebar({
   status: TicketStatus
   resolvedAt: string | null
   estimateStatus: EstimateStatus
+  completionStatus: CompletionStatus
   estimatedHours: number | null
   actualHours: number | null
   hoursLogged: boolean
@@ -60,10 +72,14 @@ export function TicketDetailSidebar({
   const isDanger = pct > 85
   const tone = isOver ? 'over' : isDanger ? 'warn' : 'ok'
 
-  const showSubmit = canSubmitEstimate(estimateStatus, estimatedHours, status)
-  const showAwaiting = estimateStatus === 'pending_approval' && status !== 'resolved' && status !== 'closed'
-  const showResolve = canResolveWithEstimate(estimateStatus, status)
-  const estimateLocked = isEstimateLocked(estimateStatus)
+  const closed = isTicketClosed(status)
+  const showSubmit = !closed && canSubmitEstimate(estimateStatus, estimatedHours, status)
+  const showAwaiting =
+    !closed && estimateStatus === 'pending_approval' && status !== 'resolved' && status !== 'closed'
+  const showAwaitingWork = !closed && isAwaitingWorkApproval(completionStatus)
+  const showSubmitWork = !closed && canSubmitWorkForCheck(estimateStatus, completionStatus, status)
+  const showResolve = !closed && canResolveTicket(estimateStatus, completionStatus, status)
+  const estimateLocked = closed || isEstimateLocked(estimateStatus)
   const logged =
     actualHours != null && actualHours > 0 ? `${actualHours.toFixed(1)}h` : '—'
 
@@ -142,19 +158,52 @@ export function TicketDetailSidebar({
               Client must approve the estimate and priority before work continues.
             </p>
           </div>
-        ) : showResolve ? (
-          <button
-            type="button"
-            className="dash-btn-primary btn-primary w-full cursor-pointer mt-4"
-            onClick={onResolve}
-          >
-            Resolve & log hours
-          </button>
+        ) : showAwaitingWork ? (
+          <div className="ticket-estimate-awaiting" role="status">
+            <span className="ticket-estimate-awaiting-eyebrow">Awaiting client</span>
+            <p className="ticket-estimate-awaiting-text">
+              Client must review and approve the completed work before you can resolve and log hours.
+            </p>
+          </div>
+        ) : showResolve || showSubmitWork ? (
+          <div className="ticket-detail-resolve-actions mt-4 flex flex-col gap-2">
+            {showResolve ? (
+              <button
+                type="button"
+                className="dash-btn-primary btn-primary w-full cursor-pointer"
+                onClick={onResolve}
+              >
+                Resolve & log hours
+              </button>
+            ) : null}
+            {showSubmitWork ? (
+              <button
+                type="button"
+                className="dash-btn-secondary w-full cursor-pointer justify-center"
+                disabled={pending}
+                onClick={() =>
+                  startTransition(async () => {
+                    const ok = await runWithToast(() => submitWorkForClientCheck(ticketId), {
+                      loading: 'Notifying client…',
+                      success: 'Client notified — waiting for work approval',
+                    })
+                    if (ok !== null) refresh()
+                  })
+                }
+              >
+                {pending ? 'Sending…' : 'Submit for client check'}
+              </button>
+            ) : null}
+          </div>
         ) : hoursLogged ? (
           <p className="ticket-detail-aside-note dash-meta">Hours recorded for this ticket.</p>
         ) : null}
 
-        {resolvedAt && (status === 'resolved' || status === 'closed') ? (
+        {closed ? (
+          <p className="ticket-detail-aside-note dash-meta">This ticket is closed — no further edits.</p>
+        ) : null}
+
+        {resolvedAt && closed ? (
           <p className="ticket-detail-resolved-readout">
             <span className="ticket-detail-control-label">Resolved</span>
             <time dateTime={resolvedAt}>{formatDateTimeHuman(resolvedAt)}</time>
@@ -196,7 +245,7 @@ export function TicketDetailSidebar({
         </section>
       )}
 
-      {retainers.length > 0 ? (
+      {!closed && retainers.length > 0 ? (
         <section className="ticket-detail-aside-card ticket-detail-aside-card--muted">
           <button
             type="button"

@@ -5,8 +5,10 @@ import { StatusPill } from '@/components/ui/StatusPill'
 import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { CommentThread } from '@/components/tickets/CommentThread'
 import { EstimateApprovalModal } from '@/components/tickets/EstimateApprovalModal'
+import { WorkApprovalModal } from '@/components/tickets/WorkApprovalModal'
 import { TicketCommentForm } from '@/components/tickets/TicketCommentForm'
 import { formatDateTimeHuman } from '@/lib/tickets/display'
+import { isTicketClosed } from '@/lib/tickets/closed'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
 function ticketId(id: string) {
@@ -39,7 +41,9 @@ export default async function PortalTicketDetailPage({
 
   const estimatedHours =
     ticket.estimated_hours != null ? Number(ticket.estimated_hours) : null
-  const pendingApproval = ticket.estimate_status === 'pending_approval'
+  const pendingEstimateApproval = ticket.estimate_status === 'pending_approval'
+  const pendingWorkApproval = ticket.completion_status === 'pending_approval'
+  const closed = isTicketClosed(ticket.status as TicketStatus)
 
   const { data: comments } = await supabase
     .from('ticket_comments')
@@ -56,7 +60,7 @@ export default async function PortalTicketDetailPage({
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6 items-start">
         <div className="space-y-5">
-          {pendingApproval && estimatedHours != null && estimatedHours > 0 ? (
+          {!closed && pendingEstimateApproval && estimatedHours != null && estimatedHours > 0 ? (
             <EstimateApprovalModal
               ticketId={ticket.id}
               ticketTitle={ticket.title}
@@ -65,11 +69,18 @@ export default async function PortalTicketDetailPage({
             />
           ) : null}
 
+          {!closed && pendingWorkApproval ? (
+            <WorkApprovalModal ticketId={ticket.id} ticketTitle={ticket.title} />
+          ) : null}
+
           <div className="dash-panel">
             <div className="dash-card-section px-5 py-4">
               <div className="flex items-start justify-between gap-4 mb-2">
                 <span className="dash-ticket-id">{ticketId(ticket.id)}</span>
-                <StatusPill status={ticket.status as TicketStatus} />
+                <div className="portal-ticket-header-badges">
+                  <StatusPill status={ticket.status as TicketStatus} />
+                  <PriorityBadge priority={ticket.priority as TicketPriority} />
+                </div>
               </div>
               <h1
                 className="text-lg font-medium leading-snug"
@@ -95,9 +106,8 @@ export default async function PortalTicketDetailPage({
                 </p>
               </div>
             )}
-            <div className="px-5 py-3 flex flex-wrap gap-4 dash-meta">
+            <div className="px-5 py-3 dash-meta">
               <span className="capitalize">{ticket.type}</span>
-              <PriorityBadge priority={ticket.priority as TicketPriority} />
             </div>
           </div>
 
@@ -108,10 +118,14 @@ export default async function PortalTicketDetailPage({
             <div className="px-5 py-4">
               <CommentThread comments={comments ?? []} showInternal={false} />
             </div>
-            {ticket.status !== 'closed' && (
+            {!closed ? (
               <div className="px-5 pb-5 pt-0" style={{ borderTop: '1px solid var(--border)' }}>
                 <TicketCommentForm ticketId={ticket.id} variant="portal" />
               </div>
+            ) : (
+              <p className="px-5 pb-5 pt-3 dash-meta" style={{ borderTop: '1px solid var(--border)' }}>
+                This ticket is closed.
+              </p>
             )}
           </div>
         </div>

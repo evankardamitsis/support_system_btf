@@ -11,9 +11,12 @@ import {
   getClientNotificationEmails,
   notifyClientEstimatePending,
   notifyClientTicketResolved,
+  notifyClientWorkReviewPending,
   notifyStaffEstimateApproved,
   notifyStaffNewTicket,
+  notifyStaffWorkApproved,
 } from '@/lib/email/ticket-notifications'
+import { isTicketClosed } from '@/lib/tickets/closed'
 import { isEstimateLocked } from '@/lib/tickets/estimate'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
@@ -31,6 +34,21 @@ async function requireStaff() {
     throw new Error('Not authorized')
   }
   return { supabase, user }
+}
+
+async function assertTicketOpen(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  ticketId: string
+) {
+  const { data: ticket } = await supabase
+    .from('tickets')
+    .select('status')
+    .eq('id', ticketId)
+    .single()
+  if (!ticket) throw new Error('Ticket not found')
+  if (isTicketClosed(ticket.status)) {
+    throw new Error('This ticket is closed and cannot be modified')
+  }
 }
 
 function revalidateTicketPaths(ticketId: string) {
@@ -118,6 +136,7 @@ export async function createPortalTicket(formData: FormData): Promise<string> {
 
 export async function updateTicketPriority(ticketId: string, priority: TicketPriority) {
   const { supabase } = await requireStaff()
+  await assertTicketOpen(supabase, ticketId)
   const { data: ticket } = await supabase
     .from('tickets')
     .select('estimate_status')
@@ -133,6 +152,7 @@ export async function updateTicketPriority(ticketId: string, priority: TicketPri
 
 export async function updateTicketEstimatedHours(ticketId: string, hours: number | null) {
   const { supabase } = await requireStaff()
+  await assertTicketOpen(supabase, ticketId)
   const { data: ticket } = await supabase
     .from('tickets')
     .select('estimate_status')
@@ -227,13 +247,16 @@ export async function approveTicketEstimate(ticketId: string) {
 
   const { data: ticket, error: fetchErr } = await supabase
     .from('tickets')
-    .select('id, title, client_id, estimated_hours, priority, estimate_status')
+    .select('id, title, client_id, estimated_hours, priority, estimate_status, status')
     .eq('id', ticketId)
     .single()
 
   if (fetchErr || !ticket) throw new Error(fetchErr?.message ?? 'Ticket not found')
   if (ticket.client_id !== profile.client_id) {
     throw new Error('Not authorized for this ticket')
+  }
+  if (isTicketClosed(ticket.status)) {
+    throw new Error('This ticket is closed')
   }
   if (ticket.estimate_status !== 'pending_approval') {
     throw new Error('No estimate is waiting for your approval')
@@ -266,8 +289,119 @@ export async function approveTicketEstimate(ticketId: string) {
   revalidateTicketPaths(ticketId)
 }
 
+export async function submitWorkForClientCheck(ticketId: string) {
+  const { supabase } = await requireStaff()
+  await assertTicketOpen(supabase, ticketId)
+
+  const { data: ticket, error: fetchErr } = await supabase
+    .from('tickets')
+    .select('id, title, client_id, estimate_status, completion_status, status')
+    .eq('id', ticketId)
+    .single()
+
+  if (fetchErr || !ticket) throw new Error(fetchErr?.message ?? 'Ticket not found')
+  if (ticket.estimate_status !== 'approved') {
+    throw new Error('Client must approve the estimate before submitting work for review')
+  }
+  if (ticket.completion_status === 'pending_approval') {
+    throw new Error('Work is already awaiting client approval')
+  }
+  if (ticket.completion_status === 'approved') {
+    throw new Error('Client has already approved this work')
+  }
+
+  const clientEmails = await getClientNotificationEmails(ticket.client_id)
+  if (!clientEmails.length) {
+    throw new Error(
+      'No client email on file — add an email on the client record or invite a portal user before submitting'
+    )
+  }
+
+  const now = new Date().toISOString()
+  const { error } = await supabase
+    .from('tickets')
+    .update({
+      completion_status: 'pending_approval',
+      completion_submitted_at: now,
+      status: 'waiting_on_client',
+    })
+    .eq('id', ticketId)
+
+  if (error) throw new Error(error.message)
+
+  const notify = await notifyClientWorkReviewPending({
+    ticketId,
+    ticketTitle: ticket.title,
+    clientId: ticket.client_id,
+  })
+  if (!notify.sent) {
+    throw new Error(notify.error)
+  }
+
+  revalidateTicketPaths(ticketId)
+}
+
+export async function approveTicketWork(ticketId: string) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect('/auth/login')
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role, client_id')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile || profile.role !== 'client' || !profile.client_id) {
+    throw new Error('Only client users can approve completed work')
+  }
+
+  const { data: ticket, error: fetchErr } = await supabase
+    .from('tickets')
+    .select('id, title, client_id, completion_status, status')
+    .eq('id', ticketId)
+    .single()
+
+  if (fetchErr || !ticket) throw new Error(fetchErr?.message ?? 'Ticket not found')
+  if (ticket.client_id !== profile.client_id) {
+    throw new Error('Not authorized for this ticket')
+  }
+  if (isTicketClosed(ticket.status)) {
+    throw new Error('This ticket is closed')
+  }
+  if (ticket.completion_status !== 'pending_approval') {
+    throw new Error('No completed work is waiting for your approval')
+  }
+
+  const now = new Date().toISOString()
+  const { error } = await supabase
+    .from('tickets')
+    .update({
+      completion_status: 'approved',
+      completion_approved_at: now,
+      status: 'in_progress',
+    })
+    .eq('id', ticketId)
+    .eq('completion_status', 'pending_approval')
+
+  if (error) throw new Error(error.message)
+
+  const staffNotify = await notifyStaffWorkApproved({
+    ticketId,
+    ticketTitle: ticket.title,
+  })
+  if (!staffNotify.sent) {
+    console.error('[email] staff work-approved notification failed:', staffNotify.error)
+  }
+
+  revalidateTicketPaths(ticketId)
+}
+
 export async function updateTicketStatus(ticketId: string, status: TicketStatus) {
   const { supabase } = await requireStaff()
+  await assertTicketOpen(supabase, ticketId)
 
   let resolvedNotify: {
     clientId: string
@@ -279,11 +413,16 @@ export async function updateTicketStatus(ticketId: string, status: TicketStatus)
   if (status === 'resolved') {
     const { data: ticket } = await supabase
       .from('tickets')
-      .select('estimate_status, status, title, client_id, estimated_hours, actual_hours')
+      .select(
+        'estimate_status, completion_status, status, title, client_id, estimated_hours, actual_hours'
+      )
       .eq('id', ticketId)
       .single()
     if (ticket?.estimate_status !== 'approved') {
       throw new Error('Client must approve the estimate before resolving')
+    }
+    if (ticket?.completion_status === 'pending_approval') {
+      throw new Error('Client must approve the completed work before resolving')
     }
     if (ticket?.client_id) {
       await assertClientCanUseRetainer(supabase, ticket.client_id)
@@ -345,13 +484,19 @@ export async function resolveTicketWithHours(ticketId: string, actualHours: numb
 
   const { data: ticket, error: ticketErr } = await supabase
     .from('tickets')
-    .select('id, client_id, status, estimate_status, title, estimated_hours')
+    .select('id, client_id, status, estimate_status, completion_status, title, estimated_hours')
     .eq('id', ticketId)
     .single()
 
   if (ticketErr || !ticket) throw new Error(ticketErr?.message ?? 'Ticket not found')
+  if (isTicketClosed(ticket.status)) {
+    throw new Error('This ticket is closed and cannot be modified')
+  }
   if (ticket.estimate_status !== 'approved') {
     throw new Error('Client must approve the estimate before resolving')
+  }
+  if (ticket.completion_status === 'pending_approval') {
+    throw new Error('Client must approve the completed work before resolving')
   }
 
   const { data: existingLog } = await supabase
@@ -411,6 +556,7 @@ export async function resolveTicketWithHours(ticketId: string, actualHours: numb
 
 export async function updateTicketAssignee(ticketId: string, agentId: string | null) {
   const { supabase } = await requireStaff()
+  await assertTicketOpen(supabase, ticketId)
   const { error } = await supabase
     .from('tickets')
     .update({ assigned_to: agentId })

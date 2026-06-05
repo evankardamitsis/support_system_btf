@@ -139,6 +139,9 @@ export interface Database {
           estimate_status: 'pending_approval' | 'approved' | null
           estimate_submitted_at: string | null
           estimate_approved_at: string | null
+          completion_status: 'pending_approval' | 'approved' | null
+          completion_submitted_at: string | null
+          completion_approved_at: string | null
         }
         Insert: {
           id?: string
@@ -158,6 +161,9 @@ export interface Database {
           estimate_status?: 'pending_approval' | 'approved' | null
           estimate_submitted_at?: string | null
           estimate_approved_at?: string | null
+          completion_status?: 'pending_approval' | 'approved' | null
+          completion_submitted_at?: string | null
+          completion_approved_at?: string | null
         }
         Update: {
           id?: string
@@ -177,6 +183,9 @@ export interface Database {
           estimate_status?: 'pending_approval' | 'approved' | null
           estimate_submitted_at?: string | null
           estimate_approved_at?: string | null
+          completion_status?: 'pending_approval' | 'approved' | null
+          completion_submitted_at?: string | null
+          completion_approved_at?: string | null
         }
         Relationships: []
       }
