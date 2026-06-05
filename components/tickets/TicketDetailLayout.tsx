@@ -12,6 +12,7 @@ import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { EditableStatusPill } from './EditableStatusPill'
 import { EditablePriorityPill } from './EditablePriorityPill'
 import { ResolveHoursModal } from './ResolveHoursModal'
+import { ResolveOfflineModal } from './ResolveOfflineModal'
 import { TicketDetailSidebar, type ExtraHoursItem } from './TicketDetailSidebar'
 import { DeleteTicketButton } from './DeleteTicketButton'
 import { formatDateTimeHuman, formatTicketId } from '@/lib/tickets/display'
@@ -83,6 +84,7 @@ export function TicketDetailLayout({
 }) {
   const router = useRouter()
   const [resolveOpen, setResolveOpen] = useState(false)
+  const [resolveOfflineOpen, setResolveOfflineOpen] = useState(false)
   const [pending, startTransition] = useTransition()
 
   function refresh() {
@@ -251,7 +253,9 @@ export function TicketDetailLayout({
           extraHours={extraHours}
           extraHoursActiveAt={extraHoursActiveAt}
           completionDisputeNote={completionDisputeNote}
+          isAdmin={isAdmin}
           onResolve={() => setResolveOpen(true)}
+          onResolveOffline={() => setResolveOfflineOpen(true)}
         />
       </div>
 
@@ -266,6 +270,17 @@ export function TicketDetailLayout({
         open={resolveOpen}
         onClose={() => {
           setResolveOpen(false)
+          refresh()
+        }}
+      />
+
+      <ResolveOfflineModal
+        ticketId={ticketId}
+        ticketTitle={title}
+        estimatedHours={estimatedHours}
+        open={resolveOfflineOpen}
+        onClose={() => {
+          setResolveOfflineOpen(false)
           refresh()
         }}
       />

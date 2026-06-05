@@ -1855,8 +1855,17 @@
   color: var(--text-1);
 }
 
-.estimate-modal-dispute-input {
-  margin-bottom: 0.25rem;
+[data-theme="dashboard"] .estimate-modal-dispute-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.25rem 1.5rem 0;
+}
+
+[data-theme="dashboard"] .estimate-modal-dispute-input {
+  min-height: 8.5rem;
+  padding: 0.75rem 0.875rem;
+  line-height: 1.5;
 }
 
 [data-theme="dashboard"] .ticket-work-disputed {
@@ -1886,6 +1895,14 @@
 
 [data-theme="dashboard"] .ticket-work-disputed-hint {
   margin: 0.625rem 0 0;
+}
+
+[data-theme="dashboard"] .ticket-detail-offline-resolve {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid var(--border);
 }
 
 [data-theme="dashboard"] .estimate-modal-later:hover:not(:disabled) {

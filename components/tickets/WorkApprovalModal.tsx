@@ -142,20 +142,22 @@ export function WorkApprovalModal({
                 </p>
               </header>
 
-              <label className="dash-label" htmlFor={`work-dispute-${ticketId}`}>
-                Your concerns
-              </label>
-              <textarea
-                id={`work-dispute-${ticketId}`}
-                rows={5}
-                required
-                minLength={10}
-                value={concerns}
-                onChange={e => setConcerns(e.target.value)}
-                className="btf-input w-full resize-y estimate-modal-dispute-input"
-                placeholder="Explain what still needs to be fixed or completed…"
-                autoFocus
-              />
+              <div className="estimate-modal-dispute-body">
+                <label className="dash-label" htmlFor={`work-dispute-${ticketId}`}>
+                  Your concerns
+                </label>
+                <textarea
+                  id={`work-dispute-${ticketId}`}
+                  rows={5}
+                  required
+                  minLength={10}
+                  value={concerns}
+                  onChange={e => setConcerns(e.target.value)}
+                  className="btf-input w-full resize-y estimate-modal-dispute-input"
+                  placeholder="Explain what still needs to be fixed or completed…"
+                  autoFocus
+                />
+              </div>
 
               <div className="estimate-modal-actions">
                 <button

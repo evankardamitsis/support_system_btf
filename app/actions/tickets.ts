@@ -654,6 +654,106 @@ export async function resolveTicketWithHours(ticketId: string, actualHours: numb
   revalidateTicketPaths(ticketId)
 }
 
+export async function resolveTicketOffline(ticketId: string, actualHours: number) {
+  const { isAdmin, user } = await requireAdmin()
+  if (!isAdmin || !user) {
+    throw new Error('Only admins can resolve tickets offline')
+  }
+
+  if (!actualHours || actualHours <= 0 || Number.isNaN(actualHours)) {
+    throw new Error('Enter actual hours spent (greater than 0)')
+  }
+
+  const supabase = await createClient()
+  const { data: ticket, error: ticketErr } = await supabase
+    .from('tickets')
+    .select(
+      'id, client_id, status, estimate_status, estimated_hours, completion_status, title'
+    )
+    .eq('id', ticketId)
+    .single()
+
+  if (ticketErr || !ticket) throw new Error(ticketErr?.message ?? 'Ticket not found')
+  if (isTicketClosed(ticket.status)) {
+    throw new Error(TICKET_LOCKED_MESSAGE)
+  }
+
+  await assertClientCanUseRetainer(supabase, ticket.client_id)
+
+  const adminResult = tryCreateAdminClient()
+  if ('error' in adminResult) {
+    throw new Error(adminResult.error)
+  }
+  const admin = adminResult.client
+
+  const { data: existingLog } = await supabase
+    .from('hours_log')
+    .select('id')
+    .eq('ticket_id', ticketId)
+    .eq('is_extra', false)
+    .limit(1)
+    .maybeSingle()
+
+  const retainer = await getRetainerForClient(supabase, ticket.client_id)
+  if (!retainer) {
+    throw new Error('No retainer period for this client — add a retainer before logging hours')
+  }
+
+  const minutes = Math.round(actualHours * 60)
+  const now = new Date().toISOString()
+  const roundedActual = Math.round(actualHours * 100) / 100
+  const hasEstimate = ticket.estimated_hours != null && Number(ticket.estimated_hours) > 0
+
+  if (!existingLog) {
+    const { error: logErr } = await admin.from('hours_log').insert({
+      ticket_id: ticketId,
+      retainer_id: retainer.id,
+      agent_id: user.id,
+      minutes,
+      note: 'Logged on offline resolve',
+      is_extra: false,
+    })
+    if (logErr) throw new Error(logErr.message)
+  }
+
+  const { error: clearExtraErr } = await admin
+    .from('ticket_extra_hours')
+    .delete()
+    .eq('ticket_id', ticketId)
+    .eq('status', 'pending_approval')
+
+  if (clearExtraErr) throw new Error(clearExtraErr.message)
+
+  await staffPatchTicket(ticketId, {
+    status: 'resolved',
+    resolved_at: now,
+    actual_hours: roundedActual,
+    estimate_status: hasEstimate ? 'approved' : ticket.estimate_status,
+    estimate_approved_at: hasEstimate ? now : null,
+    completion_status: null,
+    completion_submitted_at: null,
+    completion_approved_at: null,
+    completion_dispute_note: null,
+    completion_disputed_at: null,
+    extra_hours_active_at: null,
+  })
+
+  const clientNotify = await notifyClientTicketResolved({
+    ticketId,
+    ticketTitle: ticket.title,
+    clientId: ticket.client_id,
+    estimatedHours: hasEstimate ? Number(ticket.estimated_hours) : null,
+    actualHours: roundedActual,
+  })
+  if (!clientNotify.sent) {
+    console.error('[email] client ticket-resolved notification failed:', clientNotify.error)
+  }
+
+  revalidateTicketPaths(ticketId)
+  revalidatePath(`/portal/tickets/${ticketId}`)
+  revalidatePath('/portal/tickets')
+}
+
 export async function updateTicketAssignee(ticketId: string, agentId: string | null) {
   const { supabase } = await requireStaff()
   await assertTicketOpen(supabase, ticketId)

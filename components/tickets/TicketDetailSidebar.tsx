@@ -63,7 +63,9 @@ export function TicketDetailSidebar({
   extraHours = [],
   extraHoursActiveAt = null,
   completionDisputeNote = null,
+  isAdmin = false,
   onResolve,
+  onResolveOffline,
 }: {
   ticketId: string
   status: TicketStatus
@@ -77,7 +79,9 @@ export function TicketDetailSidebar({
   extraHours?: ExtraHoursItem[]
   extraHoursActiveAt?: string | null
   completionDisputeNote?: string | null
+  isAdmin?: boolean
   onResolve: () => void
+  onResolveOffline: () => void
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -274,6 +278,22 @@ export function TicketDetailSidebar({
             <p className="ticket-work-disputed-text">{completionDisputeNote}</p>
             <p className="ticket-work-disputed-hint dash-meta">
               Address the concerns, continue work, then submit for client check again.
+            </p>
+          </div>
+        ) : null}
+
+        {isAdmin && !closed ? (
+          <div className="ticket-detail-offline-resolve mt-4">
+            <button
+              type="button"
+              className="dash-btn-secondary w-full cursor-pointer justify-center"
+              disabled={pending}
+              onClick={onResolveOffline}
+            >
+              Resolved offline
+            </button>
+            <p className="ticket-detail-aside-note dash-meta">
+              Clears pending client approvals and resolves with logged hours.
             </p>
           </div>
         ) : null}
