@@ -7,7 +7,18 @@ import { requireAdmin } from '@/lib/auth/require-admin'
 
 export default async function AdminTeamPage() {
   const { isAdmin } = await requireAdmin()
-  const { members, pendingInvites } = await getTeamDirectory()
+
+  let members: Awaited<ReturnType<typeof getTeamDirectory>>['members'] = []
+  let pendingInvites: Awaited<ReturnType<typeof getTeamDirectory>>['pendingInvites'] = []
+  let loadError: string | null = null
+
+  try {
+    const directory = await getTeamDirectory()
+    members = directory.members
+    pendingInvites = directory.pendingInvites
+  } catch (err) {
+    loadError = err instanceof Error ? err.message : 'Could not load team directory'
+  }
 
   const adminCount = members.filter(m => m.role === 'admin').length
   const memberCount = members.filter(m => m.role === 'agent').length
@@ -19,17 +30,21 @@ export default async function AdminTeamPage() {
         description="BTF internal admins and members with access to the support dashboard."
       />
 
-      <MetricStrip
-        items={[
-          { label: 'Admins', value: String(adminCount) },
-          { label: 'Members', value: String(memberCount) },
-          {
-            label: 'Pending invites',
-            value: String(pendingInvites.length),
-            accent: pendingInvites.length > 0 ? '#fb923c' : undefined,
-          },
-        ]}
-      />
+      {loadError ? (
+        <p className="ticket-modal-error leading-relaxed">{loadError}</p>
+      ) : (
+        <MetricStrip
+          items={[
+            { label: 'Admins', value: String(adminCount) },
+            { label: 'Members', value: String(memberCount) },
+            {
+              label: 'Pending invites',
+              value: String(pendingInvites.length),
+              accent: pendingInvites.length > 0 ? '#fb923c' : undefined,
+            },
+          ]}
+        />
+      )}
 
       {isAdmin ? (
         <InviteTeamForm />
