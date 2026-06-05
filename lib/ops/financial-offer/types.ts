@@ -1,3 +1,5 @@
+export type HostingMaintenancePeriod = 'month' | 'year' | 'custom'
+
 export type FinancialOfferLineItem = {
   work: string
   cost: number

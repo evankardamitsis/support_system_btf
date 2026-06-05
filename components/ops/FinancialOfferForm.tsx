@@ -6,11 +6,13 @@ import { Plus, Trash2 } from 'lucide-react'
 import { submitFinancialOffer } from '@/app/actions/financial-offers'
 import {
   computeFinancialOffer,
+  formatHostingMaintenance,
   formatOfferCurrency,
   offerFilename,
 } from '@/lib/ops/financial-offer/calculate'
 import type {
   FinancialOfferLineItem,
+  HostingMaintenancePeriod,
   SavedCompanyIban,
 } from '@/lib/ops/financial-offer/types'
 import { notifyError, runWithToast } from '@/lib/notify'
@@ -40,7 +42,9 @@ export function FinancialOfferForm({ savedIbans, upfrontPercent }: FinancialOffe
     { work: '', cost: 0 },
     { work: '', cost: 0 },
   ])
-  const [hostingMaintenance, setHostingMaintenance] = useState('')
+  const [hostingAmount, setHostingAmount] = useState<number | ''>('')
+  const [hostingPeriod, setHostingPeriod] = useState<HostingMaintenancePeriod>('year')
+  const [hostingCustomPeriod, setHostingCustomPeriod] = useState('')
   const [excludeVat, setExcludeVat] = useState(false)
   const [selectedIbanIds, setSelectedIbanIds] = useState<Set<string>>(
     () => new Set(savedIbans.map(row => row.id))
@@ -90,13 +94,35 @@ export function FinancialOfferForm({ savedIbans, upfrontPercent }: FinancialOffe
       return null
     }
 
+    let hostingMaintenance: string | null = null
+    if (hostingAmount !== '' && Number(hostingAmount) > 0) {
+      if (hostingPeriod === 'custom' && !hostingCustomPeriod.trim()) {
+        notifyError('Enter a custom period for hosting & maintenance')
+        return null
+      }
+      try {
+        hostingMaintenance = formatHostingMaintenance({
+          amount: Number(hostingAmount),
+          period: hostingPeriod,
+          customPeriod: hostingCustomPeriod,
+        })
+      } catch (err) {
+        notifyError(err instanceof Error ? err.message : 'Invalid hosting & maintenance')
+        return null
+      }
+    }
+
     const payload = {
       clientName: name,
       clientEmail: clientEmail.trim() || null,
       lineItems: lineItems
         .map(row => ({ work: row.work.trim(), cost: Number(row.cost) }))
         .filter(row => row.work && row.cost > 0),
-      hostingMaintenance: hostingMaintenance.trim() || null,
+      hostingAmount: hostingAmount === '' ? null : Number(hostingAmount),
+      hostingPeriod: hostingAmount === '' ? null : hostingPeriod,
+      hostingCustomPeriod:
+        hostingPeriod === 'custom' && hostingAmount !== '' ? hostingCustomPeriod.trim() : null,
+      hostingMaintenance,
       ibans: selectedIbans.map(row => ({
         bankName: row.bankName,
         iban: row.iban,
@@ -226,17 +252,49 @@ export function FinancialOfferForm({ savedIbans, upfrontPercent }: FinancialOffe
         </div>
 
         <div>
-          <label className="dash-label" htmlFor="offer-hosting">
+          <label className="dash-label" htmlFor="offer-hosting-amount">
             Hosting & maintenance <span className="dash-meta">(optional)</span>
           </label>
-          <input
-            id="offer-hosting"
-            className="btf-input w-full max-w-sm"
-            placeholder="e.g. 150 € / year"
-            value={hostingMaintenance}
-            onChange={e => setHostingMaintenance(e.target.value)}
-            disabled={pending}
-          />
+          <div className="financial-offer-hosting grid grid-cols-1 sm:grid-cols-[8rem_8rem_1fr] gap-2 max-w-xl">
+            <input
+              id="offer-hosting-amount"
+              type="number"
+              min={0}
+              step={1}
+              className="btf-input w-full tabular-nums"
+              placeholder="Amount"
+              value={hostingAmount}
+              onChange={e =>
+                setHostingAmount(e.target.value === '' ? '' : Number(e.target.value) || 0)
+              }
+              disabled={pending}
+            />
+            <select
+              id="offer-hosting-period"
+              className="dash-select w-full text-sm"
+              value={hostingPeriod}
+              onChange={e => setHostingPeriod(e.target.value as HostingMaintenancePeriod)}
+              disabled={pending}
+            >
+              <option value="year">Per year</option>
+              <option value="month">Per month</option>
+              <option value="custom">Custom</option>
+            </select>
+            {hostingPeriod === 'custom' ? (
+              <input
+                id="offer-hosting-custom"
+                className="btf-input w-full"
+                placeholder="e.g. quarter, 6 months"
+                value={hostingCustomPeriod}
+                onChange={e => setHostingCustomPeriod(e.target.value)}
+                disabled={pending}
+              />
+            ) : (
+              <p className="dash-meta self-center text-sm">
+                {hostingPeriod === 'month' ? 'Billed monthly' : 'Billed yearly'}
+              </p>
+            )}
+          </div>
         </div>
 
         <label className="financial-offer-vat-toggle">

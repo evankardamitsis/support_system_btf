@@ -1,4 +1,9 @@
-import type { FinancialOfferComputed, FinancialOfferInput, FinancialOfferLineItem } from './types'
+import type {
+  FinancialOfferComputed,
+  FinancialOfferInput,
+  FinancialOfferLineItem,
+  HostingMaintenancePeriod,
+} from './types'
 
 export const DEFAULT_UPFRONT_PERCENT = 30
 
@@ -58,8 +63,7 @@ export function parseFinancialOfferInput(raw: unknown): FinancialOfferInput {
     : []
   if (ibans.length === 0) throw new Error('Add at least one complete bank account (IBAN)')
 
-  const hostingMaintenance =
-    typeof body.hostingMaintenance === 'string' ? body.hostingMaintenance.trim() : ''
+  const hostingMaintenance = parseHostingMaintenanceInput(body)
 
   const upfrontPercent =
     body.upfrontPercent != null ? Number(body.upfrontPercent) : DEFAULT_UPFRONT_PERCENT
@@ -81,6 +85,39 @@ export function parseFinancialOfferInput(raw: unknown): FinancialOfferInput {
     upfrontPercent,
     excludeVat,
   }
+}
+
+export function formatHostingMaintenance(input: {
+  amount: number
+  period: HostingMaintenancePeriod
+  customPeriod?: string | null
+}): string | null {
+  if (!Number.isFinite(input.amount) || input.amount <= 0) return null
+
+  const value = formatOfferCurrency(input.amount)
+  if (input.period === 'month') return `${value} / month`
+  if (input.period === 'year') return `${value} / year`
+
+  const custom = input.customPeriod?.trim()
+  if (!custom) throw new Error('Enter a custom period for hosting & maintenance')
+  return `${value} / ${custom}`
+}
+
+function parseHostingMaintenanceInput(body: Record<string, unknown>): string | null {
+  const amount = Number(body.hostingAmount)
+  if (Number.isFinite(amount) && amount > 0) {
+    const periodRaw = body.hostingPeriod
+    const period: HostingMaintenancePeriod =
+      periodRaw === 'month' || periodRaw === 'custom' ? periodRaw : 'year'
+    const customPeriod =
+      typeof body.hostingCustomPeriod === 'string' ? body.hostingCustomPeriod : ''
+
+    return formatHostingMaintenance({ amount, period, customPeriod })
+  }
+
+  const legacy =
+    typeof body.hostingMaintenance === 'string' ? body.hostingMaintenance.trim() : ''
+  return legacy || null
 }
 
 export function formatOfferDocumentDate(date: Date = new Date()): string {
