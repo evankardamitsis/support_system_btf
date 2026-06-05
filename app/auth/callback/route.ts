@@ -1,21 +1,23 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { finalizeRegistration } from '@/lib/auth/finalize-registration'
+import { getPostLoginPath } from '@/lib/auth/post-login'
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/'
   const type = searchParams.get('type')
 
   if (code) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-      // Password recovery flow — send to set-password page
       if (type === 'recovery') {
         return NextResponse.redirect(`${origin}/auth/update-password`)
       }
-      return NextResponse.redirect(`${origin}${next}`)
+      await finalizeRegistration(supabase)
+      const path = await getPostLoginPath(supabase)
+      return NextResponse.redirect(`${origin}${path}`)
     }
   }
 

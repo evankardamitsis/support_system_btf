@@ -2,18 +2,24 @@ import { redirect, notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { PasswordField } from '@/components/auth/PasswordField'
 import { AuthError } from '@/components/auth/AuthMessage'
+import { EmailConfirmationMessage } from '@/components/auth/EmailConfirmationMessage'
+import { finalizeStaffInvite } from '@/lib/auth/finalize-staff-invite'
+import { getSignupEmailRedirectTo } from '@/lib/auth/redirect-url'
 import { formatStaffRole } from '@/lib/team/roles'
 
 export default async function RegisterStaffPage({
   searchParams,
 }: {
-  searchParams: Promise<{ token?: string; error?: string }>
+  searchParams: Promise<{ token?: string; error?: string; check_email?: string }>
 }) {
   const params = await searchParams
   const token = params.token
   if (!token) notFound()
+
+  const showCheckEmail = params.check_email === '1' || params.check_email === 'true'
 
   const supabase = await createClient()
   const { data: invite } = await supabase
@@ -22,7 +28,8 @@ export default async function RegisterStaffPage({
     .eq('token', token)
     .single()
 
-  const invalid = !invite || invite.used || new Date(invite.expires_at) < new Date()
+  const expired = !invite || new Date(invite.expires_at) < new Date()
+  const invalid = expired || (!showCheckEmail && (!invite || invite.used))
 
   async function register(formData: FormData) {
     'use server'
@@ -42,32 +49,42 @@ export default async function RegisterStaffPage({
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: inv.email,
       password,
-      options: { data: { full_name: inv.full_name } },
+      options: {
+        data: { full_name: inv.full_name },
+        emailRedirectTo: getSignupEmailRedirectTo(),
+      },
     })
 
     if (authError || !authData.user) {
-      redirect(
-        `/auth/register-staff?token=${token}&error=${encodeURIComponent(authError?.message ?? 'Signup failed')}`
-      )
+      const msg = authError?.message ?? 'Signup failed'
+      if (/already registered/i.test(msg)) {
+        redirect(`/auth/register-staff?token=${token}&check_email=1`)
+      }
+      redirect(`/auth/register-staff?token=${token}&error=${encodeURIComponent(msg)}`)
     }
 
     const role = inv.role === 'admin' ? 'admin' : 'agent'
-
-    const { error: profileError } = await supabase.from('users').insert({
-      id: authData.user.id,
-      role,
-      full_name: inv.full_name,
-      client_id: null,
-    })
+    const admin = createAdminClient()
+    const { error: profileError } = await admin.from('users').upsert(
+      {
+        id: authData.user.id,
+        role,
+        full_name: inv.full_name,
+        client_id: null,
+      },
+      { onConflict: 'id' }
+    )
 
     if (profileError) {
-      redirect(
-        `/auth/register-staff?token=${token}&error=${encodeURIComponent(profileError.message)}`
-      )
+      redirect(`/auth/register-staff?token=${token}&error=${encodeURIComponent(profileError.message)}`)
     }
 
-    await supabase.from('staff_invite_tokens').update({ used: true }).eq('id', inv.id)
-    redirect('/admin/tickets')
+    if (authData.session) {
+      await finalizeStaffInvite(supabase)
+      redirect('/admin/tickets')
+    }
+
+    redirect(`/auth/register-staff?token=${token}&check_email=1`)
   }
 
   const inputStyle = {
@@ -85,7 +102,7 @@ export default async function RegisterStaffPage({
 
   return (
     <div
-      className="min-h-[100dvh] grid-bg grid-bg-fade flex flex-col items-center justify-center px-4"
+      className="min-h-dvh grid-bg grid-bg-fade flex flex-col items-center justify-center px-4"
       style={{ background: 'var(--bg)' }}
     >
       <div className="w-full max-w-[440px] flex flex-col gap-10">
@@ -121,6 +138,25 @@ export default async function RegisterStaffPage({
                   This team invite has expired or already been used.
                 </p>
               </>
+            ) : showCheckEmail ? (
+              <>
+                <h1
+                  className="text-2xl font-medium"
+                  style={{
+                    fontFamily: 'var(--font-dm-mono)',
+                    color: 'var(--text-1)',
+                    letterSpacing: '0.01em',
+                  }}
+                >
+                  Confirm your email
+                </h1>
+                <p
+                  className="text-base mt-1.5"
+                  style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-2)' }}
+                >
+                  One more step before you can access the dashboard.
+                </p>
+              </>
             ) : (
               <>
                 <h1
@@ -133,12 +169,14 @@ export default async function RegisterStaffPage({
                 >
                   Join BTF Support
                 </h1>
-                <p
-                  className="text-base mt-1.5"
-                  style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-2)' }}
-                >
-                  {invite.full_name} · {formatStaffRole(invite.role)} · {invite.email}
-                </p>
+                {invite ? (
+                  <p
+                    className="text-base mt-1.5"
+                    style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-2)' }}
+                  >
+                    {invite.full_name} · {formatStaffRole(invite.role)} · {invite.email}
+                  </p>
+                ) : null}
               </>
             )}
           </div>
@@ -152,7 +190,13 @@ export default async function RegisterStaffPage({
               >
                 ← Sign in
               </Link>
-            ) : (
+            ) : showCheckEmail && invite?.email ? (
+              <EmailConfirmationMessage
+                email={invite.email}
+                clientName={invite.full_name}
+                variant="staff"
+              />
+            ) : invite ? (
               <form action={register} className="flex flex-col gap-6">
                 <div className="flex flex-col gap-2.5">
                   <label
@@ -209,7 +253,7 @@ export default async function RegisterStaffPage({
                   Create account →
                 </button>
               </form>
-            )}
+            ) : null}
           </div>
         </div>
       </div>

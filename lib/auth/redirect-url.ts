@@ -6,3 +6,8 @@ export function getAuthRedirectOrigin(): string {
 export function getPasswordRecoveryRedirectTo(): string {
   return `${getAuthRedirectOrigin()}/auth/callback?type=recovery`
 }
+
+/** Client signup confirmation email → session → portal */
+export function getSignupEmailRedirectTo(): string {
+  return `${getAuthRedirectOrigin()}/auth/callback`
+}

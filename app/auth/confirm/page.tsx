@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { completeAuthRedirect } from '@/app/actions/auth'
 
 export default function AuthConfirmPage() {
   const router = useRouter()
@@ -24,13 +25,16 @@ export default function AuthConfirmPage() {
 
     if (accessToken && refreshToken) {
       const supabase = createClient()
-      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).then(() => {
-        if (type === 'recovery') {
-          router.replace('/auth/update-password')
-        } else {
-          router.replace('/auth/login')
-        }
-      })
+      void supabase.auth
+        .setSession({ access_token: accessToken, refresh_token: refreshToken })
+        .then(async () => {
+          if (type === 'recovery') {
+            router.replace('/auth/update-password')
+            return
+          }
+          const path = await completeAuthRedirect()
+          router.replace(path)
+        })
     }
   }, [router])
 
