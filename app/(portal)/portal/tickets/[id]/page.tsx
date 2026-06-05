@@ -127,26 +127,12 @@ export default async function PortalTicketDetailPage({
               actualHours={actualHours}
               approvedExtraMinutes={approvedExtraMinutes}
             />
-            {ticket.description && (
-              <div
-                className="px-5 py-4"
-                style={{
-                  borderTop: '1px solid var(--border)',
-                  borderLeft: '2px solid var(--accent)',
-                  background: 'var(--surface)',
-                }}
-              >
-                <p
-                  className="text-sm leading-relaxed whitespace-pre-wrap"
-                  style={{ color: 'var(--text-2)', fontFamily: 'var(--font-geist)' }}
-                >
-                  {ticket.description}
-                </p>
-              </div>
-            )}
-            <div className="px-5 py-3 dash-meta">
-              <span className="capitalize">{ticket.type}</span>
-            </div>
+            {ticket.description ? (
+              <section className="portal-ticket-request">
+                <h2 className="portal-ticket-request-label">Your request</h2>
+                <p className="portal-ticket-request-body">{ticket.description}</p>
+              </section>
+            ) : null}
           </div>
 
           <div className="dash-panel">
