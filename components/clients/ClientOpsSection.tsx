@@ -1,6 +1,6 @@
 import Link from 'next/link'
-import { ChevronRight, FileText, FolderKanban, Server } from 'lucide-react'
-import quickStyles from '@/components/clients/client-ops-quick-actions.module.css'
+import { ChevronRight } from 'lucide-react'
+import { OpsQuickActions } from '@/components/ops/OpsQuickActions'
 import {
   formatHostingContractCost,
   formatHostingDate,
@@ -19,34 +19,6 @@ const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
   archived: 'Archived',
 }
 
-function ClientOpsQuickActions() {
-  return (
-    <div className={quickStyles.actions}>
-      <Link
-        href="/admin/ops/projects/new"
-        className={`${quickStyles.btn} ${quickStyles.project}`}
-      >
-        <FolderKanban size={13} strokeWidth={2.25} aria-hidden />
-        <span>New project</span>
-      </Link>
-      <Link
-        href="/admin/ops/financial-offers/new"
-        className={`${quickStyles.btn} ${quickStyles.offer}`}
-      >
-        <FileText size={13} strokeWidth={2.25} aria-hidden />
-        <span>New offer</span>
-      </Link>
-      <Link
-        href="/admin/ops/hosting-maintenance/new"
-        className={`${quickStyles.btn} ${quickStyles.hosting}`}
-      >
-        <Server size={13} strokeWidth={2.25} aria-hidden />
-        <span>New hosting</span>
-      </Link>
-    </div>
-  )
-}
-
 export function ClientOpsSection({ ops }: { ops: ClientOpsSummary }) {
   const hasAny = ops.projects.length > 0 || ops.offers.length > 0 || ops.hosting.length > 0
 
@@ -55,7 +27,7 @@ export function ClientOpsSection({ ops }: { ops: ClientOpsSummary }) {
       <section className="client-ops-section space-y-3 anim-fade-up anim-fade-up-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="dash-section-title">Operations</h2>
-          <ClientOpsQuickActions />
+          <OpsQuickActions />
         </div>
         <div className="dash-empty">
           <p className="dash-empty-title">No OPS records yet</p>
@@ -71,7 +43,7 @@ export function ClientOpsSection({ ops }: { ops: ClientOpsSummary }) {
     <section className="client-ops-section space-y-6 anim-fade-up anim-fade-up-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="dash-section-title">Operations</h2>
-        <ClientOpsQuickActions />
+        <OpsQuickActions />
       </div>
 
       {ops.projects.length > 0 ? (

@@ -30,8 +30,9 @@ export const ADMIN_PRODUCT_AREAS: Record<AdminProductArea, AdminProductAreaConfi
   ops: {
     id: 'ops',
     label: 'Ops',
-    homeHref: '/admin/ops/financial-offers',
+    homeHref: '/admin/ops',
     nav: [
+      { label: 'Dashboard', href: '/admin/ops' },
       { label: 'Projects', href: '/admin/ops/projects', adminOnly: true },
       { label: 'Hosting & maintenance', href: '/admin/ops/hosting-maintenance' },
       { label: 'Financial offers', href: '/admin/ops/financial-offers' },

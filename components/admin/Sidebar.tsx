@@ -45,7 +45,10 @@ export function AdminSidebar({ userName, userEmail, userRole, onClose }: AdminSi
         {nav
           .filter(item => !item.adminOnly || userRole === 'admin')
           .map(({ label, href }) => {
-          const active = pathname === href || pathname.startsWith(href + '/')
+          const active =
+            href === '/admin/ops'
+              ? pathname === '/admin/ops'
+              : pathname === href || pathname.startsWith(href + '/')
           return (
             <Link
               key={href}
