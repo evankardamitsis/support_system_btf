@@ -1,7 +1,13 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { ResolveCelebrationProvider } from '@/components/admin/ResolveCelebrationProvider'
 import { NotificationAudioInit } from '@/components/dashboard/NotificationAudioInit'
+
+const OpsCommsLauncher = dynamic(
+  () => import('@/components/comms/OpsCommsLauncher').then(module => module.OpsCommsLauncher),
+  { ssr: false }
+)
 import { useSidebarOpen } from '@/lib/ui/use-sidebar-open'
 import { AdminSidebar } from './Sidebar'
 import { TopBar } from './TopBar'
@@ -19,7 +25,7 @@ export function DashboardShell({ children, userName, userEmail, userRole }: Dash
   return (
     <ResolveCelebrationProvider>
     <NotificationAudioInit />
-    <div data-theme="dashboard" className="flex flex-col h-screen overflow-hidden dash-shell">
+    <div data-theme="dashboard" className="dash-shell flex flex-col h-dvh min-h-0 overflow-hidden">
       <TopBar
         userName={userName}
         userEmail={userEmail}
@@ -28,7 +34,7 @@ export function DashboardShell({ children, userName, userEmail, userRole }: Dash
         onMenuClick={toggleSidebar}
       />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="dash-body flex flex-1 min-h-0 min-w-0 overflow-hidden">
         {sidebarOpen ? (
           <div
             className="dash-sidebar-backdrop fixed inset-0 z-20 bg-black/60"
@@ -47,12 +53,14 @@ export function DashboardShell({ children, userName, userEmail, userRole }: Dash
           />
         </div>
 
-        <main className="flex-1 overflow-y-auto dash-main">
+        <main className="dash-main flex-1 min-h-0 min-w-0 overflow-y-auto">
           <div className="dash-main-inner">
             {children}
           </div>
         </main>
       </div>
+
+      <OpsCommsLauncher />
     </div>
     </ResolveCelebrationProvider>
   )

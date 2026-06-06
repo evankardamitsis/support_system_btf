@@ -71,7 +71,7 @@ export function OpsDashboard({
   ]
 
   return (
-    <div className="ops-dashboard space-y-6 w-full">
+    <div className="ops-dashboard space-y-5 sm:space-y-6 w-full min-w-0">
       <PageHeader
         title="Operations"
         description="Morning check-in — pipeline, delivery, and renewals in one place."

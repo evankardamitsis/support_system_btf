@@ -40,7 +40,7 @@ export function PortalDashboardShell({
   }, [closeSidebar, pathname, router])
 
   return (
-    <div data-theme="dashboard" className="flex flex-col h-screen overflow-hidden dash-shell">
+    <div data-theme="dashboard" className="dash-shell flex flex-col h-dvh min-h-0 overflow-hidden">
       <PortalTopBar
         userName={userName}
         userEmail={userEmail}
@@ -48,7 +48,7 @@ export function PortalDashboardShell({
         onMenuClick={toggleSidebar}
       />
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="dash-body flex flex-1 min-h-0 min-w-0 overflow-hidden">
         {sidebarOpen ? (
           <div
             className="dash-sidebar-backdrop fixed inset-0 z-20 bg-black/60"
@@ -64,7 +64,7 @@ export function PortalDashboardShell({
             onShowTour={startTour}
           />
         </div>
-        <main className="flex-1 overflow-y-auto dash-main">
+        <main className="dash-main flex-1 min-h-0 min-w-0 overflow-y-auto">
           <div className="dash-main-inner">
             {children}
           </div>
