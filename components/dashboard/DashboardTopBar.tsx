@@ -69,6 +69,9 @@ export function DashboardTopBar({
   useEffect(() => {
     if (!mobileSearchOpen) return
 
+    const prevOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
     const frame = window.requestAnimationFrame(() => {
       searchWrapRef.current?.querySelector<HTMLInputElement>('.dash-search-input')?.focus()
     })
@@ -79,6 +82,7 @@ export function DashboardTopBar({
     window.addEventListener('keydown', onKey)
 
     return () => {
+      document.body.style.overflow = prevOverflow
       window.cancelAnimationFrame(frame)
       window.removeEventListener('keydown', onKey)
     }
@@ -104,96 +108,121 @@ export function DashboardTopBar({
     )
 
   return (
-    <header
-      className={`dash-topbar shrink-0${mobileSearchOpen ? ' dash-topbar--search-open' : ''}`}
-    >
-      <button
-        type="button"
-        onClick={onMenuClick}
-        className={`dash-topbar-menu-btn dash-menu-toggle-btn${menuOpen ? ' is-open' : ''}`}
-        aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-        aria-expanded={menuOpen}
-        aria-controls="dash-sidebar"
+    <>
+      <div
+        className={`dash-topbar-wrap shrink-0${mobileSearchOpen ? ' dash-topbar-wrap--search-open' : ''}`}
       >
-        <MenuToggleIcon open={menuOpen} />
-      </button>
-
-      <div className="dash-topbar-brand">
-        <Link href={homeHref} className="dash-topbar-brand-link" aria-label="Home">
-          <Image
-            src="/btf-wordmark.svg"
-            alt="BTF"
-            width={96}
-            height={14}
-            className="dash-topbar-logo"
-            priority
-          />
-        </Link>
-        {variant === 'admin' ? <ProductAreaSwitcher userRole={userRole} /> : null}
-      </div>
-
-      <div className="dash-topbar-search" ref={searchWrapRef}>
-        <div className="dash-topbar-search-panel">
-          {search}
-          <button
-            type="button"
-            className="dash-topbar-search-close"
-            aria-label="Close search"
-            onClick={() => setMobileSearchOpen(false)}
-          >
-            <X size={16} aria-hidden />
-          </button>
-        </div>
-      </div>
-
-      <div className="dash-topbar-actions">
-        <button
-          type="button"
-          className={`dash-topbar-search-toggle${mobileSearchOpen ? ' is-active' : ''}`}
-          aria-label={mobileSearchOpen ? 'Close search' : 'Open search'}
-          aria-expanded={mobileSearchOpen}
-          onClick={() => {
-            setOpen(false)
-            setMobileSearchOpen(prev => !prev)
-          }}
+        <header
+          className={`dash-topbar${mobileSearchOpen ? ' dash-topbar--search-open' : ''}`}
         >
-          <Search size={18} aria-hidden />
-        </button>
-        {showNotifications ? <OpsNotificationBell /> : null}
-        <div className="dash-topbar-account-wrap" ref={ref}>
           <button
             type="button"
-            onClick={() => setOpen(!open)}
-            className="dash-topbar-account"
-            aria-expanded={open}
-            aria-haspopup="menu"
+            onClick={onMenuClick}
+            className={`dash-topbar-menu-btn dash-menu-toggle-btn${menuOpen ? ' is-open' : ''}`}
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
+            aria-controls="dash-sidebar"
           >
-            <div className="dash-avatar dash-avatar--lg">{ini}</div>
-            <span className="dash-topbar-account-name">
-              {userName?.split(' ')[0] ?? userEmail}
-            </span>
-            <ChevronDown size={14} className="dash-topbar-chevron" aria-hidden />
+            <MenuToggleIcon open={menuOpen} />
           </button>
 
-          {open ? (
-            <div className="dash-topbar-account-menu anim-fade" role="menu">
-              <div className="dash-topbar-menu-head">
-                <p className="dash-topbar-menu-name">{userName}</p>
-                <p className="dash-topbar-menu-email">{userEmail}</p>
-              </div>
+          <div className="dash-topbar-brand">
+            <Link href={homeHref} className="dash-topbar-brand-link" aria-label="Home">
+              <Image
+                src="/btf-wordmark.svg"
+                alt="BTF"
+                width={96}
+                height={14}
+                className="dash-topbar-logo"
+                priority
+              />
+            </Link>
+            {variant === 'admin' ? <ProductAreaSwitcher userRole={userRole} /> : null}
+          </div>
+
+          <div className="dash-topbar-search dash-topbar-search--desktop">{search}</div>
+
+          <div className="dash-topbar-actions">
+            <button
+              type="button"
+              className={`dash-topbar-search-toggle${mobileSearchOpen ? ' is-active' : ''}`}
+              aria-label={mobileSearchOpen ? 'Close search' : 'Open search'}
+              aria-expanded={mobileSearchOpen}
+              onClick={() => {
+                setOpen(false)
+                setMobileSearchOpen(prev => !prev)
+              }}
+            >
+              <Search size={18} aria-hidden />
+            </button>
+            {showNotifications ? <OpsNotificationBell /> : null}
+            <div className="dash-topbar-account-wrap" ref={ref}>
               <button
                 type="button"
-                role="menuitem"
-                onClick={handleLogout}
-                className="dash-topbar-menu-logout"
+                onClick={() => setOpen(!open)}
+                className="dash-topbar-account"
+                aria-expanded={open}
+                aria-haspopup="menu"
               >
-                <LogOut size={14} />
-                Sign out
+                <div className="dash-avatar dash-avatar--lg">{ini}</div>
+                <span className="dash-topbar-account-name">
+                  {userName?.split(' ')[0] ?? userEmail}
+                </span>
+                <ChevronDown size={14} className="dash-topbar-chevron" aria-hidden />
+              </button>
+
+              {open ? (
+                <div className="dash-topbar-account-menu anim-fade" role="menu">
+                  <div className="dash-topbar-menu-head">
+                    <p className="dash-topbar-menu-name">{userName}</p>
+                    <p className="dash-topbar-menu-email">{userEmail}</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={handleLogout}
+                    className="dash-topbar-menu-logout"
+                  >
+                    <LogOut size={14} />
+                    Sign out
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </header>
+
+        {mobileSearchOpen ? (
+          <div
+            className="dash-topbar-search-mobile"
+            ref={searchWrapRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Search"
+          >
+            <div className="dash-topbar-search-mobile-inner">
+              {search}
+              <button
+                type="button"
+                className="dash-topbar-search-mobile-close"
+                aria-label="Close search"
+                onClick={() => setMobileSearchOpen(false)}
+              >
+                <X size={16} aria-hidden />
               </button>
             </div>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
       </div>
-    </header>
+
+      {mobileSearchOpen ? (
+        <button
+          type="button"
+          className="dash-topbar-search-backdrop"
+          aria-label="Close search"
+          onClick={() => setMobileSearchOpen(false)}
+        />
+      ) : null}
+    </>
   )
 }
