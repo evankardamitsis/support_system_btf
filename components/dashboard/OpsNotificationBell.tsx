@@ -1,9 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell } from 'lucide-react'
+import {
+  NotificationPopover,
+  type NotificationPopoverItem,
+} from '@/components/ui/notification-popover'
 import { createClient } from '@/lib/supabase/client'
 import {
   countUnreadOpsNotifications,
@@ -23,18 +25,25 @@ const TYPE_LABELS: Record<OpsNotificationRecord['type'], string> = {
   project_completed: 'Project',
 }
 
+function toPopoverItem(item: OpsNotificationRecord): NotificationPopoverItem {
+  return {
+    id: item.id,
+    title: item.title,
+    description: item.body ?? undefined,
+    timeLabel: formatDateTimeHuman(item.createdAt),
+    read: Boolean(item.readAt),
+    badge: TYPE_LABELS[item.type],
+  }
+}
+
 export function OpsNotificationBell() {
   const router = useRouter()
-  const buttonRef = useRef<HTMLButtonElement>(null)
-  const panelRef = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
   const [items, setItems] = useState<OpsNotificationRecord[]>([])
-  const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({})
 
   const refresh = useCallback(async () => {
     const supabase = createClient()
@@ -69,59 +78,17 @@ export function OpsNotificationBell() {
   }, [])
 
   useEffect(() => {
-    setMounted(true)
     void refresh()
     const interval = window.setInterval(() => void refresh(), 60_000)
     return () => window.clearInterval(interval)
   }, [refresh])
 
-  useLayoutEffect(() => {
-    if (!open || !buttonRef.current) return
+  const notifications = useMemo(() => items.map(toPopoverItem), [items])
 
-    function updatePosition() {
-      const rect = buttonRef.current!.getBoundingClientRect()
-      setPanelStyle({
-        position: 'fixed',
-        top: rect.bottom + 6,
-        right: Math.max(8, window.innerWidth - rect.right),
-        width: Math.min(320, window.innerWidth - 16),
-      })
-    }
+  async function handleOpenItem(id: string) {
+    const item = items.find(row => row.id === id)
+    if (!item || !userId) return
 
-    updatePosition()
-    window.addEventListener('resize', updatePosition)
-    window.addEventListener('scroll', updatePosition, true)
-    return () => {
-      window.removeEventListener('resize', updatePosition)
-      window.removeEventListener('scroll', updatePosition, true)
-    }
-  }, [open])
-
-  useEffect(() => {
-    if (!open) return
-
-    const onPointer = (e: PointerEvent) => {
-      const target = e.target as Node
-      if (buttonRef.current?.contains(target)) return
-      if (panelRef.current?.contains(target)) return
-      setOpen(false)
-    }
-
-    document.addEventListener('pointerdown', onPointer)
-    return () => document.removeEventListener('pointerdown', onPointer)
-  }, [open])
-
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open])
-
-  async function handleOpenItem(item: OpsNotificationRecord) {
-    if (!userId) return
     const supabase = createClient()
     if (!item.readAt) {
       try {
@@ -134,6 +101,7 @@ export function OpsNotificationBell() {
         // Navigation still works if marking read fails.
       }
     }
+
     setOpen(false)
     router.push(item.href)
   }
@@ -151,75 +119,19 @@ export function OpsNotificationBell() {
     }
   }
 
-  const panel = open && mounted ? (
-    <div data-theme="dashboard" className="ops-notify-portal">
-      <div
-        ref={panelRef}
-        className="ops-notify-panel ops-notify-panel--portal anim-fade"
-        style={panelStyle}
-        role="menu"
-      >
-      <div className="ops-notify-panel-head">
-        <p className="ops-notify-panel-title">Notifications</p>
-        {unreadCount > 0 ? (
-          <button type="button" className="ops-notify-mark-all" onClick={handleMarkAllRead}>
-            Mark all read
-          </button>
-        ) : null}
-      </div>
-
-      {loading ? (
-        <p className="ops-notify-status">Loading…</p>
-      ) : error ? (
-        <p className="ops-notify-status ops-notify-status--error">{error}</p>
-      ) : items.length === 0 ? (
-        <p className="ops-notify-status">No notifications yet</p>
-      ) : (
-        <ul className="ops-notify-list">
-          {items.map(item => (
-            <li key={item.id}>
-              <button
-                type="button"
-                role="menuitem"
-                className={`ops-notify-item${item.readAt ? '' : ' ops-notify-item--unread'}`}
-                onClick={() => handleOpenItem(item)}
-              >
-                <span className="ops-notify-item-kind">{TYPE_LABELS[item.type]}</span>
-                <span className="ops-notify-item-title">{item.title}</span>
-                {item.body ? <span className="ops-notify-item-body">{item.body}</span> : null}
-                <span className="ops-notify-item-time">{formatDateTimeHuman(item.createdAt)}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      </div>
-    </div>
-  ) : null
-
   return (
-    <div className="ops-notify-wrap">
-      <button
-        ref={buttonRef}
-        type="button"
-        className="ops-notify-btn"
-        aria-label={unreadCount > 0 ? `${unreadCount} unread notifications` : 'Notifications'}
-        aria-expanded={open}
-        aria-haspopup="menu"
-        onClick={() => {
-          setOpen(value => !value)
-          if (!open) void refresh()
-        }}
-      >
-        <Bell size={16} strokeWidth={2} aria-hidden />
-        {unreadCount > 0 ? (
-          <span className="ops-notify-badge" aria-hidden>
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
-        ) : null}
-      </button>
-
-      {mounted && panel ? createPortal(panel, document.body) : null}
-    </div>
+    <NotificationPopover
+      notifications={notifications}
+      open={open}
+      onOpenChange={nextOpen => {
+        setOpen(nextOpen)
+        if (nextOpen) void refresh()
+      }}
+      onItemClick={handleOpenItem}
+      onMarkAllRead={handleMarkAllRead}
+      unreadCount={unreadCount}
+      loading={loading}
+      error={error}
+    />
   )
 }
