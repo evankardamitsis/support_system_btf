@@ -2771,12 +2771,863 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   }
 }
 
+[data-theme="dashboard"] .ops-task-drawer-root {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+}
+
+[data-theme="dashboard"] .ops-task-drawer {
+  position: relative;
+  z-index: 1;
+  cursor: default;
+  display: flex;
+  flex-direction: column;
+  width: min(28rem, 100vw);
+  max-width: 100%;
+  height: 100%;
+  border-left: 1px solid var(--border);
+  background: var(--ops-surface, #24242e);
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.35);
+  animation: ops-task-drawer-in 220ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes ops-task-drawer-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0.6;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+[data-theme="dashboard"] .ops-task-drawer-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1rem 0.85rem;
+  border-bottom: 1px solid var(--ops-border-soft, var(--border));
+}
+
+[data-theme="dashboard"] .ops-task-drawer-head-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-parent {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 0.75rem;
+  color: var(--ops-progress-label, #c4b5fd);
+  cursor: pointer;
+  text-align: left;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-parent:hover {
+  text-decoration: underline;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-phase {
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-family: var(--font-dm-mono);
+  color: var(--text-3);
+}
+
+[data-theme="dashboard"] .ops-task-drawer-title-input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-1);
+  padding: 0;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-title-input:focus {
+  outline: none;
+  color: var(--ops-progress-label, #c4b5fd);
+}
+
+[data-theme="dashboard"] .ops-task-drawer-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-close:hover {
+  color: var(--text-1);
+  border-color: color-mix(in srgb, var(--ops-progress-label, #c4b5fd) 40%, var(--border));
+}
+
+[data-theme="dashboard"] .ops-task-drawer-head-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-kind {
+  font-size: 0.5625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-family: var(--font-dm-mono);
+  color: var(--text-3);
+}
+
+[data-theme="dashboard"] .ops-task-drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.85rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-primary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--ops-border-soft, var(--border));
+}
+
+[data-theme="dashboard"] .ops-task-drawer-status-select {
+  width: 100%;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.65rem;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-fields--inline {
+  padding-top: 0.15rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+[data-theme="dashboard"] .ops-task-drawer-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-add-btn:hover:not(:disabled) {
+  color: var(--ops-progress-label, #c4b5fd);
+  border-color: color-mix(in srgb, var(--ops-progress-label, #c4b5fd) 40%, var(--border));
+  background: color-mix(in srgb, var(--ops-progress-label, #c4b5fd) 8%, transparent);
+}
+
+[data-theme="dashboard"] .ops-task-drawer-add-cancel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-add-cancel:hover:not(:disabled) {
+  color: var(--text-1);
+}
+
+[data-theme="dashboard"] .ops-task-drawer-description-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-description-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-description-label {
+  font-size: 0.5625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-family: var(--font-dm-mono);
+}
+
+[data-theme="dashboard"] .ops-task-drawer-text-action {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 0.6875rem;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-text-action:hover {
+  color: var(--ops-progress-label, #c4b5fd);
+  text-decoration: underline;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-description-preview {
+  width: 100%;
+  border: 1px dashed color-mix(in srgb, var(--border) 85%, transparent);
+  background: color-mix(in srgb, var(--ops-surface-muted, var(--dash-chrome)) 55%, transparent);
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-description-preview:hover {
+  border-color: color-mix(in srgb, var(--ops-progress-label, #c4b5fd) 35%, var(--border));
+  background: color-mix(in srgb, var(--ops-progress-label, #c4b5fd) 6%, transparent);
+}
+
+[data-theme="dashboard"] .ops-task-drawer-description-snippet {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--text-2);
+  white-space: pre-wrap;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-description-placeholder {
+  font-size: 0.8125rem;
+  color: var(--text-3);
+}
+
+[data-theme="dashboard"] .ops-task-drawer-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-accordion {
+  border: 1px solid var(--ops-border-soft, var(--border));
+  background: color-mix(in srgb, var(--ops-surface-muted, var(--dash-chrome)) 45%, transparent);
+}
+
+[data-theme="dashboard"] .ops-task-drawer-accordion--open {
+  background: color-mix(in srgb, var(--ops-surface-muted, var(--dash-chrome)) 65%, transparent);
+}
+
+[data-theme="dashboard"] .ops-task-drawer-accordion-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-1);
+}
+
+[data-theme="dashboard"] .ops-task-drawer-accordion-trigger:hover {
+  color: var(--ops-progress-label, #c4b5fd);
+}
+
+[data-theme="dashboard"] .ops-task-drawer-accordion-chevron {
+  flex-shrink: 0;
+  color: var(--text-3);
+  transition: transform 160ms ease;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-accordion-chevron--collapsed {
+  transform: rotate(-90deg);
+}
+
+[data-theme="dashboard"] .ops-task-drawer-accordion-title {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-accordion-badge {
+  margin-left: auto;
+  font-size: 0.6875rem;
+  font-family: var(--font-dm-mono);
+  color: var(--ops-progress-copy, #ddd6fe);
+}
+
+[data-theme="dashboard"] .ops-task-drawer-accordion-panel {
+  padding: 0 0.7rem 0.7rem;
+  border-top: 1px solid var(--ops-border-soft, color-mix(in srgb, var(--border) 45%, transparent));
+}
+
+[data-theme="dashboard"] .ops-task-drawer-accordion-panel .ops-task-drawer-fields {
+  padding-top: 0.7rem;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-field--wide {
+  grid-column: 1 / -1;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-section-label {
+  margin: 0 0 0.65rem;
+  font-size: 0.5625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ops-progress-label, #c4b5fd);
+  font-family: var(--font-dm-mono);
+  font-weight: 500;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-section-head .ops-task-drawer-section-label {
+  margin: 0;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-section-meta {
+  font-size: 0.6875rem;
+  color: var(--ops-progress-copy, #ddd6fe);
+  font-family: var(--font-dm-mono);
+}
+
+[data-theme="dashboard"] .ops-task-drawer-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-field-label {
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-family: var(--font-dm-mono);
+}
+
+[data-theme="dashboard"] .ops-task-drawer-select,
+[data-theme="dashboard"] .ops-task-drawer-select-native,
+[data-theme="dashboard"] .ops-task-drawer-date {
+  width: 100%;
+  font-size: 0.8125rem;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-notes {
+  width: 100%;
+  min-height: 5rem;
+  resize: vertical;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-subtasks {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-subtask {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: center;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-subtask-status {
+  font-size: 0.6875rem;
+  padding: 0.2rem 0.3rem;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-subtask-title {
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  font-size: 0.8125rem;
+  color: var(--text-1);
+  cursor: pointer;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-subtask-title:hover {
+  color: var(--ops-progress-label, #c4b5fd);
+  text-decoration: underline;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-subtask-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-subtask-form .btf-input {
+  flex: 1;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-empty {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--text-3);
+}
+
+[data-theme="dashboard"] .ops-project-files--embedded {
+  gap: 0.5rem;
+}
+
+[data-theme="dashboard"] .ops-project-files-embedded-head {
+  display: flex;
+  justify-content: flex-start;
+  padding-top: 0.55rem;
+}
+
+[data-theme="dashboard"] .ops-project-files--embedded .ops-project-files-item {
+  padding: 0.45rem 0.55rem;
+}
+
+[data-theme="dashboard"] .ops-task-comments-head {
+  margin-bottom: 0.45rem;
+}
+
+[data-theme="dashboard"] .ops-task-comments-label {
+  font-size: 0.5625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-family: var(--font-dm-mono);
+}
+
+[data-theme="dashboard"] .ops-task-comments--embedded {
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--ops-border-soft, var(--border));
+}
+
+[data-theme="dashboard"] .ops-task-comments--embedded .ops-task-comments-form {
+  margin-top: 0.5rem;
+}
+
+[data-theme="dashboard"] .ops-task-comments--concise .ticket-detail-thread {
+  max-height: 9rem;
+}
+
+[data-theme="dashboard"] .ops-task-comments--concise .ticket-detail-comment {
+  padding: 0.45rem 0;
+}
+
+[data-theme="dashboard"] .ops-task-comments--concise .ops-task-comments-form {
+  gap: 0.45rem;
+}
+
+[data-theme="dashboard"] .ops-project-files--compact-upload {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+[data-theme="dashboard"] .ops-project-files-compact-row {
+  display: flex;
+}
+
+[data-theme="dashboard"] .ops-task-comments-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+}
+
+[data-theme="dashboard"] .ops-task-comments .ticket-detail-thread {
+  max-height: 14rem;
+  overflow-y: auto;
+}
+
+[data-theme="dashboard"] .ops-task-comments .ticket-detail-thread-empty {
+  margin-bottom: 0.5rem;
+}
+
+[data-theme="dashboard"] .ops-project-files {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+[data-theme="dashboard"] .ops-project-files-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+[data-theme="dashboard"] .ops-project-files-title,
+[data-theme="dashboard"] .ops-task-drawer-section .ops-project-files-title {
+  margin: 0;
+  font-size: 0.5625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ops-progress-label, #c4b5fd);
+  font-family: var(--font-dm-mono);
+  font-weight: 500;
+}
+
+[data-theme="dashboard"] .ops-project-overview-card .ops-project-files-title {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.15rem;
+}
+
+[data-theme="dashboard"] .ops-project-files-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  padding: 0.3rem 0.55rem;
+  cursor: pointer;
+  transition: color 120ms ease, border-color 120ms ease;
+}
+
+[data-theme="dashboard"] .ops-project-files-upload:hover {
+  color: var(--ops-progress-label, #c4b5fd);
+  border-color: color-mix(in srgb, var(--ops-progress-label, #c4b5fd) 40%, var(--border));
+}
+
+[data-theme="dashboard"] .ops-project-files-empty {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-3);
+}
+
+[data-theme="dashboard"] .ops-project-files-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+[data-theme="dashboard"] .ops-project-files-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  gap: 0.15rem 0.5rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--ops-border-soft, var(--border));
+  background: var(--ops-surface-muted, color-mix(in srgb, var(--dash-chrome) 60%, transparent));
+}
+
+[data-theme="dashboard"] .ops-project-files-link {
+  grid-column: 1;
+  grid-row: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  color: var(--text-1);
+  text-decoration: none;
+  font-size: 0.8125rem;
+}
+
+[data-theme="dashboard"] .ops-project-files-link:hover {
+  color: var(--ops-progress-label, #c4b5fd);
+  text-decoration: underline;
+}
+
+[data-theme="dashboard"] .ops-project-files-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-theme="dashboard"] .ops-project-files-meta {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.65rem;
+  font-size: 0.6875rem;
+  color: var(--text-3);
+  font-family: var(--font-dm-mono);
+}
+
+[data-theme="dashboard"] .ops-project-files-task {
+  color: var(--ops-progress-copy, #ddd6fe);
+}
+
+[data-theme="dashboard"] .ops-project-files-delete {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+[data-theme="dashboard"] .ops-project-files-delete:hover:not(:disabled) {
+  color: #f87171;
+  border-color: color-mix(in srgb, #f87171 40%, var(--border));
+}
+
+[data-theme="dashboard"] .ops-project-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+[data-theme="dashboard"] .ops-project-overview-card {
+  padding: 1rem 1.125rem;
+  border: 1px solid var(--ops-border-soft, var(--border));
+  background: var(--ops-surface, color-mix(in srgb, var(--dash-chrome) 65%, transparent));
+}
+
+[data-theme="dashboard"] .ops-project-overview-card--wide {
+  grid-column: 1 / -1;
+}
+
+[data-theme="dashboard"] .ops-project-overview-card-title {
+  margin: 0 0 0.85rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ops-progress-label, #c4b5fd);
+  font-family: var(--font-dm-mono);
+  font-weight: 500;
+}
+
+[data-theme="dashboard"] .ops-project-overview-description {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--text-2);
+  white-space: pre-wrap;
+}
+
+[data-theme="dashboard"] .ops-project-overview-empty {
+  margin: 0 0 1rem;
+  font-size: 0.8125rem;
+  color: var(--text-3);
+}
+
+[data-theme="dashboard"] .ops-project-overview-stats,
+[data-theme="dashboard"] .ops-project-overview-links {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem 1rem;
+  margin: 0;
+}
+
+[data-theme="dashboard"] .ops-project-overview-stats > div,
+[data-theme="dashboard"] .ops-project-overview-links > div {
+  min-width: 0;
+}
+
+[data-theme="dashboard"] .ops-project-overview-stats dt,
+[data-theme="dashboard"] .ops-project-overview-links dt {
+  font-size: 0.625rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-family: var(--font-dm-mono);
+  margin-bottom: 0.25rem;
+}
+
+[data-theme="dashboard"] .ops-project-overview-stats dd,
+[data-theme="dashboard"] .ops-project-overview-links dd {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-1);
+}
+
+[data-theme="dashboard"] .ops-project-overview-link {
+  color: var(--ops-progress-label, #c4b5fd);
+  text-decoration: none;
+}
+
+[data-theme="dashboard"] .ops-project-overview-link:hover {
+  text-decoration: underline;
+}
+
+[data-theme="dashboard"] .ops-project-overview-health {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+[data-theme="dashboard"] .ops-project-overview-health li {
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--ops-border-soft, var(--border));
+  background: var(--ops-surface-muted, color-mix(in srgb, var(--dash-chrome) 60%, transparent));
+}
+
+[data-theme="dashboard"] .ops-project-overview-health-value {
+  display: block;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+[data-theme="dashboard"] .ops-project-overview-health-label {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.6875rem;
+  color: var(--text-3);
+}
+
+[data-theme="dashboard"] .ops-project-overview-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+[data-theme="dashboard"] .ops-project-overview-status {
+  padding: 0.55rem 0.5rem;
+  border: 1px solid var(--ops-border-soft, var(--border));
+  text-align: center;
+}
+
+[data-theme="dashboard"] .ops-project-overview-status-count {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+[data-theme="dashboard"] .ops-project-overview-status-label {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.625rem;
+  color: var(--text-3);
+}
+
+[data-theme="dashboard"] .ops-project-overview-phases {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+[data-theme="dashboard"] .ops-project-overview-phase-head {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.4rem;
+}
+
+[data-theme="dashboard"] .ops-project-overview-phase-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-1);
+  flex: 1;
+  min-width: 0;
+}
+
+[data-theme="dashboard"] .ops-project-overview-phase-meta {
+  font-size: 0.6875rem;
+  color: var(--ops-progress-copy, #ddd6fe);
+  font-family: var(--font-dm-mono);
+}
+
+[data-theme="dashboard"] .ops-project-overview-phase-status {
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-family: var(--font-dm-mono);
+  color: var(--text-3);
+}
+
+[data-theme="dashboard"] .ops-project-overview-phase-bar {
+  height: 0.35rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border) 75%, transparent);
+  overflow: hidden;
+}
+
+[data-theme="dashboard"] .ops-project-overview-phase-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #6d28d9, #a78bfa);
+  transition: width 500ms ease;
+}
+
+[data-theme="dashboard"] .ops-project-overview-unphased {
+  margin: 0.85rem 0 0;
+}
+
+@media (max-width: 900px) {
+  [data-theme="dashboard"] .ops-project-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  [data-theme="dashboard"] .ops-project-overview-stats,
+  [data-theme="dashboard"] .ops-project-overview-links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  [data-theme="dashboard"] .ops-task-drawer-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  [data-theme="dashboard"] .ops-project-overview-status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 [data-theme="dashboard"] .ops-project-view-toggle {
   display: inline-flex;
   padding: 3px;
   gap: 2px;
-  border: 1px solid var(--border);
-  background: var(--ops-surface-muted, color-mix(in srgb, var(--dash-chrome) 70%, transparent));
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: color-mix(in srgb, var(--accent) 7%, var(--ops-surface-muted, color-mix(in srgb, var(--dash-chrome) 70%, transparent)));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 [data-theme="dashboard"] .ops-project-view-btn {
@@ -2791,15 +3642,15 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 }
 
 [data-theme="dashboard"] .ops-project-view-btn:hover:not(.ops-project-view-btn--active) {
-  color: var(--text-2);
+  color: color-mix(in srgb, var(--accent) 72%, var(--text-2));
 }
 
 [data-theme="dashboard"] .ops-project-view-btn--active {
-  color: #ede9fe;
-  background: color-mix(in srgb, #8b5cf6 32%, var(--ops-surface, var(--dash-chrome)));
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, var(--ops-surface, var(--dash-chrome)));
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white 10%, transparent),
-    0 1px 4px color-mix(in srgb, #8b5cf6 22%, transparent);
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 42%, transparent),
+    0 0 10px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 
 [data-theme="dashboard"] .ops-kanban {
@@ -3064,6 +3915,18 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   line-height: 1.4;
   color: var(--text-1);
   flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  transition: color 120ms ease;
+}
+
+[data-theme="dashboard"] .ops-kanban-card-title:hover {
+  color: var(--ops-progress-label, #c4b5fd);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--ops-progress-label, #c4b5fd) 45%, transparent);
 }
 
 [data-theme="dashboard"] .ops-kanban-phase-chip {
@@ -3074,8 +3937,7 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   text-transform: uppercase;
   font-family: var(--font-dm-mono);
   color: var(--text-3);
-  border: 1px solid var(--border);
-  padding: 0.1rem 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
 }
 
 [data-theme="dashboard"] .ops-subtasks-toggle {
@@ -3249,6 +4111,72 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   border-left-color: #94a3b8;
 }
 
+[data-theme="dashboard"] .ops-phase-tone-row--0,
+[data-theme="dashboard"] .ops-list-phase--tone-0 .ops-list-phase-head {
+  background: color-mix(in srgb, #8b5cf6 12%, var(--ops-surface, color-mix(in srgb, var(--dash-chrome) 55%, transparent)));
+}
+
+[data-theme="dashboard"] .ops-phase-tone-row--1,
+[data-theme="dashboard"] .ops-list-phase--tone-1 .ops-list-phase-head {
+  background: color-mix(in srgb, #3b82f6 12%, var(--ops-surface, color-mix(in srgb, var(--dash-chrome) 55%, transparent)));
+}
+
+[data-theme="dashboard"] .ops-phase-tone-row--2,
+[data-theme="dashboard"] .ops-list-phase--tone-2 .ops-list-phase-head {
+  background: color-mix(in srgb, #f59e0b 14%, var(--ops-surface, color-mix(in srgb, var(--dash-chrome) 55%, transparent)));
+}
+
+[data-theme="dashboard"] .ops-phase-tone-row--3,
+[data-theme="dashboard"] .ops-list-phase--tone-3 .ops-list-phase-head {
+  background: color-mix(in srgb, #10b981 12%, var(--ops-surface, color-mix(in srgb, var(--dash-chrome) 55%, transparent)));
+}
+
+[data-theme="dashboard"] .ops-phase-tone-row--4,
+[data-theme="dashboard"] .ops-list-phase--tone-4 .ops-list-phase-head {
+  background: color-mix(in srgb, #f43f5e 12%, var(--ops-surface, color-mix(in srgb, var(--dash-chrome) 55%, transparent)));
+}
+
+[data-theme="dashboard"] .ops-phase-tone-row--5,
+[data-theme="dashboard"] .ops-list-phase--tone-5 .ops-list-phase-head {
+  background: color-mix(in srgb, #06b6d4 12%, var(--ops-surface, color-mix(in srgb, var(--dash-chrome) 55%, transparent)));
+}
+
+[data-theme="dashboard"] .ops-project-overview-phase-head.ops-phase-tone-row {
+  padding: 0.45rem 0.65rem;
+  border-radius: 0.25rem;
+}
+
+[data-theme="dashboard"] .ops-phase-tone-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.45rem;
+  border-radius: 0.25rem;
+}
+
+[data-theme="dashboard"] .ops-phase-tone-label--0 {
+  background: color-mix(in srgb, #8b5cf6 16%, transparent);
+}
+
+[data-theme="dashboard"] .ops-phase-tone-label--1 {
+  background: color-mix(in srgb, #3b82f6 16%, transparent);
+}
+
+[data-theme="dashboard"] .ops-phase-tone-label--2 {
+  background: color-mix(in srgb, #f59e0b 18%, transparent);
+}
+
+[data-theme="dashboard"] .ops-phase-tone-label--3 {
+  background: color-mix(in srgb, #10b981 16%, transparent);
+}
+
+[data-theme="dashboard"] .ops-phase-tone-label--4 {
+  background: color-mix(in srgb, #f43f5e 16%, transparent);
+}
+
+[data-theme="dashboard"] .ops-phase-tone-label--5 {
+  background: color-mix(in srgb, #06b6d4 16%, transparent);
+}
+
 [data-theme="dashboard"] .ops-list-phase--collapsed .ops-list-phase-head {
   border-bottom: none;
 }
@@ -3260,7 +4188,6 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   gap: 0.75rem 1rem;
   padding: 0.8rem 1.125rem;
   border-bottom: 1px solid var(--ops-border-soft, color-mix(in srgb, var(--border) 65%, transparent));
-  background: var(--ops-surface, color-mix(in srgb, var(--dash-chrome) 55%, transparent));
 }
 
 [data-theme="dashboard"] .ops-list-phase-toggle {
@@ -3420,6 +4347,18 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   font-size: 0.875rem;
   line-height: 1.35;
   color: var(--text-1);
+  border: none;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  transition: color 120ms ease;
+}
+
+[data-theme="dashboard"] .ops-list-task-title:hover {
+  color: var(--ops-progress-label, #c4b5fd);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--ops-progress-label, #c4b5fd) 45%, transparent);
 }
 
 [data-theme="dashboard"] .ops-list-task--done .ops-list-task-title {

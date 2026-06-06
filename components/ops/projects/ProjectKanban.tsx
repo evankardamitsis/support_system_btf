@@ -9,10 +9,12 @@ import {
   EditableAssigneeSelect,
   type AssigneeOption,
 } from '@/components/tickets/EditableAssigneeSelect'
+import { phaseToneIndexFromPhaseId, phaseToneLabelClass } from '@/lib/ops/projects/phase-tone'
 import {
   TASK_STATUSES,
   TASK_STATUS_LABELS,
   type OpsProjectDetail,
+  type OpsProjectPhase,
   type OpsProjectTask,
   type TaskPriority,
   type TaskStatus,
@@ -23,7 +25,9 @@ const TASK_DRAG_TYPE = 'application/x-ops-task-id'
 
 function KanbanCard({
   task,
+  phases,
   staff,
+  onOpenTask,
   onStatusChange,
   onAssigneeChange,
   onPriorityChange,
@@ -33,7 +37,9 @@ function KanbanCard({
   onDragEnd,
 }: {
   task: OpsProjectTask
+  phases: OpsProjectPhase[]
   staff: AssigneeOption[]
+  onOpenTask: (taskId: string) => void
   onStatusChange: (taskId: string, status: TaskStatus) => void
   onAssigneeChange: (taskId: string, assigneeId: string | null) => void
   onPriorityChange: (taskId: string, priority: TaskPriority) => void
@@ -67,10 +73,20 @@ function KanbanCard({
         <span className="ops-kanban-drag-handle" aria-hidden>
           <GripVertical size={14} />
         </span>
-        <p className="ops-kanban-card-title">{task.title}</p>
+        <button
+          type="button"
+          className="ops-kanban-card-title"
+          onClick={() => onOpenTask(task.id)}
+        >
+          {task.title}
+        </button>
       </div>
       {task.phaseName ? (
-        <span className="ops-kanban-phase-chip">{task.phaseName}</span>
+        <span
+          className={`ops-kanban-phase-chip ${phaseToneLabelClass(phaseToneIndexFromPhaseId(task.phaseId, phases))}`}
+        >
+          {task.phaseName}
+        </span>
       ) : null}
       {staff.length > 0 ? (
         <EditableAssigneeSelect
@@ -155,9 +171,11 @@ function KanbanCard({
 export function ProjectKanban({
   project,
   staff,
+  onOpenTask,
 }: {
   project: OpsProjectDetail
   staff: AssigneeOption[]
+  onOpenTask: (taskId: string) => void
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -290,7 +308,9 @@ export function ProjectKanban({
                   <KanbanCard
                     key={task.id}
                     task={task}
+                    phases={project.phases}
                     staff={staff}
+                    onOpenTask={onOpenTask}
                     onStatusChange={persistStatusChange}
                     onAssigneeChange={persistAssigneeChange}
                     onPriorityChange={persistPriorityChange}

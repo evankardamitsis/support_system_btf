@@ -12,6 +12,7 @@ import {
   EditableAssigneeSelect,
   type AssigneeOption,
 } from '@/components/tickets/EditableAssigneeSelect'
+import { PHASE_TONE_COUNT } from '@/lib/ops/projects/phase-tone'
 import type {
   OpsProjectDetail,
   OpsProjectPhase,
@@ -23,8 +24,6 @@ import type {
 import { runWithToast } from '@/lib/notify'
 
 type StaffOption = AssigneeOption
-
-const PHASE_TONE_COUNT = 6
 
 function PhaseSection({
   phaseId,
@@ -116,6 +115,7 @@ function TaskRow({
   staff,
   depth,
   pending,
+  onOpenTask,
   onRefresh,
 }: {
   task: OpsProjectTask
@@ -123,6 +123,7 @@ function TaskRow({
   staff: StaffOption[]
   depth: number
   pending: boolean
+  onOpenTask: (taskId: string) => void
   onRefresh: () => void
 }) {
   const [addingSubtask, setAddingSubtask] = useState(false)
@@ -180,7 +181,13 @@ function TaskRow({
       >
         <div className={`ops-list-task-grid ops-list-task-grid--${task.status}`}>
           <div className="ops-list-task-main" data-label="Task">
-            <span className="ops-list-task-title">{task.title}</span>
+            <button
+              type="button"
+              className="ops-list-task-title"
+              onClick={() => onOpenTask(task.id)}
+            >
+              {task.title}
+            </button>
           </div>
           <div className="ops-list-task-priority" data-label="Priority">
             <TaskPrioritySelect
@@ -280,6 +287,7 @@ function TaskRow({
                   staff={staff}
                   depth={depth + 1}
                   pending={pending}
+                  onOpenTask={onOpenTask}
                   onRefresh={onRefresh}
                 />
               ))}
@@ -295,11 +303,13 @@ export function ProjectListView({
   project,
   staff,
   hideEmptyPhases = false,
+  onOpenTask,
   onRefresh,
 }: {
   project: OpsProjectDetail
   staff: StaffOption[]
   hideEmptyPhases?: boolean
+  onOpenTask: (taskId: string) => void
   onRefresh: () => void
 }) {
   const [pending, startTransition] = useTransition()
@@ -364,6 +374,7 @@ export function ProjectListView({
                   staff={staff}
                   depth={0}
                   pending={pending}
+                  onOpenTask={onOpenTask}
                   onRefresh={onRefresh}
                 />
               ))
@@ -391,6 +402,7 @@ export function ProjectListView({
               staff={staff}
               depth={0}
               pending={pending}
+              onOpenTask={onOpenTask}
               onRefresh={onRefresh}
             />
           ))}

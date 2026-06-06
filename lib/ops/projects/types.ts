@@ -72,6 +72,28 @@ export type OpsProjectDetail = OpsProjectRecord & {
   tasks: OpsProjectTask[]
 }
 
+export type OpsProjectTaskComment = {
+  id: string
+  taskId: string
+  authorId: string
+  authorName: string
+  authorRole: string | null
+  body: string
+  createdAt: string
+}
+
+export type OpsProjectFile = {
+  id: string
+  projectId: string
+  taskId: string | null
+  taskTitle: string | null
+  fileName: string
+  mimeType: string | null
+  sizeBytes: number
+  uploadedByName: string | null
+  createdAt: string
+}
+
 export const TASK_STATUSES: TaskStatus[] = ['backlog', 'in_progress', 'review', 'done']
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {

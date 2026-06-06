@@ -318,6 +318,7 @@ export async function updateTask(
   taskId: string,
   patch: {
     title?: string
+    description?: string | null
     status?: TaskStatus
     assigneeId?: string | null
     priority?: TaskPriority
@@ -339,6 +340,7 @@ export async function updateTask(
     updated_at: new Date().toISOString(),
   }
   if (patch.title !== undefined) updates.title = patch.title.trim()
+  if (patch.description !== undefined) updates.description = patch.description?.trim() || null
   if (patch.status !== undefined) updates.status = patch.status
   if (patch.assigneeId !== undefined) updates.assignee_id = patch.assigneeId
   if (patch.priority !== undefined) updates.priority = patch.priority

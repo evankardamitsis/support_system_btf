@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { ChevronDown, Ellipsis, Plus } from 'lucide-react'
 import {
@@ -14,6 +14,9 @@ import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import { ProjectAddPanel } from '@/components/ops/projects/ProjectAddPanel'
 import { ProjectKanban } from '@/components/ops/projects/ProjectKanban'
 import { ProjectListView } from '@/components/ops/projects/ProjectListView'
+import { ProjectOverview } from '@/components/ops/projects/ProjectOverview'
+import { ProjectTaskDrawer } from '@/components/ops/projects/ProjectTaskDrawer'
+import { findProjectTask } from '@/lib/ops/projects/find-task'
 import {
   formatProjectCost,
   formatProjectDate,
@@ -40,7 +43,9 @@ export function ProjectDetail({
   staff: StaffOption[]
 }) {
   const router = useRouter()
-  const [view, setView] = useState<'kanban' | 'list'>(() =>
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const [view, setView] = useState<'overview' | 'kanban' | 'list'>(() =>
     typeof window !== 'undefined' && window.matchMedia('(min-width: 1025px)').matches
       ? 'kanban'
       : 'list'
@@ -77,6 +82,25 @@ export function ProjectDetail({
     () => ({ ...project, tasks: filteredTasks }),
     [project, filteredTasks]
   )
+
+  const activeTaskId = searchParams.get('task')
+  const activeTask = useMemo(
+    () => (activeTaskId ? findProjectTask(project.tasks, activeTaskId) : null),
+    [activeTaskId, project.tasks]
+  )
+
+  function openTask(taskId: string) {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('task', taskId)
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+  }
+
+  function closeTask() {
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('task')
+    const qs = params.toString()
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+  }
 
   useEffect(() => {
     if (!actionsOpen) return
@@ -300,6 +324,15 @@ export function ProjectDetail({
                 <button
                   type="button"
                   role="tab"
+                  aria-selected={view === 'overview'}
+                  className={`ops-project-view-btn${view === 'overview' ? ' ops-project-view-btn--active' : ''}`}
+                  onClick={() => setView('overview')}
+                >
+                  Overview
+                </button>
+                <button
+                  type="button"
+                  role="tab"
                   aria-selected={view === 'kanban'}
                   className={`ops-project-view-btn${view === 'kanban' ? ' ops-project-view-btn--active' : ''}`}
                   onClick={() => setView('kanban')}
@@ -431,7 +464,9 @@ export function ProjectDetail({
         </div>
       </div>
 
-      {assigneeFilter !== 'all' && filteredTasks.length === 0 ? (
+      {view === 'overview' ? (
+        <ProjectOverview project={project} />
+      ) : assigneeFilter !== 'all' && filteredTasks.length === 0 ? (
         <div className="dash-empty">
           <p className="dash-empty-title">No tasks for this assignee</p>
           <p className="dash-empty-hint">
@@ -439,15 +474,30 @@ export function ProjectDetail({
           </p>
         </div>
       ) : view === 'kanban' ? (
-        <ProjectKanban project={filteredProject} staff={staff} />
+        <ProjectKanban
+          project={filteredProject}
+          staff={staff}
+          onOpenTask={openTask}
+        />
       ) : (
         <ProjectListView
           project={filteredProject}
           staff={staff}
           hideEmptyPhases={assigneeFilter !== 'all'}
+          onOpenTask={openTask}
           onRefresh={() => router.refresh()}
         />
       )}
+
+      <ProjectTaskDrawer
+        open={Boolean(activeTask)}
+        task={activeTask}
+        project={project}
+        staff={staff}
+        onClose={closeTask}
+        onOpenTask={openTask}
+        onRefresh={() => router.refresh()}
+      />
 
       <ConfirmDeleteModal
         open={confirmComplete}

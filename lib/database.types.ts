@@ -548,6 +548,89 @@ export interface Database {
           },
         ]
       }
+      ops_project_files: {
+        Row: {
+          id: string
+          project_id: string
+          task_id: string | null
+          storage_path: string
+          file_name: string
+          mime_type: string | null
+          size_bytes: number
+          uploaded_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          task_id?: string | null
+          storage_path: string
+          file_name: string
+          mime_type?: string | null
+          size_bytes?: number
+          uploaded_by: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          task_id?: string | null
+          storage_path?: string
+          file_name?: string
+          mime_type?: string | null
+          size_bytes?: number
+          uploaded_by?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ops_project_files_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'ops_projects'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ops_project_files_task_id_fkey'
+            columns: ['task_id']
+            isOneToOne: false
+            referencedRelation: 'ops_project_tasks'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      ops_project_task_comments: {
+        Row: {
+          id: string
+          task_id: string
+          author_id: string
+          body: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          task_id: string
+          author_id: string
+          body: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          task_id?: string
+          author_id?: string
+          body?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ops_project_task_comments_task_id_fkey'
+            columns: ['task_id']
+            isOneToOne: false
+            referencedRelation: 'ops_project_tasks'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       ops_project_phases: {
         Row: {
           id: string

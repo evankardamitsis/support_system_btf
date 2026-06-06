@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import { getProject, listProjectStaff } from '@/app/actions/projects'
 import { ProjectDetail } from '@/components/ops/projects/ProjectDetail'
@@ -12,5 +13,9 @@ export default async function ProjectDetailPage({
 
   if (!project) notFound()
 
-  return <ProjectDetail project={project} staff={staff} />
+  return (
+    <Suspense fallback={<div className="dash-empty"><p className="dash-empty-title">Loading project…</p></div>}>
+      <ProjectDetail project={project} staff={staff} />
+    </Suspense>
+  )
 }
