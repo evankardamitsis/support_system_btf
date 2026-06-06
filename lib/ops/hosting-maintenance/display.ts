@@ -33,6 +33,15 @@ export function isExpiringSoon(periodEnd: string, status: string): boolean {
   return days >= 0 && days <= HOSTING_RENEWAL_REMINDER_DAYS
 }
 
+/** Active contract whose period end falls in the current calendar month. */
+export function isDueThisMonth(periodEnd: string, status: string): boolean {
+  if (status !== 'active') return false
+  const end = new Date(`${periodEnd}T12:00:00`)
+  const today = new Date()
+  today.setHours(12, 0, 0, 0)
+  return end.getFullYear() === today.getFullYear() && end.getMonth() === today.getMonth()
+}
+
 export function isPastExpiry(periodEnd: string): boolean {
   return daysUntilExpiry(periodEnd) < 0
 }

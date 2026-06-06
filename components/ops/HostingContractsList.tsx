@@ -12,6 +12,7 @@ import {
   daysUntilExpiry,
   formatHostingContractCost,
   formatHostingDate,
+  isDueThisMonth,
   isExpiringSoon,
 } from '@/lib/ops/hosting-maintenance/display'
 import {
@@ -127,8 +128,12 @@ export function HostingContractsList({ contracts }: { contracts: HostingContract
             {filtered.map(contract => {
               const days = daysUntilExpiry(contract.periodEnd)
               const expiring = isExpiringSoon(contract.periodEnd, contract.status)
+              const dueThisMonth = isDueThisMonth(contract.periodEnd, contract.status)
               return (
-                <div key={contract.id} className={`ops-hosting-grid ops-hosting-row${expiring ? ' ops-hosting-row--expiring' : ''}`}>
+                <div
+                  key={contract.id}
+                  className={`ops-hosting-grid ops-hosting-row${dueThisMonth ? ' ops-hosting-row--due-month' : ''}${expiring ? ' ops-hosting-row--expiring' : ''}`}
+                >
                   <div className="ops-hosting-cell ops-hosting-cell-primary min-w-0" data-label="Name">
                     <Link
                       href={`/admin/ops/hosting-maintenance/${contract.id}`}
