@@ -7,7 +7,6 @@ import { formatHostingDate } from '@/lib/ops/hosting-maintenance/display'
 import {
   daysBetween,
   firstDayOfMonthUtc,
-  inclusivePeriodDays,
   isDateOnly,
   periodEndFromStart,
   utcToday,
@@ -35,16 +34,11 @@ function DateQuickActions({ actions, disabled }: { actions: QuickButton[]; disab
   )
 }
 
-function periodLengthLabel(
-  periodStart: string,
-  periodEnd: string,
-  periodType: HostingMaintenancePeriod
-): string {
-  const days = inclusivePeriodDays(periodStart, periodEnd)
+function periodLengthLabel(periodType: HostingMaintenancePeriod): string {
   if (periodType === 'month') return '1 month'
-  if (periodType === 'year') return '1 year'
-  if (days === 1) return '1 day'
-  return `${days} days`
+  if (periodType === '3month') return '3 months'
+  if (periodType === '6month') return '6 months'
+  return '1 year'
 }
 
 export function HostingPeriodDates({
@@ -55,8 +49,6 @@ export function HostingPeriodDates({
   onPeriodEndChange,
   onSyncPeriodEnd,
   endSynced,
-  customDurationDays,
-  onCustomDurationDaysChange,
   disabled = false,
 }: {
   periodType: HostingMaintenancePeriod
@@ -66,18 +58,16 @@ export function HostingPeriodDates({
   onPeriodEndChange: (value: string, synced?: boolean) => void
   onSyncPeriodEnd: () => void
   endSynced: boolean
-  customDurationDays: number
-  onCustomDurationDaysChange: (days: number) => void
   disabled?: boolean
 }) {
   const computedEnd = useMemo(() => {
     if (!isDateOnly(periodStart)) return periodEnd
-    return periodEndFromStart(periodStart, periodType, customDurationDays)
-  }, [periodStart, periodType, customDurationDays, periodEnd])
+    return periodEndFromStart(periodStart, periodType)
+  }, [periodStart, periodType, periodEnd])
 
   const summary = useMemo(() => {
     if (!isDateOnly(periodStart) || !isDateOnly(periodEnd)) return null
-    const length = periodLengthLabel(periodStart, periodEnd, periodType)
+    const length = periodLengthLabel(periodType)
     const untilExpiry = daysBetween(utcToday(), periodEnd)
     const expiryHint =
       untilExpiry < 0
@@ -93,43 +83,15 @@ export function HostingPeriodDates({
     }
   }, [periodStart, periodEnd, periodType])
 
-  function applyStart(nextStart: string) {
-    onPeriodStartChange(nextStart)
-  }
-
-  function applyPresetEnd(
-    preset: HostingMaintenancePeriod | { customDurationDays: number }
-  ) {
-    if (!isDateOnly(periodStart)) return
-
-    if (typeof preset === 'string') {
-      const nextEnd = periodEndFromStart(periodStart, preset)
-      onCustomDurationDaysChange(inclusivePeriodDays(periodStart, nextEnd))
-      onPeriodEndChange(nextEnd, true)
-      return
-    }
-
-    onCustomDurationDaysChange(preset.customDurationDays)
-    onPeriodEndChange(periodEndFromStart(periodStart, 'custom', preset.customDurationDays), true)
-  }
-
   const startQuickActions: QuickButton[] = [
-    { label: 'Today', onClick: () => applyStart(utcToday()) },
-    { label: '1st this month', onClick: () => applyStart(firstDayOfMonthUtc(0)) },
-    { label: '1st next month', onClick: () => applyStart(firstDayOfMonthUtc(1)) },
+    { label: 'Today', onClick: () => onPeriodStartChange(utcToday()) },
+    { label: '1st this month', onClick: () => onPeriodStartChange(firstDayOfMonthUtc(0)) },
+    { label: '1st next month', onClick: () => onPeriodStartChange(firstDayOfMonthUtc(1)) },
   ]
 
-  const endQuickActions: QuickButton[] =
-    periodType === 'custom'
-      ? [
-          { label: '+1 month', onClick: () => applyPresetEnd('month') },
-          { label: '+3 months', onClick: () => applyPresetEnd({ customDurationDays: 92 }) },
-          { label: '+6 months', onClick: () => applyPresetEnd({ customDurationDays: 183 }) },
-          { label: '+1 year', onClick: () => applyPresetEnd('year') },
-        ]
-      : !endSynced
-        ? [{ label: 'Match period', onClick: onSyncPeriodEnd }]
-        : []
+  const endQuickActions: QuickButton[] = !endSynced
+    ? [{ label: 'Match period', onClick: onSyncPeriodEnd }]
+    : []
 
   return (
     <section className="hosting-period-dates">
@@ -140,7 +102,7 @@ export function HostingPeriodDates({
             <span>{summary.length}</span>
             <span aria-hidden>·</span>
             <span>{summary.expiryHint}</span>
-            {endSynced && periodType !== 'custom' ? (
+            {endSynced ? (
               <>
                 <span aria-hidden>·</span>
                 <span className="hosting-period-dates-auto">Auto expiry</span>

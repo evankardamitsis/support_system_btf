@@ -1,4 +1,15 @@
-export type HostingMaintenancePeriod = 'month' | 'year' | 'custom'
+export type HostingMaintenancePeriod = 'month' | '3month' | '6month' | 'year'
+
+export const HOSTING_PERIOD_OPTIONS: { value: HostingMaintenancePeriod; label: string }[] = [
+  { value: 'month', label: 'Per month' },
+  { value: '3month', label: 'Per 3 months' },
+  { value: '6month', label: 'Per 6 months' },
+  { value: 'year', label: 'Per year' },
+]
+
+export function isHostingMaintenancePeriod(value: unknown): value is HostingMaintenancePeriod {
+  return value === 'month' || value === '3month' || value === '6month' || value === 'year'
+}
 
 export type FinancialOfferLineItem = {
   work: string

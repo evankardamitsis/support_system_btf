@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireStaff } from '@/lib/auth/require-staff'
+import { isValidEmailAddress, normalizeEmailAddress } from '@/lib/email/addresses'
 import { sendFinancialOfferEmail } from '@/lib/email/financial-offer-email'
 import { getCompanyProfile, toCompanyProfileData } from '@/lib/ops/company-profile'
 import { requireAdmin } from '@/lib/auth/require-admin'
@@ -31,7 +32,11 @@ export async function submitFinancialOffer(
   const company = await resolveOfferCompany(supabase)
 
   if (options.sendEmail) {
-    if (!offer.clientEmail) throw new Error('Client email is required to send the offer')
+    const clientEmail = offer.clientEmail ? normalizeEmailAddress(offer.clientEmail) : null
+    if (!clientEmail || !isValidEmailAddress(clientEmail)) {
+      throw new Error('Enter a valid client email address to send the offer')
+    }
+    offer.clientEmail = clientEmail
   }
 
   const pdf = await renderOffer(offer, company)
@@ -62,8 +67,10 @@ export async function resendFinancialOfferEmail(
   const loaded = await loadOfferForPdf(supabase, offerId)
   if (!loaded) throw new Error('Offer not found')
 
-  const to = email?.trim() || loaded.offer.clientEmail
-  if (!to) throw new Error('No client email on this offer')
+  const to = normalizeEmailAddress(email?.trim() || loaded.offer.clientEmail || '')
+  if (!to || !isValidEmailAddress(to)) {
+    throw new Error('Enter a valid client email address')
+  }
 
   const company = toCompanyProfileData(await getCompanyProfile(supabase))
   const pdf = await renderOffer(loaded.offer, company)

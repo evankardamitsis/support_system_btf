@@ -15,6 +15,8 @@ import type {
   HostingMaintenancePeriod,
   SavedCompanyIban,
 } from '@/lib/ops/financial-offer/types'
+import { HOSTING_PERIOD_OPTIONS } from '@/lib/ops/financial-offer/types'
+import { isValidEmailAddress, normalizeEmailAddress } from '@/lib/email/addresses'
 import { notifyError, runWithToast } from '@/lib/notify'
 
 const emptyLine = (): FinancialOfferLineItem => ({ work: '', cost: 0 })
@@ -44,7 +46,6 @@ export function FinancialOfferForm({ savedIbans, upfrontPercent }: FinancialOffe
   ])
   const [hostingAmount, setHostingAmount] = useState<number | ''>('')
   const [hostingPeriod, setHostingPeriod] = useState<HostingMaintenancePeriod>('year')
-  const [hostingCustomPeriod, setHostingCustomPeriod] = useState('')
   const [excludeVat, setExcludeVat] = useState(false)
   const [selectedIbanIds, setSelectedIbanIds] = useState<Set<string>>(
     () => new Set(savedIbans.map(row => row.id))
@@ -96,20 +97,10 @@ export function FinancialOfferForm({ savedIbans, upfrontPercent }: FinancialOffe
 
     let hostingMaintenance: string | null = null
     if (hostingAmount !== '' && Number(hostingAmount) > 0) {
-      if (hostingPeriod === 'custom' && !hostingCustomPeriod.trim()) {
-        notifyError('Enter a custom period for hosting & maintenance')
-        return null
-      }
-      try {
-        hostingMaintenance = formatHostingMaintenance({
-          amount: Number(hostingAmount),
-          period: hostingPeriod,
-          customPeriod: hostingCustomPeriod,
-        })
-      } catch (err) {
-        notifyError(err instanceof Error ? err.message : 'Invalid hosting & maintenance')
-        return null
-      }
+      hostingMaintenance = formatHostingMaintenance({
+        amount: Number(hostingAmount),
+        period: hostingPeriod,
+      })
     }
 
     const payload = {
@@ -120,8 +111,7 @@ export function FinancialOfferForm({ savedIbans, upfrontPercent }: FinancialOffe
         .filter(row => row.work && row.cost > 0),
       hostingAmount: hostingAmount === '' ? null : Number(hostingAmount),
       hostingPeriod: hostingAmount === '' ? null : hostingPeriod,
-      hostingCustomPeriod:
-        hostingPeriod === 'custom' && hostingAmount !== '' ? hostingCustomPeriod.trim() : null,
+      hostingCustomPeriod: null,
       hostingMaintenance,
       ibans: selectedIbans.map(row => ({
         bankName: row.bankName,
@@ -149,9 +139,12 @@ export function FinancialOfferForm({ savedIbans, upfrontPercent }: FinancialOffe
     const payload = buildPayload()
     if (!payload) return
 
-    if (sendEmail && !payload.clientEmail) {
-      notifyError('Enter the client email to send the offer')
-      return
+    if (sendEmail) {
+      const to = payload.clientEmail ? normalizeEmailAddress(payload.clientEmail) : null
+      if (!to || !isValidEmailAddress(to)) {
+        notifyError('Enter a valid client email to send the offer')
+        return
+      }
     }
 
     startTransition(async () => {
@@ -276,24 +269,16 @@ export function FinancialOfferForm({ savedIbans, upfrontPercent }: FinancialOffe
               onChange={e => setHostingPeriod(e.target.value as HostingMaintenancePeriod)}
               disabled={pending}
             >
-              <option value="year">Per year</option>
-              <option value="month">Per month</option>
-              <option value="custom">Custom</option>
+              {HOSTING_PERIOD_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
-            {hostingPeriod === 'custom' ? (
-              <input
-                id="offer-hosting-custom"
-                className="btf-input w-full"
-                placeholder="e.g. quarter, 6 months"
-                value={hostingCustomPeriod}
-                onChange={e => setHostingCustomPeriod(e.target.value)}
-                disabled={pending}
-              />
-            ) : (
-              <p className="dash-meta self-center text-sm">
-                {hostingPeriod === 'month' ? 'Billed monthly' : 'Billed yearly'}
-              </p>
-            )}
+            <p className="dash-meta self-center text-sm">
+              {HOSTING_PERIOD_OPTIONS.find(option => option.value === hostingPeriod)?.label ??
+                'Billed yearly'}
+            </p>
           </div>
         </div>
 

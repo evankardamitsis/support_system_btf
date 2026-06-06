@@ -46,6 +46,13 @@ function addUtcYears(dateStr: string, years: number): string {
   return formatUtcDate(d)
 }
 
+function addUtcDays(dateStr: string, days: number): string {
+  const d = parseUtcDate(dateStr)
+  if (!d) return dateStr
+  d.setUTCDate(d.getUTCDate() + days)
+  return formatUtcDate(d)
+}
+
 export function daysBetween(start: string, end: string): number {
   const a = parseUtcDate(start)
   const b = parseUtcDate(end)
@@ -57,32 +64,24 @@ export function inclusivePeriodDays(start: string, end: string): number {
   return daysBetween(start, end) + 1
 }
 
+function inclusiveEndFromMonths(periodStart: string, months: number): string {
+  const nextStart = addUtcMonths(periodStart, months)
+  return addUtcDays(nextStart, -1)
+}
+
 /** Inclusive period end from a start date and billing period type. */
 export function periodEndFromStart(
   periodStart: string,
-  periodType: HostingMaintenancePeriod,
-  customDurationDays = 365
+  periodType: HostingMaintenancePeriod
 ): string {
   if (!isDateOnly(periodStart)) return periodStart
 
-  if (periodType === 'month') {
-    const nextStart = addUtcMonths(periodStart, 1)
-    return addUtcDays(nextStart, -1)
-  }
+  if (periodType === 'month') return inclusiveEndFromMonths(periodStart, 1)
+  if (periodType === '3month') return inclusiveEndFromMonths(periodStart, 3)
+  if (periodType === '6month') return inclusiveEndFromMonths(periodStart, 6)
 
-  if (periodType === 'year') {
-    const nextStart = addUtcYears(periodStart, 1)
-    return addUtcDays(nextStart, -1)
-  }
-
-  return addUtcDays(periodStart, Math.max(customDurationDays, 1) - 1)
-}
-
-function addUtcDays(dateStr: string, days: number): string {
-  const d = parseUtcDate(dateStr)
-  if (!d) return dateStr
-  d.setUTCDate(d.getUTCDate() + days)
-  return formatUtcDate(d)
+  const nextStart = addUtcYears(periodStart, 1)
+  return addUtcDays(nextStart, -1)
 }
 
 /** Next billing period after the current one ends. */
@@ -94,15 +93,17 @@ export function computeRenewedPeriod(input: {
   const periodStart = renewalDateFromPeriodEnd(input.periodEnd)
 
   if (input.periodType === 'month') {
-    const nextEnd = addUtcMonths(periodStart, 1)
-    return { periodStart, periodEnd: addUtcDays(nextEnd, -1) }
+    return { periodStart, periodEnd: inclusiveEndFromMonths(periodStart, 1) }
   }
 
-  if (input.periodType === 'year') {
-    const nextEnd = addUtcYears(periodStart, 1)
-    return { periodStart, periodEnd: addUtcDays(nextEnd, -1) }
+  if (input.periodType === '3month') {
+    return { periodStart, periodEnd: inclusiveEndFromMonths(periodStart, 3) }
   }
 
-  const duration = daysBetween(input.periodStart, input.periodEnd)
-  return { periodStart, periodEnd: addUtcDays(periodStart, duration) }
+  if (input.periodType === '6month') {
+    return { periodStart, periodEnd: inclusiveEndFromMonths(periodStart, 6) }
+  }
+
+  const nextEnd = addUtcYears(periodStart, 1)
+  return { periodStart, periodEnd: addUtcDays(nextEnd, -1) }
 }

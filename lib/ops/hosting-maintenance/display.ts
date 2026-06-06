@@ -8,13 +8,12 @@ export function formatHostingContractCost(
   periodType: HostingMaintenancePeriod,
   customPeriod: string | null
 ): string {
-  return (
-    formatHostingMaintenance({
-      amount,
-      period: periodType,
-      customPeriod,
-    }) ?? formatOfferCurrency(amount)
-  )
+  const formatted = formatHostingMaintenance({ amount, period: periodType })
+  if (formatted) return formatted
+  if (customPeriod?.trim()) {
+    return `${formatOfferCurrency(amount)} / ${customPeriod.trim()}`
+  }
+  return formatOfferCurrency(amount)
 }
 
 export function formatHostingDate(dateStr: string | null): string {

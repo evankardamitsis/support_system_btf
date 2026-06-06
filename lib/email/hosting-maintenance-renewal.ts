@@ -48,7 +48,7 @@ export async function sendHostingRenewalReminder(
     `Reply to this email or contact us at <strong>${company.email}</strong> and we will send payment details.`,
   ].join(' ')
 
-  const ok = await sendEmail({
+  const result = await sendEmail({
     to: recipients,
     subject: `Hosting & maintenance renewal — ${contract.name}`,
     html: emailShell(
@@ -59,6 +59,6 @@ export async function sendHostingRenewalReminder(
     ),
   })
 
-  if (!ok) return { sent: false, error: 'Failed to send email' }
+  if (!result.ok) return { sent: false, error: result.error }
   return { sent: true }
 }

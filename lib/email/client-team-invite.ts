@@ -38,7 +38,7 @@ export async function sendClientTeamInviteEmail(input: {
     ),
   })
 
-  if (!sent) {
+  if (!sent.ok) {
     return {
       sent: false,
       error:

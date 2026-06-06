@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Mail, X } from 'lucide-react'
 import { resendFinancialOfferEmail } from '@/app/actions/financial-offers'
 import type { FinancialOfferRecord } from '@/lib/ops/financial-offer/types'
+import { isValidEmailAddress, normalizeEmailAddress } from '@/lib/email/addresses'
 import { notifyError, runWithToast } from '@/lib/notify'
 
 type FinancialOfferEmailPanelProps = {
@@ -19,9 +20,9 @@ export function FinancialOfferEmailPanel({ offer, onClose }: FinancialOfferEmail
 
   function handleSend(e: React.FormEvent) {
     e.preventDefault()
-    const to = email.trim()
-    if (!to) {
-      notifyError('Enter the client email')
+    const to = normalizeEmailAddress(email)
+    if (!to || !isValidEmailAddress(to)) {
+      notifyError('Enter a valid client email address')
       return
     }
 

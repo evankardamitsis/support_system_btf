@@ -130,7 +130,7 @@ export async function notifyClientEstimatePending(input: {
     ),
   })
 
-  if (!sent) {
+  if (!sent.ok) {
     return {
       sent: false,
       error:
@@ -191,7 +191,7 @@ export async function notifyClientTicketResolved(input: {
     ),
   })
 
-  if (!sent) {
+  if (!sent.ok) {
     return {
       sent: false,
       error:
@@ -237,7 +237,7 @@ export async function notifyClientNewRetainer(input: {
     ),
   })
 
-  if (!sent) {
+  if (!sent.ok) {
     return {
       sent: false,
       error:
@@ -288,7 +288,7 @@ export async function notifyStaffNewTicket(input: {
     ),
   })
 
-  if (!sent) {
+  if (!sent.ok) {
     return {
       sent: false,
       error:
@@ -326,7 +326,7 @@ export async function notifyClientWorkReviewPending(input: {
     ),
   })
 
-  if (!sent) {
+  if (!sent.ok) {
     return {
       sent: false,
       error:
@@ -363,7 +363,7 @@ export async function notifyStaffWorkApproved(input: {
     ),
   })
 
-  if (!sent) {
+  if (!sent.ok) {
     return {
       sent: false,
       error:
@@ -405,7 +405,7 @@ export async function notifyStaffWorkDisputed(input: {
     ),
   })
 
-  if (!sent) {
+  if (!sent.ok) {
     return {
       sent: false,
       error:
@@ -448,7 +448,7 @@ export async function notifyStaffTicketAssigned(input: {
     ),
   })
 
-  if (!sent) {
+  if (!sent.ok) {
     return {
       sent: false,
       error:
@@ -501,7 +501,7 @@ export async function notifyStaffInternalMention(input: {
     ),
   })
 
-  if (!sent) {
+  if (!sent.ok) {
     return {
       sent: false,
       error:
@@ -541,7 +541,7 @@ export async function notifyClientExtraHoursPending(input: {
     ),
   })
 
-  if (!sent) {
+  if (!sent.ok) {
     return {
       sent: false,
       error:
@@ -580,7 +580,7 @@ export async function notifyStaffExtraHoursApproved(input: {
     ),
   })
 
-  if (!sent) {
+  if (!sent.ok) {
     return {
       sent: false,
       error:
@@ -621,7 +621,7 @@ export async function notifyStaffEstimateApproved(input: {
     ),
   })
 
-  if (!sent) {
+  if (!sent.ok) {
     return {
       sent: false,
       error:
@@ -712,7 +712,7 @@ export async function notifyClientApprovalReminder(input: {
     html: emailShell(copy.title, copy.body, copy.cta, url),
   })
 
-  if (!sent) {
+  if (!sent.ok) {
     return {
       sent: false,
       error:
@@ -752,7 +752,7 @@ export async function notifyStaffTicketOnHold(input: {
     ),
   })
 
-  if (!sent) {
+  if (!sent.ok) {
     return {
       sent: false,
       error:

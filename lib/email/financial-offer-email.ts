@@ -1,3 +1,4 @@
+import { isValidEmailAddress, normalizeEmailAddress } from '@/lib/email/addresses'
 import { sendEmail } from '@/lib/email/send'
 import { offerFilename } from '@/lib/ops/financial-offer/calculate'
 import type { CompanyProfileData } from '@/lib/ops/financial-offer/types'
@@ -18,9 +19,17 @@ export async function sendFinancialOfferEmail(input: {
   company: CompanyProfileData
   pdf: Buffer
 }): Promise<{ sent: true } | { sent: false; error: string }> {
+  const to = normalizeEmailAddress(input.to)
+  if (!to || !isValidEmailAddress(to)) {
+    return {
+      sent: false,
+      error: 'Enter a valid client email address before sending the offer.',
+    }
+  }
+
   const filename = offerFilename(input.clientName)
   const sent = await sendEmail({
-    to: input.to,
+    to,
     subject: `Financial Offer — ${input.clientName}`,
     html: emailShell(
       'Your financial offer',
@@ -35,11 +44,10 @@ export async function sendFinancialOfferEmail(input: {
     ],
   })
 
-  if (!sent) {
+  if (!sent.ok) {
     return {
       sent: false,
-      error:
-        'Offer was saved but the email could not be sent. Check ZEPTOMAIL_API_KEY and EMAIL_FROM.',
+      error: `Offer was saved but the email could not be sent. ${sent.error}`,
     }
   }
 

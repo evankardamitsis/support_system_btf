@@ -1,6 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
-import type { HostingMaintenancePeriod } from '@/lib/ops/financial-offer/types'
+import {
+  isHostingMaintenancePeriod,
+  type HostingMaintenancePeriod,
+} from '@/lib/ops/financial-offer/types'
 import type { HostingContractRecord, HostingContractStatus } from '@/lib/ops/hosting-maintenance/types'
 
 type Db = SupabaseClient<Database>
@@ -71,14 +74,9 @@ export function parseHostingContractInput(raw: unknown) {
   }
 
   const periodTypeRaw = body.periodType
-  const periodType: HostingMaintenancePeriod =
-    periodTypeRaw === 'month' || periodTypeRaw === 'custom' ? periodTypeRaw : 'year'
-
-  const customPeriod =
-    typeof body.customPeriod === 'string' ? body.customPeriod.trim() : ''
-  if (periodType === 'custom' && !customPeriod) {
-    throw new Error('Enter a custom period label')
-  }
+  const periodType: HostingMaintenancePeriod = isHostingMaintenancePeriod(periodTypeRaw)
+    ? periodTypeRaw
+    : 'year'
 
   const periodStart = typeof body.periodStart === 'string' ? body.periodStart.trim() : ''
   const periodEnd = typeof body.periodEnd === 'string' ? body.periodEnd.trim() : ''
@@ -92,7 +90,7 @@ export function parseHostingContractInput(raw: unknown) {
     clientId,
     costAmount: Math.round(costAmount * 100) / 100,
     periodType,
-    customPeriod: periodType === 'custom' ? customPeriod : null,
+    customPeriod: null,
     periodStart,
     periodEnd,
     notes: notes || null,

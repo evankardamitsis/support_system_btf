@@ -91,17 +91,14 @@ export function parseFinancialOfferInput(raw: unknown): FinancialOfferInput {
 export function formatHostingMaintenance(input: {
   amount: number
   period: HostingMaintenancePeriod
-  customPeriod?: string | null
 }): string | null {
   if (!Number.isFinite(input.amount) || input.amount <= 0) return null
 
   const value = formatOfferCurrency(input.amount)
   if (input.period === 'month') return `${value} / month`
-  if (input.period === 'year') return `${value} / year`
-
-  const custom = input.customPeriod?.trim()
-  if (!custom) throw new Error('Enter a custom period for hosting & maintenance')
-  return `${value} / ${custom}`
+  if (input.period === '3month') return `${value} / 3 months`
+  if (input.period === '6month') return `${value} / 6 months`
+  return `${value} / year`
 }
 
 function parseHostingMaintenanceInput(body: Record<string, unknown>): string | null {
@@ -109,11 +106,11 @@ function parseHostingMaintenanceInput(body: Record<string, unknown>): string | n
   if (Number.isFinite(amount) && amount > 0) {
     const periodRaw = body.hostingPeriod
     const period: HostingMaintenancePeriod =
-      periodRaw === 'month' || periodRaw === 'custom' ? periodRaw : 'year'
-    const customPeriod =
-      typeof body.hostingCustomPeriod === 'string' ? body.hostingCustomPeriod : ''
+      periodRaw === 'month' || periodRaw === '3month' || periodRaw === '6month'
+        ? periodRaw
+        : 'year'
 
-    return formatHostingMaintenance({ amount, period, customPeriod })
+    return formatHostingMaintenance({ amount, period })
   }
 
   const legacy =

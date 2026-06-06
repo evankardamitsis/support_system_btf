@@ -494,7 +494,7 @@ export interface Database {
           id: string
           name: string
           client_id: string
-          period_type: 'month' | 'year' | 'custom'
+          period_type: 'month' | '3month' | '6month' | 'year'
           custom_period: string | null
           cost_amount: number
           period_start: string
@@ -510,7 +510,7 @@ export interface Database {
           id?: string
           name: string
           client_id: string
-          period_type?: 'month' | 'year' | 'custom'
+          period_type?: 'month' | '3month' | '6month' | 'year'
           custom_period?: string | null
           cost_amount: number
           period_start: string
@@ -526,7 +526,7 @@ export interface Database {
           id?: string
           name?: string
           client_id?: string
-          period_type?: 'month' | 'year' | 'custom'
+          period_type?: 'month' | '3month' | '6month' | 'year'
           custom_period?: string | null
           cost_amount?: number
           period_start?: string
