@@ -1,7 +1,7 @@
 'use client'
 
-import { useRef, useState, useTransition } from 'react'
-import { ChevronDown, Pencil, Trash2 } from 'lucide-react'
+import { useMemo, useRef, useState, useTransition } from 'react'
+import { Pencil, Trash2 } from 'lucide-react'
 import {
   createTask,
   deletePhase,
@@ -12,15 +12,18 @@ import {
 } from '@/app/actions/projects'
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import {
-  PhaseStatusSelect,
-  TaskPrioritySelect,
-  TaskStatusSelect,
-} from '@/components/ops/projects/StatusSelect'
+  AgentPlan,
+  type AgentPlanGroup,
+  type AgentPlanItem,
+} from '@/components/ui/agent-plan'
+import { PhaseStatusSelect } from '@/components/ops/projects/StatusSelect'
 import {
   EditableAssigneeSelect,
   type AssigneeOption,
 } from '@/components/tickets/EditableAssigneeSelect'
+import { formatProjectDate } from '@/lib/ops/projects/display'
 import { PHASE_TONE_COUNT } from '@/lib/ops/projects/phase-tone'
+import { nextTaskStatus } from '@/lib/ops/projects/task-status'
 import type {
   OpsProjectDetail,
   OpsProjectPhase,
@@ -29,370 +32,18 @@ import type {
   TaskPriority,
   TaskStatus,
 } from '@/lib/ops/projects/types'
+import {
+  TASK_PRIORITY_LABELS,
+  TASK_STATUS_LABELS,
+} from '@/lib/ops/projects/types'
 import { runWithToast } from '@/lib/notify'
 
 type StaffOption = AssigneeOption
 
-function PhaseSection({
-  phaseId,
-  title,
-  toneIndex,
-  status,
-  taskCount,
-  doneCount,
-  collapsed,
-  onToggle,
-  onStatusChange,
-  onRename,
-  onDelete,
-  pending,
-  children,
-}: {
-  phaseId: string
-  title: string
-  toneIndex: number
-  status?: PhaseStatus
-  taskCount: number
-  doneCount: number
-  collapsed: boolean
-  onToggle: (phaseId: string) => void
-  onStatusChange?: (status: PhaseStatus) => void
-  onRename?: (name: string) => void
-  onDelete?: () => void
-  pending: boolean
-  children: React.ReactNode
-}) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(title)
-  const inputRef = useRef<HTMLInputElement>(null)
-  const phasePct = taskCount > 0 ? (doneCount / taskCount) * 100 : 0
-  const toneClass = `ops-list-phase--tone-${toneIndex % PHASE_TONE_COUNT}`
-  const canManage = Boolean(onRename && onDelete)
-
-  function startEditing() {
-    if (!onRename || pending) return
-    setDraft(title)
-    setEditing(true)
-    requestAnimationFrame(() => inputRef.current?.focus())
-  }
-
-  function commitRename() {
-    if (!onRename) return
-    const trimmed = draft.trim()
-    if (!trimmed) {
-      setDraft(title)
-      setEditing(false)
-      return
-    }
-    if (trimmed !== title) onRename(trimmed)
-    setEditing(false)
-  }
-
-  return (
-    <section
-      className={`ops-list-phase ${toneClass}${collapsed ? ' ops-list-phase--collapsed' : ''}`}
-    >
-      <div className="ops-list-phase-head">
-        <div className="ops-list-phase-toggle-wrap">
-          <button
-            type="button"
-            className="ops-list-phase-toggle"
-            onClick={() => onToggle(phaseId)}
-            aria-expanded={!collapsed}
-            aria-controls={`ops-phase-body-${phaseId}`}
-          >
-            <ChevronDown
-              size={16}
-              className={`ops-list-phase-chevron${collapsed ? ' ops-list-phase-chevron--collapsed' : ''}`}
-              aria-hidden
-            />
-            {editing ? (
-              <input
-                ref={inputRef}
-                className="btf-input ops-list-phase-title-input"
-                value={draft}
-                disabled={pending}
-                onChange={e => setDraft(e.target.value)}
-                onBlur={commitRename}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    commitRename()
-                  }
-                  if (e.key === 'Escape') {
-                    setDraft(title)
-                    setEditing(false)
-                  }
-                }}
-                onClick={e => e.stopPropagation()}
-                aria-label="Phase name"
-              />
-            ) : (
-              <span className="ops-list-phase-title">{title}</span>
-            )}
-            <span className="ops-list-phase-count">{taskCount}</span>
-          </button>
-          {canManage && !editing ? (
-            <div className="ops-list-phase-manage">
-              <button
-                type="button"
-                className="ops-list-phase-manage-btn"
-                onClick={startEditing}
-                disabled={pending}
-                aria-label={`Rename phase ${title}`}
-              >
-                <Pencil size={14} aria-hidden />
-              </button>
-              {taskCount === 0 ? (
-                <button
-                  type="button"
-                  className="ops-list-phase-manage-btn ops-list-phase-manage-btn--danger"
-                  onClick={onDelete}
-                  disabled={pending}
-                  aria-label={`Delete phase ${title}`}
-                >
-                  <Trash2 size={14} aria-hidden />
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-        {status && onStatusChange ? (
-          <PhaseStatusSelect
-            value={status}
-            disabled={pending}
-            className="ops-list-select"
-            aria-label={`Status for phase ${title}`}
-            onChange={onStatusChange}
-          />
-        ) : null}
-        <div className="ops-list-phase-progress">
-          <div className="ops-list-phase-progress-bar">
-            <div className="ops-list-phase-progress-fill" style={{ width: `${phasePct}%` }} />
-          </div>
-          <span className="ops-progress-copy ops-list-phase-progress-label">
-            {doneCount}/{taskCount}
-          </span>
-        </div>
-      </div>
-      {!collapsed ? (
-        <div id={`ops-phase-body-${phaseId}`} className="ops-list-phase-body">
-          {taskCount > 0 ? (
-            <div className="ops-list-col-head" aria-hidden>
-              <span>Task</span>
-              <span>Priority</span>
-              <span>Status</span>
-              <span>Assignee</span>
-              <span />
-            </div>
-          ) : null}
-          {children}
-        </div>
-      ) : null}
-    </section>
-  )
-}
-
-function TaskRow({
-  task,
-  phases,
-  staff,
-  depth,
-  pending,
-  onOpenTask,
-  onDeleteRequest,
-  onRefresh,
-}: {
-  task: OpsProjectTask
-  phases: OpsProjectPhase[]
-  staff: StaffOption[]
-  depth: number
-  pending: boolean
-  onOpenTask: (taskId: string) => void
-  onDeleteRequest: (task: OpsProjectTask) => void
-  onRefresh: () => void
-}) {
-  const [addingSubtask, setAddingSubtask] = useState(false)
-  const [subtaskTitle, setSubtaskTitle] = useState('')
-  const [subtasksOpen, setSubtasksOpen] = useState(false)
-  const subtaskCount = task.subtasks.length
-  const doneSubtasks = task.subtasks.filter(s => s.status === 'done').length
-
-  function handleStatusChange(status: TaskStatus) {
-    runWithToast(() => updateTask(task.id, { status }), {
-      loading: 'Updating…',
-      success: 'Task updated',
-    }).then(() => onRefresh())
-  }
-
-  function handleAssigneeChange(assigneeId: string | null) {
-    runWithToast(() => updateTask(task.id, { assigneeId }), {
-      loading: 'Updating assignee…',
-      success: assigneeId
-        ? `Assigned to ${staff.find(s => s.id === assigneeId)?.name ?? 'teammate'}`
-        : 'Assignee cleared',
-    }).then(() => onRefresh())
-  }
-
-  function handlePriorityChange(priority: TaskPriority) {
-    runWithToast(() => updateTask(task.id, { priority }), {
-      loading: 'Updating priority…',
-      success: 'Priority updated',
-    }).then(() => onRefresh())
-  }
-
-  function handleAddSubtask(e: React.FormEvent) {
-    e.preventDefault()
-    if (!subtaskTitle.trim()) return
-    runWithToast(
-      () =>
-        createTask({
-          projectId: task.projectId,
-          phaseId: task.phaseId,
-          parentId: task.id,
-          title: subtaskTitle,
-        }),
-      { loading: 'Adding subtask…', success: 'Subtask added' }
-    ).then(() => {
-      setSubtaskTitle('')
-      setAddingSubtask(false)
-      onRefresh()
-    })
-  }
-
-  return (
-    <div className={`ops-list-task-group${depth > 0 ? ' ops-list-task-group--nested' : ''}`}>
-      <div
-        className={`ops-list-task ops-list-task--${task.status}${task.priority === 'high' ? ' ops-list-task--priority-high' : ''}`}
-      >
-        <div className={`ops-list-task-grid ops-list-task-grid--${task.status}`}>
-          <div className="ops-list-task-main" data-label="Task">
-            <button
-              type="button"
-              className="ops-list-task-title"
-              onClick={() => onOpenTask(task.id)}
-            >
-              {task.title}
-            </button>
-          </div>
-          <div className="ops-list-task-priority" data-label="Priority">
-            <TaskPrioritySelect
-              value={task.priority}
-              disabled={pending}
-              className="ops-list-select"
-              aria-label={`Priority for ${task.title}`}
-              onChange={handlePriorityChange}
-            />
-          </div>
-          <div className="ops-list-task-status" data-label="Status">
-            <TaskStatusSelect
-              value={task.status}
-              disabled={pending}
-              className="ops-list-select"
-              aria-label={`Status for ${task.title}`}
-              onChange={handleStatusChange}
-            />
-          </div>
-          <div className="ops-list-task-assignee" data-label="Assignee">
-            {staff.length > 0 ? (
-              <EditableAssigneeSelect
-                value={task.assigneeId}
-                options={staff}
-                disabled={pending}
-                className="ops-task-assignee"
-                ariaLabel={`Assignee for ${task.title}`}
-                onChange={handleAssigneeChange}
-              />
-            ) : (
-              <span className="ops-list-task-empty">—</span>
-            )}
-          </div>
-          <div className="ops-list-task-actions">
-            {depth === 0 ? (
-              <button
-                type="button"
-                className="ops-list-add-subtask"
-                onClick={() => setAddingSubtask(v => !v)}
-                disabled={pending}
-              >
-                + Subtask
-              </button>
-            ) : null}
-            <button
-              type="button"
-              className="ops-list-task-delete"
-              onClick={() => onDeleteRequest(task)}
-              disabled={pending}
-              aria-label={`Delete ${task.title}`}
-            >
-              <Trash2 size={14} aria-hidden />
-            </button>
-          </div>
-        </div>
-        {addingSubtask ? (
-          <form onSubmit={handleAddSubtask} className="ops-list-inline-form">
-            <input
-              className="btf-input"
-              value={subtaskTitle}
-              onChange={e => setSubtaskTitle(e.target.value)}
-              placeholder="Subtask title"
-              disabled={pending}
-              autoFocus
-            />
-            <button type="submit" className="dash-btn-primary btn-primary" disabled={pending}>
-              Add
-            </button>
-          </form>
-        ) : null}
-      </div>
-      {subtaskCount > 0 ? (
-        <div
-          className={`ops-list-subtasks-wrap${subtasksOpen ? '' : ' ops-list-subtasks-wrap--collapsed'}`}
-        >
-          <button
-            type="button"
-            className="ops-subtasks-toggle ops-subtasks-toggle--list"
-            onClick={() => setSubtasksOpen(v => !v)}
-            aria-expanded={subtasksOpen}
-            aria-label={subtasksOpen ? 'Collapse subtasks' : `Show ${subtaskCount} subtasks`}
-          >
-            <ChevronDown
-              size={14}
-              className={`ops-subtasks-toggle-chevron${subtasksOpen ? '' : ' ops-subtasks-toggle-chevron--collapsed'}`}
-              aria-hidden
-            />
-            <span className="ops-subtasks-toggle-label">
-              {subtasksOpen
-                ? 'Subtasks'
-                : `${subtaskCount} subtask${subtaskCount === 1 ? '' : 's'}`}
-            </span>
-            {!subtasksOpen ? (
-              <span className="ops-subtasks-toggle-meta">
-                {doneSubtasks}/{subtaskCount} done
-              </span>
-            ) : null}
-          </button>
-          {subtasksOpen ? (
-            <div className="ops-list-subtasks">
-              {task.subtasks.map(sub => (
-                <TaskRow
-                  key={sub.id}
-                  task={sub}
-                  phases={phases}
-                  staff={staff}
-                  depth={depth + 1}
-                  pending={pending}
-                  onOpenTask={onOpenTask}
-                  onDeleteRequest={onDeleteRequest}
-                  onRefresh={onRefresh}
-                />
-              ))}
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
-  )
+const PHASE_STATUS_LABELS: Record<PhaseStatus, string> = {
+  pending: 'Pending',
+  in_progress: 'In progress',
+  done: 'Done',
 }
 
 function groupTasksByPhase(tasks: OpsProjectTask[]) {
@@ -403,6 +54,206 @@ function groupTasksByPhase(tasks: OpsProjectTask[]) {
     tasksByPhase.get(key)!.push(task)
   }
   return tasksByPhase
+}
+
+function itemExpandKey(groupId: string, itemId: string) {
+  return `${groupId}:${itemId}`
+}
+
+function taskDueBadge(task: OpsProjectTask) {
+  if (!task.dueDate) return undefined
+  return [{ key: 'due', label: `Due ${formatProjectDate(task.dueDate)}`, tone: 'warn' as const }]
+}
+
+function taskRowTrailing(
+  task: OpsProjectTask,
+  staff: StaffOption[],
+  pending: boolean,
+  onAssignee: (taskId: string, assigneeId: string | null) => void,
+  onPriority: (taskId: string, priority: TaskPriority) => void
+) {
+  return (
+    <div className="ops-agent-plan-row-controls">
+      {staff.length > 0 ? (
+        <EditableAssigneeSelect
+          value={task.assigneeId}
+          options={staff}
+          disabled={pending}
+          className="ops-task-assignee ops-agent-plan-assignee"
+          ariaLabel={`Assignee for ${task.title}`}
+          onChange={assigneeId => onAssignee(task.id, assigneeId)}
+        />
+      ) : null}
+      <select
+        className="btf-input ops-priority-select ops-priority-select--compact ops-agent-plan-priority"
+        value={task.priority}
+        disabled={pending}
+        aria-label={`Priority for ${task.title}`}
+        onChange={e => onPriority(task.id, e.target.value as TaskPriority)}
+      >
+        {(['low', 'normal', 'high'] as const).map(priority => (
+          <option key={priority} value={priority}>
+            {TASK_PRIORITY_LABELS[priority]}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
+function mapTaskToPlanItem(
+  task: OpsProjectTask,
+  staff: StaffOption[],
+  pending: boolean,
+  onDeleteRequest: (task: OpsProjectTask) => void,
+  onAssignee: (taskId: string, assigneeId: string | null) => void,
+  onPriority: (taskId: string, priority: TaskPriority) => void
+): AgentPlanItem {
+  return {
+    id: task.id,
+    title: task.title,
+    description: task.description,
+    status: task.status,
+    statusLabel: TASK_STATUS_LABELS[task.status],
+    badges: taskDueBadge(task),
+    trailing: taskRowTrailing(task, staff, pending, onAssignee, onPriority),
+    actions: (
+      <button
+        type="button"
+        className="ops-agent-plan-action-btn ops-agent-plan-action-btn--danger"
+        onClick={() => onDeleteRequest(task)}
+        disabled={pending}
+        aria-label={`Delete ${task.title}`}
+      >
+        <Trash2 size={13} aria-hidden />
+      </button>
+    ),
+    children: task.subtasks.map(sub => ({
+      id: sub.id,
+      title: sub.title,
+      description: sub.description,
+      status: sub.status,
+      statusLabel: TASK_STATUS_LABELS[sub.status],
+      badges: taskDueBadge(sub),
+      trailing: taskRowTrailing(sub, staff, pending, onAssignee, onPriority),
+      actions: (
+        <button
+          type="button"
+          className="ops-agent-plan-action-btn ops-agent-plan-action-btn--danger"
+          onClick={() => onDeleteRequest(sub)}
+          disabled={pending}
+          aria-label={`Delete ${sub.title}`}
+        >
+          <Trash2 size={13} aria-hidden />
+        </button>
+      ),
+    })),
+  }
+}
+
+function PhaseTitleEditor({
+  title,
+  pending,
+  onRename,
+}: {
+  title: string
+  pending: boolean
+  onRename: (name: string) => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(title)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  function startEditing() {
+    if (pending) return
+    setDraft(title)
+    setEditing(true)
+    requestAnimationFrame(() => inputRef.current?.focus())
+  }
+
+  function commitRename() {
+    const trimmed = draft.trim()
+    if (!trimmed) {
+      setDraft(title)
+      setEditing(false)
+      return
+    }
+    if (trimmed !== title) onRename(trimmed)
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        className="btf-input ops-agent-plan-phase-input"
+        value={draft}
+        disabled={pending}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={commitRename}
+        onKeyDown={e => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            commitRename()
+          }
+          if (e.key === 'Escape') {
+            setDraft(title)
+            setEditing(false)
+          }
+        }}
+        onClick={e => e.stopPropagation()}
+        aria-label="Phase name"
+      />
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      className="ops-agent-plan-phase-edit"
+      onClick={e => {
+        e.stopPropagation()
+        startEditing()
+      }}
+      disabled={pending}
+      aria-label={`Rename phase ${title}`}
+    >
+      <Pencil size={13} aria-hidden />
+    </button>
+  )
+}
+
+function SubtaskAddForm({
+  pending,
+  onAdd,
+}: {
+  pending: boolean
+  onAdd: (title: string) => void
+}) {
+  const [title, setTitle] = useState('')
+
+  return (
+    <form
+      className="ops-agent-plan-inline-form"
+      onSubmit={e => {
+        e.preventDefault()
+        if (!title.trim()) return
+        onAdd(title.trim())
+        setTitle('')
+      }}
+    >
+      <input
+        className="btf-input"
+        value={title}
+        onChange={e => setTitle(e.target.value)}
+        placeholder="Subtask title"
+        disabled={pending}
+      />
+      <button type="submit" className="dash-btn-primary btn-primary" disabled={pending}>
+        Add
+      </button>
+    </form>
+  )
 }
 
 export function ProjectListView({
@@ -422,8 +273,22 @@ export function ProjectListView({
 }) {
   const [pending, startTransition] = useTransition()
   const [collapsedPhases, setCollapsedPhases] = useState<Set<string>>(() => new Set())
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
+  const [addingSubtaskFor, setAddingSubtaskFor] = useState<string | null>(null)
   const [phaseToDelete, setPhaseToDelete] = useState<{ id: string; name: string } | null>(null)
   const [taskToDelete, setTaskToDelete] = useState<OpsProjectTask | null>(null)
+
+  const progressByPhase = groupTasksByPhase(project.tasks)
+  const displayByPhase = groupTasksByPhase(visibleTasks ?? project.tasks)
+
+  const expandedGroups = useMemo(
+    () =>
+      [
+        ...project.phases.map(p => p.id),
+        ...(progressByPhase.get(null)?.length ? ['__unassigned__'] : []),
+      ].filter(id => !collapsedPhases.has(id)),
+    [project.phases, progressByPhase, collapsedPhases]
+  )
 
   function togglePhase(phaseId: string) {
     setCollapsedPhases(prev => {
@@ -434,8 +299,50 @@ export function ProjectListView({
     })
   }
 
-  const progressByPhase = groupTasksByPhase(project.tasks)
-  const displayByPhase = groupTasksByPhase(visibleTasks ?? project.tasks)
+  function toggleItemExpand(groupId: string, itemId: string) {
+    setExpandedItems(prev => {
+      const key = itemExpandKey(groupId, itemId)
+      return { ...prev, [key]: !prev[key] }
+    })
+  }
+
+  function updateTaskStatus(taskId: string, status: TaskStatus) {
+    runWithToast(() => updateTask(taskId, { status }), {
+      loading: 'Updating…',
+      success: 'Task updated',
+    }).then(() => onRefresh())
+  }
+
+  function updateTaskPriority(taskId: string, priority: TaskPriority) {
+    runWithToast(() => updateTask(taskId, { priority }), {
+      loading: 'Updating priority…',
+      success: 'Priority updated',
+    }).then(() => onRefresh())
+  }
+
+  function updateTaskAssignee(taskId: string, assigneeId: string | null) {
+    runWithToast(() => updateTask(taskId, { assigneeId }), {
+      loading: 'Updating assignee…',
+      success: assigneeId
+        ? `Assigned to ${staff.find(s => s.id === assigneeId)?.name ?? 'teammate'}`
+        : 'Assignee cleared',
+    }).then(() => onRefresh())
+  }
+
+  function handleStatusClick(groupId: string, itemId: string, childId?: string) {
+    const phaseTasks = displayByPhase.get(groupId === '__unassigned__' ? null : groupId) ?? []
+    const parent = phaseTasks.find(task => task.id === itemId)
+    if (!parent) return
+
+    if (childId) {
+      const child = parent.subtasks.find(sub => sub.id === childId)
+      if (!child) return
+      updateTaskStatus(child.id, nextTaskStatus(child.status))
+      return
+    }
+
+    updateTaskStatus(parent.id, nextTaskStatus(parent.status))
+  }
 
   function handlePhaseStatus(phaseId: string, status: PhaseStatus) {
     startTransition(async () => {
@@ -483,81 +390,148 @@ export function ProjectListView({
     })
   }
 
-  const unphasedDisplay = displayByPhase.get(null) ?? []
-  const unphasedProgress = progressByPhase.get(null) ?? []
+  function buildGroup(
+    phaseId: string,
+    title: string,
+    toneIndex: number,
+    phase?: OpsProjectPhase
+  ): AgentPlanGroup | null {
+    const phaseTasks = displayByPhase.get(phaseId === '__unassigned__' ? null : phaseId) ?? []
+    const progressTasks = progressByPhase.get(phaseId === '__unassigned__' ? null : phaseId) ?? []
+    if (hideEmptyPhases && phaseTasks.length === 0) return null
+
+    const doneCount = progressTasks.filter(t => t.status === 'done').length
+    const canManage = Boolean(phase)
+
+    return {
+      id: phaseId,
+      title,
+      statusLabel: phase ? PHASE_STATUS_LABELS[phase.status] : undefined,
+      statusTone: phase?.status,
+      progress: { done: doneCount, total: progressTasks.length },
+      headerExtra: (
+        <div className="ops-agent-plan-phase-tools">
+          {phase ? (
+            <>
+              <PhaseTitleEditor
+                title={title}
+                pending={pending}
+                onRename={name => handlePhaseRename(phase.id, name)}
+              />
+              {progressTasks.length === 0 ? (
+                <button
+                  type="button"
+                  className="ops-agent-plan-action-btn ops-agent-plan-action-btn--danger"
+                  onClick={() => setPhaseToDelete({ id: phase.id, name: phase.name })}
+                  disabled={pending}
+                  aria-label={`Delete phase ${phase.name}`}
+                >
+                  <Trash2 size={13} aria-hidden />
+                </button>
+              ) : null}
+              <PhaseStatusSelect
+                value={phase.status}
+                disabled={pending}
+                className="ops-list-select"
+                aria-label={`Status for phase ${phase.name}`}
+                onChange={status => handlePhaseStatus(phase.id, status)}
+              />
+            </>
+          ) : null}
+          <span
+            className={`ops-agent-plan-tone ops-agent-plan-tone--${toneIndex % PHASE_TONE_COUNT}`}
+            aria-hidden
+          />
+        </div>
+      ),
+      emptyLabel:
+        progressTasks.length === 0 ? 'No tasks in this phase' : 'No tasks match the current filters',
+      items: phaseTasks.map(task => {
+        const planItem = mapTaskToPlanItem(
+          task,
+          staff,
+          pending,
+          setTaskToDelete,
+          updateTaskAssignee,
+          updateTaskPriority
+        )
+        return {
+          ...planItem,
+          footer: (
+            <div className="ops-agent-plan-item-footer">
+              <button
+                type="button"
+                className="ops-agent-plan-add-subtask"
+                onClick={() =>
+                  setAddingSubtaskFor(current => (current === task.id ? null : task.id))
+                }
+                disabled={pending}
+              >
+                + Subtask
+              </button>
+              {addingSubtaskFor === task.id ? (
+                <SubtaskAddForm
+                  pending={pending}
+                  onAdd={subtaskTitle => {
+                    runWithToast(
+                      () =>
+                        createTask({
+                          projectId: task.projectId,
+                          phaseId: task.phaseId,
+                          parentId: task.id,
+                          title: subtaskTitle,
+                        }),
+                      { loading: 'Adding subtask…', success: 'Subtask added' }
+                    ).then(() => {
+                      setAddingSubtaskFor(null)
+                      onRefresh()
+                    })
+                  }}
+                />
+              ) : null}
+            </div>
+          ),
+        }
+      }),
+    }
+  }
+
+  const groups = useMemo(() => {
+    const built: AgentPlanGroup[] = []
+    project.phases.forEach((phase, index) => {
+      const group = buildGroup(phase.id, phase.name, index, phase)
+      if (group) built.push(group)
+    })
+
+    const unphasedProgress = progressByPhase.get(null) ?? []
+    const unphasedDisplay = displayByPhase.get(null) ?? []
+    if (unphasedProgress.length > 0 || unphasedDisplay.length > 0) {
+      const group = buildGroup('__unassigned__', 'Unassigned', PHASE_TONE_COUNT)
+      if (group) built.push(group)
+    }
+    return built
+  }, [
+    project.phases,
+    displayByPhase,
+    progressByPhase,
+    hideEmptyPhases,
+    pending,
+    staff,
+    addingSubtaskFor,
+  ])
 
   return (
-    <div className="ops-list-view">
-      {project.phases.map((phase, index) => {
-        const phaseTasks = displayByPhase.get(phase.id) ?? []
-        const progressTasks = progressByPhase.get(phase.id) ?? []
-        if (hideEmptyPhases && phaseTasks.length === 0) return null
-        const doneCount = progressTasks.filter(t => t.status === 'done').length
-        return (
-          <PhaseSection
-            key={phase.id}
-            phaseId={phase.id}
-            title={phase.name}
-            toneIndex={index}
-            status={phase.status}
-            taskCount={progressTasks.length}
-            doneCount={doneCount}
-            collapsed={collapsedPhases.has(phase.id)}
-            onToggle={togglePhase}
-            onStatusChange={status => handlePhaseStatus(phase.id, status)}
-            onRename={name => handlePhaseRename(phase.id, name)}
-            onDelete={() => setPhaseToDelete({ id: phase.id, name: phase.name })}
-            pending={pending}
-          >
-            {phaseTasks.length === 0 ? (
-              progressTasks.length === 0 ? (
-                <p className="ops-list-empty">No tasks in this phase</p>
-              ) : null
-            ) : (
-              phaseTasks.map(task => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  phases={project.phases}
-                  staff={staff}
-                  depth={0}
-                  pending={pending}
-                  onOpenTask={onOpenTask}
-                  onDeleteRequest={setTaskToDelete}
-                  onRefresh={onRefresh}
-                />
-              ))
-            )}
-          </PhaseSection>
-        )
-      })}
-
-      {unphasedProgress.length > 0 || unphasedDisplay.length > 0 ? (
-        <PhaseSection
-          phaseId="__unassigned__"
-          title="Unassigned"
-          toneIndex={PHASE_TONE_COUNT}
-          taskCount={unphasedProgress.length}
-          doneCount={unphasedProgress.filter(t => t.status === 'done').length}
-          collapsed={collapsedPhases.has('__unassigned__')}
-          onToggle={togglePhase}
-          pending={pending}
-        >
-          {unphasedDisplay.map(task => (
-            <TaskRow
-              key={task.id}
-              task={task}
-              phases={project.phases}
-              staff={staff}
-              depth={0}
-              pending={pending}
-              onOpenTask={onOpenTask}
-              onDeleteRequest={setTaskToDelete}
-              onRefresh={onRefresh}
-            />
-          ))}
-        </PhaseSection>
-      ) : null}
+    <div className="ops-list-view ops-list-view--agent-plan">
+      <AgentPlan
+        groups={groups}
+        expandedGroups={expandedGroups}
+        onToggleGroup={togglePhase}
+        expandedItems={expandedItems}
+        onToggleItem={(groupId, itemId) => toggleItemExpand(groupId, itemId)}
+        onStatusClick={handleStatusClick}
+        onItemOpen={onOpenTask}
+        disabled={pending}
+      />
 
       <ConfirmDeleteModal
         open={Boolean(taskToDelete)}

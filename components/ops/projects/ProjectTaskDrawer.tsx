@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
+import { createPortal } from 'react-dom'
 import { ChevronDown, Plus, X } from 'lucide-react'
 import { listProjectFiles } from '@/app/actions/project-attachments'
 import { createTask, deleteTask, updateTask } from '@/app/actions/projects'
@@ -156,9 +157,14 @@ export function ProjectTaskDrawer({
   const [fileCount, setFileCount] = useState(0)
   const [syncedRevision, setSyncedRevision] = useState('')
   const [mounted, setMounted] = useState(open)
+  const [portalReady, setPortalReady] = useState(false)
   const [closing, setClosing] = useState(false)
   const [cachedTask, setCachedTask] = useState<OpsProjectTask | null>(task)
   const [confirmDelete, setConfirmDelete] = useState(false)
+
+  useEffect(() => {
+    setPortalReady(true)
+  }, [])
 
   if (open && task) {
     if (!mounted) setMounted(true)
@@ -228,7 +234,7 @@ export function ProjectTaskDrawer({
     }
   }, [mounted])
 
-  if (!mounted || !drawerTask) return null
+  if (!mounted || !drawerTask || !portalReady) return null
 
   const activeTask: OpsProjectTask = drawerTask
   const parentTask = findParentProjectTask(project.tasks, activeTask.id)
@@ -306,13 +312,14 @@ export function ProjectTaskDrawer({
     })
   }
 
-  return (
-    <div
-      className={`ops-task-drawer-root${closing ? ' ops-task-drawer-root--closing' : ''}`}
-      onMouseDown={event => {
-        if (event.target === event.currentTarget) onClose()
-      }}
-    >
+  const drawer = (
+    <div data-theme="dashboard" className="ops-task-drawer-portal">
+      <div
+        className={`ops-task-drawer-root${closing ? ' ops-task-drawer-root--closing' : ''}`}
+        onMouseDown={event => {
+          if (event.target === event.currentTarget) onClose()
+        }}
+      >
       <aside
         className={`ops-task-drawer${closing ? ' ops-task-drawer--closing' : ''}`}
         role="dialog"
@@ -625,6 +632,9 @@ export function ProjectTaskDrawer({
         pending={pending}
         onConfirm={handleDelete}
       />
+      </div>
     </div>
   )
+
+  return createPortal(drawer, document.body)
 }
