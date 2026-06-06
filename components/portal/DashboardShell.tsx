@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
+import { useSidebarOpen } from '@/lib/ui/use-sidebar-open'
 import { PortalOnboarding } from './PortalOnboarding'
 import { PortalSidebar } from './Sidebar'
 import { PortalTopBar } from './TopBar'
@@ -23,11 +24,11 @@ export function PortalDashboardShell({
 }: PortalShellProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { sidebarOpen, toggleSidebar, closeSidebar } = useSidebarOpen()
   const [tourRunId, setTourRunId] = useState(0)
 
   const startTour = useCallback(() => {
-    setSidebarOpen(false)
+    closeSidebar()
     const bumpTour = () => setTourRunId(id => id + 1)
 
     if (pathname !== '/portal/tickets') {
@@ -36,7 +37,7 @@ export function PortalDashboardShell({
       return
     }
     bumpTour()
-  }, [pathname, router])
+  }, [closeSidebar, pathname, router])
 
   return (
     <div data-theme="dashboard" className="flex flex-col h-screen overflow-hidden dash-shell">
@@ -44,23 +45,22 @@ export function PortalDashboardShell({
         userName={userName}
         userEmail={userEmail}
         menuOpen={sidebarOpen}
-        onMenuClick={() => setSidebarOpen(open => !open)}
+        onMenuClick={toggleSidebar}
       />
 
       <div className="flex flex-1 overflow-hidden">
-        {sidebarOpen && (
+        {sidebarOpen ? (
           <div
-            className="fixed inset-0 z-20 lg:hidden bg-black/60"
-            onClick={() => setSidebarOpen(false)}
+            className="dash-sidebar-backdrop fixed inset-0 z-20 bg-black/60"
+            onClick={closeSidebar}
+            aria-hidden
           />
-        )}
-        <div
-          className={`fixed inset-y-0 left-0 z-30 lg:static lg:z-auto transform transition-transform duration-200 ease-out lg:transform-none ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
-        >
+        ) : null}
+        <div className={`dash-sidebar-wrap${sidebarOpen ? ' is-open' : ' is-collapsed'}`}>
           <PortalSidebar
             userName={userName}
             userEmail={userEmail}
-            onClose={() => setSidebarOpen(false)}
+            onClose={closeSidebar}
             onShowTour={startTour}
           />
         </div>

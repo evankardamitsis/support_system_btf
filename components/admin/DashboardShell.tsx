@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
 import { ResolveCelebrationProvider } from '@/components/admin/ResolveCelebrationProvider'
+import { useSidebarOpen } from '@/lib/ui/use-sidebar-open'
 import { AdminSidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 
@@ -13,7 +13,7 @@ interface DashboardShellProps {
 }
 
 export function DashboardShell({ children, userName, userEmail, userRole }: DashboardShellProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { sidebarOpen, toggleSidebar, closeSidebar } = useSidebarOpen()
 
   return (
     <ResolveCelebrationProvider>
@@ -23,28 +23,25 @@ export function DashboardShell({ children, userName, userEmail, userRole }: Dash
         userEmail={userEmail}
         userRole={userRole}
         menuOpen={sidebarOpen}
-        onMenuClick={() => setSidebarOpen(open => !open)}
+        onMenuClick={toggleSidebar}
       />
 
       <div className="flex flex-1 overflow-hidden">
-        {sidebarOpen && (
+        {sidebarOpen ? (
           <div
-            className="fixed inset-0 z-20 lg:hidden bg-black/60"
-            onClick={() => setSidebarOpen(false)}
+            className="dash-sidebar-backdrop fixed inset-0 z-20 bg-black/60"
+            onClick={closeSidebar}
+            aria-hidden
           />
-        )}
+        ) : null}
         <div
-          className={`
-          fixed inset-y-0 left-0 z-30 lg:static lg:z-auto
-          transform transition-transform duration-200 ease-out lg:transform-none
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        `}
+          className={`dash-sidebar-wrap${sidebarOpen ? ' is-open' : ' is-collapsed'}`}
         >
           <AdminSidebar
             userName={userName}
             userEmail={userEmail}
             userRole={userRole}
-            onClose={() => setSidebarOpen(false)}
+            onClose={closeSidebar}
           />
         </div>
 

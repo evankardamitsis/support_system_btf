@@ -637,6 +637,8 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   --ops-accent-hold: #fbbf24;
   --ops-accent-active: #86efac;
   --ops-accent-completed: #93c5fd;
+  --ops-progress-label: #c4b5fd;
+  --ops-progress-copy: #ddd6fe;
 }
 
 @media (min-width: 1280px) {
@@ -1271,9 +1273,16 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   overflow-wrap: anywhere;
 }
 
-[data-theme="dashboard"] .financial-offers-compact-top,
-[data-theme="dashboard"] .financial-offers-compact-aside {
+[data-theme="dashboard"] .financial-offers-row-aside {
   display: none;
+}
+
+[data-theme="dashboard"] .financial-offers-cell-primary .financial-offers-cell-email-meta {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  color: var(--text-3);
 }
 
 [data-theme="dashboard"] .company-iban-card,
@@ -1338,6 +1347,21 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   font-family: var(--font-dm-mono);
   border-bottom: 1px solid var(--ops-border-soft, var(--border));
   background: var(--ops-surface, color-mix(in srgb, var(--dash-chrome) 80%, transparent));
+}
+
+[data-theme="dashboard"] .ops-projects-grid-head .ops-progress-label {
+  font-size: 0.6875rem;
+}
+
+[data-theme="dashboard"] .ops-projects-cell-progress {
+  color: var(--ops-progress-copy, #ddd6fe);
+  font-family: var(--font-dm-mono);
+  font-size: 0.8125rem;
+}
+
+[data-theme="dashboard"] .ops-projects-cell-progress .dash-meta {
+  color: var(--ops-progress-label, #c4b5fd);
+  font-weight: 600;
 }
 
 [data-theme="dashboard"] .ops-projects-row {
@@ -2302,15 +2326,6 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   font-size: 0.625rem;
 }
 
-[data-theme="dashboard"] .ops-project-head--expanded .ops-project-stat--progress .ops-project-stat-value {
-  font-size: 1.25rem;
-  color: #c4b5fd;
-}
-
-[data-theme="dashboard"] .ops-project-head--collapsed .ops-project-stat--progress .ops-project-stat-value {
-  color: #c4b5fd;
-}
-
 [data-theme="dashboard"] .ops-project-head--expanded .ops-project-cost-input {
   width: 8rem;
   font-size: 1rem;
@@ -2402,7 +2417,7 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 }
 
 [data-theme="dashboard"] .ops-project-head--collapsed .ops-project-add-btn,
-[data-theme="dashboard"] .ops-project-head--collapsed .ops-project-delete-btn {
+[data-theme="dashboard"] .ops-project-head--collapsed .ops-project-actions-btn {
   font-size: 0.75rem;
   padding: 0.35rem 0.6rem;
 }
@@ -2412,19 +2427,73 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   font-size: 0.75rem;
 }
 
-[data-theme="dashboard"] .ops-project-delete-btn {
-  font-size: 0.8125rem;
-  padding: 0.4rem 0.75rem;
-  border: 1px solid color-mix(in srgb, #f87171 35%, var(--border));
-  background: transparent;
-  color: #f87171;
-  cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease;
+[data-theme="dashboard"] .ops-project-actions-menu {
+  position: relative;
+  flex-shrink: 0;
 }
 
-[data-theme="dashboard"] .ops-project-delete-btn:hover:not(:disabled) {
-  background: color-mix(in srgb, #ef4444 10%, transparent);
-  border-color: color-mix(in srgb, #f87171 50%, var(--border));
+[data-theme="dashboard"] .ops-project-actions-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+[data-theme="dashboard"] .ops-project-actions-btn:hover:not(:disabled),
+[data-theme="dashboard"] .ops-project-actions-btn--open {
+  color: #c4b5fd;
+  border-color: color-mix(in srgb, #8b5cf6 40%, var(--border));
+  background: color-mix(in srgb, #8b5cf6 8%, transparent);
+}
+
+[data-theme="dashboard"] .ops-project-actions-dropdown {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 30;
+  min-width: 10.5rem;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--popover, var(--dash-chrome));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28), 0 2px 6px rgba(0, 0, 0, 0.16);
+}
+
+[data-theme="dashboard"] .ops-project-actions-item {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: none;
+  border-radius: 0.35rem;
+  background: transparent;
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+[data-theme="dashboard"] .ops-project-actions-item--complete {
+  color: #86efac;
+}
+
+[data-theme="dashboard"] .ops-project-actions-item--complete:hover:not(:disabled) {
+  background: color-mix(in srgb, #22c55e 12%, transparent);
+  color: #bbf7d0;
+}
+
+[data-theme="dashboard"] .ops-project-actions-item--danger {
+  color: #f87171;
+}
+
+[data-theme="dashboard"] .ops-project-actions-item--danger:hover:not(:disabled) {
+  background: color-mix(in srgb, #ef4444 12%, transparent);
+  color: #fca5a5;
 }
 
 @media (max-width: 1024px) {
@@ -2445,7 +2514,7 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
     justify-content: flex-start;
   }
 
-  /* Collapsed header — one compact row: toggle · title · status · progress · view */
+  /* Collapsed header — one compact row: toggle · title · status · view */
   [data-theme="dashboard"] .ops-project-head--collapsed {
     padding: 0.5rem 0.625rem;
   }
@@ -2510,26 +2579,7 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   }
 
   [data-theme="dashboard"] .ops-project-head--collapsed .ops-project-stats {
-    flex: 0 0 auto;
-    gap: 0;
-  }
-
-  [data-theme="dashboard"] .ops-project-head--collapsed .ops-project-stat:not(.ops-project-stat--progress) {
     display: none;
-  }
-
-  [data-theme="dashboard"] .ops-project-head--collapsed .ops-project-stat--progress {
-    flex-shrink: 0;
-  }
-
-  [data-theme="dashboard"] .ops-project-head--collapsed .ops-project-stat--progress dt,
-  [data-theme="dashboard"] .ops-project-head--collapsed .ops-project-stat--progress .ops-project-stat-hint {
-    display: none;
-  }
-
-  [data-theme="dashboard"] .ops-project-head--collapsed .ops-project-stat--progress .ops-project-stat-value {
-    font-size: 0.75rem;
-    color: #c4b5fd;
   }
 
   [data-theme="dashboard"] .ops-project-head--collapsed .ops-project-toolbar {
@@ -2554,18 +2604,16 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
     gap: 0;
   }
 
-  [data-theme="dashboard"] .ops-project-head--collapsed .ops-project-delete-btn {
-    display: none;
-  }
-
-  [data-theme="dashboard"] .ops-project-head--collapsed .ops-project-add-btn {
+  [data-theme="dashboard"] .ops-project-head--collapsed .ops-project-add-btn,
+  [data-theme="dashboard"] .ops-project-head--collapsed .ops-project-actions-btn {
     padding: 0.35rem;
     min-width: 1.75rem;
     min-height: 1.75rem;
     justify-content: center;
   }
 
-  [data-theme="dashboard"] .ops-project-head--collapsed .ops-project-add-btn-label {
+  [data-theme="dashboard"] .ops-project-head--collapsed .ops-project-add-btn-label,
+  [data-theme="dashboard"] .ops-project-head--collapsed .ops-project-actions-label {
     display: none;
   }
 
@@ -2579,15 +2627,148 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   }
 }
 
+[data-theme="dashboard"] .ops-project-toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
 [data-theme="dashboard"] .ops-project-filters {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 [data-theme="dashboard"] .ops-project-filter-select {
   font-size: 0.8125rem;
   min-width: 11rem;
   padding: 0.35rem 0.5rem;
+}
+
+[data-theme="dashboard"] .ops-project-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+[data-theme="dashboard"] .ops-progress-label {
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ops-progress-label, #c4b5fd);
+  font-family: var(--font-dm-mono);
+  font-weight: 500;
+}
+
+[data-theme="dashboard"] .ops-progress-copy {
+  color: var(--ops-progress-copy, #ddd6fe);
+  font-family: var(--font-dm-mono);
+}
+
+[data-theme="dashboard"] .ops-progress-pct {
+  color: var(--ops-progress-label, #c4b5fd);
+  font-weight: 600;
+}
+
+[data-theme="dashboard"] .ops-project-progress-label {
+  flex-shrink: 0;
+}
+
+[data-theme="dashboard"] .ops-project-progress-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 10rem;
+  height: 1.75rem;
+  min-width: 8rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border) 75%, transparent);
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+[data-theme="dashboard"] .ops-project-progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  height: 100%;
+  border-radius: 999px;
+  z-index: 0;
+  background: linear-gradient(
+    90deg,
+    #6d28d9 0%,
+    #8b5cf6 45%,
+    #c4b5fd 55%,
+    #8b5cf6 100%
+  );
+  background-size: 200% 100%;
+  box-shadow: 0 0 10px color-mix(in srgb, #8b5cf6 55%, transparent);
+  transition: width 650ms cubic-bezier(0.4, 0, 0.2, 1);
+  animation: ops-project-progress-shine 2.8s ease-in-out infinite;
+}
+
+@keyframes ops-project-progress-shine {
+  0%,
+  100% {
+    background-position: 100% 0;
+  }
+
+  50% {
+    background-position: 0% 0;
+  }
+}
+
+[data-theme="dashboard"] .ops-project-progress-meta {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0 0.65rem;
+  white-space: nowrap;
+  pointer-events: none;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.55),
+    0 0 8px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dashboard"] .ops-project-progress-meta-sep {
+  color: color-mix(in srgb, var(--ops-progress-copy, #ddd6fe) 65%, transparent);
+  font-size: 0.75rem;
+}
+
+[data-theme="dashboard"] .ops-project-progress-pct {
+  font-size: 0.8125rem;
+  line-height: 1;
+}
+
+[data-theme="dashboard"] .ops-project-progress-tasks {
+  font-size: 0.6875rem;
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  [data-theme="dashboard"] .ops-project-toolbar-row {
+    gap: 0.65rem;
+  }
+
+  [data-theme="dashboard"] .ops-project-progress {
+    flex: 1 1 100%;
+    gap: 0.5rem;
+  }
+
+  [data-theme="dashboard"] .ops-project-progress-label {
+    width: 3.75rem;
+  }
+
+  [data-theme="dashboard"] .ops-project-progress-bar {
+    min-width: 0;
+  }
 }
 
 [data-theme="dashboard"] .ops-project-view-toggle {
@@ -3185,9 +3366,10 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 }
 
 [data-theme="dashboard"] .ops-list-phase-progress-label {
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   font-family: var(--font-dm-mono);
-  color: var(--text-3);
+  font-weight: 500;
+  color: var(--ops-progress-copy, #ddd6fe);
   white-space: nowrap;
 }
 
@@ -3572,7 +3754,7 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 }
 
 [data-theme="dashboard"] .dash-menu-toggle-btn {
-  display: none;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
@@ -3591,9 +3773,41 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
     color 180ms ease;
 }
 
-@media (max-width: 1023px) {
-  [data-theme="dashboard"] .dash-menu-toggle-btn {
-    display: inline-flex;
+[data-theme="dashboard"] .dash-sidebar-wrap {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 30;
+  width: 220px;
+  transform: translateX(-100%);
+  transition:
+    transform 200ms ease-out,
+    width 200ms ease-out;
+}
+
+[data-theme="dashboard"] .dash-sidebar-wrap.is-open {
+  transform: translateX(0);
+}
+
+[data-theme="dashboard"] .dash-sidebar-backdrop {
+  display: block;
+}
+
+@media (min-width: 1024px) {
+  [data-theme="dashboard"] .dash-sidebar-wrap {
+    position: static;
+    z-index: auto;
+    flex-shrink: 0;
+    transform: none;
+    width: 220px;
+  }
+
+  [data-theme="dashboard"] .dash-sidebar-wrap.is-collapsed {
+    width: 0;
+    overflow: hidden;
+  }
+
+  [data-theme="dashboard"] .dash-sidebar-backdrop {
+    display: none;
   }
 }
 
@@ -5655,7 +5869,7 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
     min-width: 0;
   }
 
-  [data-theme="dashboard"] .financial-offers-compact-top {
+  [data-theme="dashboard"] .financial-offers-primary-line {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -5663,7 +5877,7 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
     min-width: 0;
   }
 
-  [data-theme="dashboard"] .financial-offers-compact-aside {
+  [data-theme="dashboard"] .financial-offers-row-aside {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -5706,7 +5920,6 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
     flex: 1 1 auto;
   }
 
-  [data-theme="dashboard"] .financial-offers-cell-primary .ops-card-meta,
   [data-theme="dashboard"] .financial-offers-cell-meta,
   [data-theme="dashboard"] .financial-offers-cell-email-meta {
     display: none;
@@ -6084,7 +6297,11 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
     grid-row: 2;
     grid-column: 2;
     font-size: 0.6875rem;
-    color: var(--text-2);
+    color: var(--ops-progress-copy, #ddd6fe);
+  }
+
+  [data-theme="dashboard"] .ops-projects-cell-progress .dash-meta {
+    color: var(--ops-progress-label, #c4b5fd);
   }
 
   [data-theme="dashboard"] .ops-projects-cell-cost {

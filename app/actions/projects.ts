@@ -202,6 +202,48 @@ export async function updateProjectStatus(projectId: string, status: ProjectStat
   revalidateProjectPaths(projectId)
 }
 
+export async function completeProject(projectId: string) {
+  const { supabase } = await requireAdminPage()
+
+  const { data: project } = await supabase
+    .from('ops_projects')
+    .select('id, status')
+    .eq('id', projectId)
+    .is('deleted_at', null)
+    .single()
+
+  if (!project) throw new Error('Project not found')
+  if (project.status === 'completed') throw new Error('Project is already completed')
+  if (project.status === 'archived') throw new Error('Archived projects cannot be completed')
+
+  const now = new Date().toISOString()
+
+  const { error: tasksError } = await supabase
+    .from('ops_project_tasks')
+    .update({ status: 'done', updated_at: now })
+    .eq('project_id', projectId)
+    .neq('status', 'done')
+
+  if (tasksError) throw new Error(tasksError.message)
+
+  const { error: phasesError } = await supabase
+    .from('ops_project_phases')
+    .update({ status: 'done' })
+    .eq('project_id', projectId)
+    .neq('status', 'done')
+
+  if (phasesError) throw new Error(phasesError.message)
+
+  const { error: projectError } = await supabase
+    .from('ops_projects')
+    .update({ status: 'completed', updated_at: now })
+    .eq('id', projectId)
+
+  if (projectError) throw new Error(projectError.message)
+
+  revalidateProjectPaths(projectId)
+}
+
 export async function deleteProject(projectId: string) {
   const { supabase, user } = await requireAdminPage()
   const { error } = await supabase

@@ -2,9 +2,14 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useMemo, useState, useTransition } from 'react'
-import { ChevronDown, Plus } from 'lucide-react'
-import { deleteProject, updateProjectCost, updateProjectStatus } from '@/app/actions/projects'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { ChevronDown, Ellipsis, Plus } from 'lucide-react'
+import {
+  completeProject,
+  deleteProject,
+  updateProjectCost,
+  updateProjectStatus,
+} from '@/app/actions/projects'
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import { ProjectAddPanel } from '@/components/ops/projects/ProjectAddPanel'
 import { ProjectKanban } from '@/components/ops/projects/ProjectKanban'
@@ -35,19 +40,20 @@ export function ProjectDetail({
   staff: StaffOption[]
 }) {
   const router = useRouter()
-  const [view, setView] = useState<'kanban' | 'list'>('list')
+  const [view, setView] = useState<'kanban' | 'list'>(() =>
+    typeof window !== 'undefined' && window.matchMedia('(min-width: 1025px)').matches
+      ? 'kanban'
+      : 'list'
+  )
   const [assigneeFilter, setAssigneeFilter] = useState<AssigneeFilter>('all')
   const [headerExpanded, setHeaderExpanded] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
-
-  useEffect(() => {
-    if (window.matchMedia('(min-width: 1025px)').matches) {
-      setHeaderExpanded(true)
-      setView('kanban')
-    }
-  }, [])
   const [pending, startTransition] = useTransition()
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmComplete, setConfirmComplete] = useState(false)
+  const [actionsOpen, setActionsOpen] = useState(false)
+  const actionsRef = useRef<HTMLDivElement>(null)
+  const canComplete = project.status === 'active' || project.status === 'on_hold'
   const [costInput, setCostInput] = useState(
     project.costAmount != null ? String(project.costAmount) : ''
   )
@@ -71,6 +77,17 @@ export function ProjectDetail({
     () => ({ ...project, tasks: filteredTasks }),
     [project, filteredTasks]
   )
+
+  useEffect(() => {
+    if (!actionsOpen) return
+    const handlePointer = (event: MouseEvent) => {
+      if (actionsRef.current && !actionsRef.current.contains(event.target as Node)) {
+        setActionsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handlePointer)
+    return () => document.removeEventListener('mousedown', handlePointer)
+  }, [actionsOpen])
 
   function handleStatusChange(status: ProjectStatus) {
     startTransition(async () => {
@@ -117,6 +134,18 @@ export function ProjectDetail({
       if (ok === null) return
       setConfirmDelete(false)
       router.push('/admin/ops/projects')
+    })
+  }
+
+  function handleComplete() {
+    startTransition(async () => {
+      const ok = await runWithToast(() => completeProject(project.id), {
+        loading: 'Completing project…',
+        success: 'Project marked as completed',
+      })
+      if (ok === null) return
+      setConfirmComplete(false)
+      router.refresh()
     })
   }
 
@@ -244,16 +273,6 @@ export function ProjectDetail({
                   </time>
                 </dd>
               </div>
-
-              <div className="ops-project-stat ops-project-stat--progress">
-                <dt>Progress</dt>
-                <dd>
-                  <span className="ops-project-stat-value tabular-nums">{pct}%</span>
-                  <span className="ops-project-stat-hint">
-                    {project.doneTaskCount}/{project.taskCount} tasks
-                  </span>
-                </dd>
-              </div>
             </dl>
           </div>
 
@@ -311,14 +330,50 @@ export function ProjectDetail({
                 <Plus size={15} aria-hidden />
                 <span className="ops-project-add-btn-label">Add task</span>
               </button>
-              <button
-                type="button"
-                className="ops-project-delete-btn"
-                onClick={() => setConfirmDelete(true)}
-                disabled={pending}
-              >
-                Delete
-              </button>
+              <div className="ops-project-actions-menu" ref={actionsRef}>
+                <button
+                  type="button"
+                  className={`ops-project-actions-btn${actionsOpen ? ' ops-project-actions-btn--open' : ''}`}
+                  onClick={() => setActionsOpen(open => !open)}
+                  disabled={pending}
+                  aria-haspopup="menu"
+                  aria-expanded={actionsOpen}
+                  aria-label="Project actions"
+                >
+                  <Ellipsis size={15} aria-hidden />
+                  <span className="ops-project-actions-label">Actions</span>
+                </button>
+                {actionsOpen ? (
+                  <div className="ops-project-actions-dropdown" role="menu">
+                    {canComplete ? (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="ops-project-actions-item ops-project-actions-item--complete"
+                        disabled={pending}
+                        onClick={() => {
+                          setActionsOpen(false)
+                          setConfirmComplete(true)
+                        }}
+                      >
+                        Complete project
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="ops-project-actions-item ops-project-actions-item--danger"
+                      disabled={pending}
+                      onClick={() => {
+                        setActionsOpen(false)
+                        setConfirmDelete(true)
+                      }}
+                    >
+                      Delete project
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
@@ -332,24 +387,49 @@ export function ProjectDetail({
         onRefresh={() => router.refresh()}
       />
 
-      {staff.length > 0 ? (
-        <div className="ops-project-filters">
-          <select
-            className="btf-input ops-project-filter-select"
-            value={assigneeFilter}
-            onChange={e => setAssigneeFilter(e.target.value)}
-            aria-label="Filter tasks by assignee"
+      <div className="ops-project-toolbar-row">
+        {staff.length > 0 ? (
+          <div className="ops-project-filters">
+            <select
+              className="btf-input ops-project-filter-select"
+              value={assigneeFilter}
+              onChange={e => setAssigneeFilter(e.target.value)}
+              aria-label="Filter tasks by assignee"
+            >
+              <option value="all">All assignees</option>
+              <option value="unassigned">Unassigned</option>
+              {staff.map(member => (
+                <option key={member.id} value={member.id}>
+                  {member.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
+
+        <div className="ops-project-progress">
+          <span className="ops-progress-label ops-project-progress-label">Progress</span>
+          <div
+            className="ops-project-progress-bar"
+            role="progressbar"
+            aria-valuenow={pct}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`${pct}% complete, ${project.doneTaskCount} of ${project.taskCount} tasks done`}
           >
-            <option value="all">All assignees</option>
-            <option value="unassigned">Unassigned</option>
-            {staff.map(member => (
-              <option key={member.id} value={member.id}>
-                {member.name}
-              </option>
-            ))}
-          </select>
+            <div className="ops-project-progress-fill" style={{ width: `${pct}%` }} />
+            <p className="ops-project-progress-meta tabular-nums" aria-live="polite">
+              <span className="ops-progress-pct ops-project-progress-pct">{pct}%</span>
+              <span className="ops-project-progress-meta-sep" aria-hidden>
+                ·
+              </span>
+              <span className="ops-progress-copy ops-project-progress-tasks">
+                {project.doneTaskCount}/{project.taskCount} tasks
+              </span>
+            </p>
+          </div>
         </div>
-      ) : null}
+      </div>
 
       {assigneeFilter !== 'all' && filteredTasks.length === 0 ? (
         <div className="dash-empty">
@@ -368,6 +448,23 @@ export function ProjectDetail({
           onRefresh={() => router.refresh()}
         />
       )}
+
+      <ConfirmDeleteModal
+        open={confirmComplete}
+        onClose={() => setConfirmComplete(false)}
+        title="Complete project?"
+        description={
+          <>
+            This marks <strong>{project.name}</strong> as completed and sets all open tasks and
+            phases to done. The project stays in your list.
+          </>
+        }
+        confirmLabel="Complete project"
+        confirmVariant="primary"
+        pendingLabel="Completing…"
+        pending={pending}
+        onConfirm={handleComplete}
+      />
 
       <ConfirmDeleteModal
         open={confirmDelete}

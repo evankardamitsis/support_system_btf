@@ -87,7 +87,7 @@ function PhaseSection({
           <div className="ops-list-phase-progress-bar">
             <div className="ops-list-phase-progress-fill" style={{ width: `${phasePct}%` }} />
           </div>
-          <span className="ops-list-phase-progress-label">
+          <span className="ops-progress-copy ops-list-phase-progress-label">
             {doneCount}/{taskCount}
           </span>
         </div>

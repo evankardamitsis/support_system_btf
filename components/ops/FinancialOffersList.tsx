@@ -96,7 +96,7 @@ export function FinancialOffersList({
             <div key={offer.id} className="financial-offers-entry">
               <div className="financial-offers-grid financial-offers-row">
                 <div className="financial-offers-cell financial-offers-cell-primary min-w-0" data-label="Client">
-                  <div className="financial-offers-compact-top">
+                  <div className="financial-offers-primary-line">
                     <Link
                       href={`/admin/ops/financial-offers/${offer.id}`}
                       className="financial-offers-client financial-offers-client-link"
@@ -104,7 +104,7 @@ export function FinancialOffersList({
                     >
                       {offer.clientName}
                     </Link>
-                    <div className="financial-offers-compact-aside">
+                    <div className="financial-offers-row-aside">
                       <div className="financial-offers-compact-badges">
                         {offer.status === 'accepted' ? (
                           <span className="financial-offers-active-badge">Accepted</span>

@@ -61,7 +61,7 @@ export function ProjectsList({ projects }: { projects: OpsProjectRecord[] }) {
             <span>Project</span>
             <span>Client</span>
             <span>Status</span>
-            <span>Progress</span>
+            <span className="ops-progress-label">Progress</span>
             <span>Cost</span>
             <span>Start</span>
             <span>Target</span>
