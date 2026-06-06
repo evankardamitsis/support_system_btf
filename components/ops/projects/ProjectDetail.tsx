@@ -51,6 +51,7 @@ export function ProjectDetail({
       : 'list'
   )
   const [assigneeFilter, setAssigneeFilter] = useState<AssigneeFilter>('all')
+  const [hideCompleted, setHideCompleted] = useState(false)
   const [headerExpanded, setHeaderExpanded] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [pending, startTransition] = useTransition()
@@ -73,14 +74,26 @@ export function ProjectDetail({
   const pct =
     project.taskCount > 0 ? Math.round((project.doneTaskCount / project.taskCount) * 100) : 0
 
-  const filteredTasks = useMemo(
+  const assigneeFilteredTasks = useMemo(
     () => filterProjectTasks(project.tasks, assigneeFilter),
     [project.tasks, assigneeFilter]
   )
 
-  const filteredProject = useMemo(
-    () => ({ ...project, tasks: filteredTasks }),
-    [project, filteredTasks]
+  const visibleTasks = useMemo(
+    () => filterProjectTasks(assigneeFilteredTasks, 'all', hideCompleted),
+    [assigneeFilteredTasks, hideCompleted]
+  )
+
+  const hasActiveTaskFilters = assigneeFilter !== 'all' || hideCompleted
+
+  const assigneeFilteredProject = useMemo(
+    () => ({ ...project, tasks: assigneeFilteredTasks }),
+    [project, assigneeFilteredTasks]
+  )
+
+  const visibleProject = useMemo(
+    () => ({ ...project, tasks: visibleTasks }),
+    [project, visibleTasks]
   )
 
   const activeTaskId = searchParams.get('task')
@@ -421,22 +434,43 @@ export function ProjectDetail({
       />
 
       <div className="ops-project-toolbar-row">
-        {staff.length > 0 ? (
+        {view !== 'overview' ? (
           <div className="ops-project-filters">
-            <select
-              className="btf-input ops-project-filter-select"
-              value={assigneeFilter}
-              onChange={e => setAssigneeFilter(e.target.value)}
-              aria-label="Filter tasks by assignee"
-            >
-              <option value="all">All assignees</option>
-              <option value="unassigned">Unassigned</option>
-              {staff.map(member => (
-                <option key={member.id} value={member.id}>
-                  {member.name}
-                </option>
-              ))}
-            </select>
+            <label className="ops-project-filter-check">
+              <input
+                type="checkbox"
+                className="ops-project-filter-check-input"
+                checked={hideCompleted}
+                onChange={e => setHideCompleted(e.target.checked)}
+              />
+              <span className="ops-project-filter-check-ui" aria-hidden>
+                <span className="ops-project-filter-check-box">
+                  <span className="ops-project-filter-check-bars">
+                    <span className="ops-project-filter-check-bar" />
+                    <span className="ops-project-filter-check-bar" />
+                    <span className="ops-project-filter-check-bar ops-project-filter-check-bar--done" />
+                  </span>
+                  <span className="ops-project-filter-check-mark" />
+                </span>
+              </span>
+              <span className="ops-project-filter-check-label">Hide completed</span>
+            </label>
+            {staff.length > 0 ? (
+              <select
+                className="btf-input ops-project-filter-select"
+                value={assigneeFilter}
+                onChange={e => setAssigneeFilter(e.target.value)}
+                aria-label="Filter tasks by assignee"
+              >
+                <option value="all">All assignees</option>
+                <option value="unassigned">Unassigned</option>
+                {staff.map(member => (
+                  <option key={member.id} value={member.id}>
+                    {member.name}
+                  </option>
+                ))}
+              </select>
+            ) : null}
           </div>
         ) : null}
 
@@ -466,22 +500,23 @@ export function ProjectDetail({
 
       {view === 'overview' ? (
         <ProjectOverview project={project} />
-      ) : assigneeFilter !== 'all' && filteredTasks.length === 0 ? (
+      ) : hasActiveTaskFilters && visibleTasks.length === 0 ? (
         <div className="dash-empty">
-          <p className="dash-empty-title">No tasks for this assignee</p>
+          <p className="dash-empty-title">No matching tasks</p>
           <p className="dash-empty-hint">
-            Try another assignee or switch back to all assignees.
+            Try adjusting the filters above.
           </p>
         </div>
       ) : view === 'kanban' ? (
         <ProjectKanban
-          project={filteredProject}
+          project={visibleProject}
           staff={staff}
           onOpenTask={openTask}
         />
       ) : (
         <ProjectListView
-          project={filteredProject}
+          project={assigneeFilteredProject}
+          visibleTasks={visibleTasks}
           staff={staff}
           hideEmptyPhases={assigneeFilter !== 'all'}
           onOpenTask={openTask}

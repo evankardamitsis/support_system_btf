@@ -22,12 +22,31 @@ function filterTaskTree(task: OpsProjectTask, filter: AssigneeFilter): OpsProjec
   return null
 }
 
+function hideCompletedTaskTree(task: OpsProjectTask): OpsProjectTask | null {
+  if (task.status === 'done') return null
+
+  const visibleSubtasks = task.subtasks
+    .map(sub => hideCompletedTaskTree(sub))
+    .filter((sub): sub is OpsProjectTask => sub !== null)
+
+  return { ...task, subtasks: visibleSubtasks }
+}
+
 export function filterProjectTasks(
   tasks: OpsProjectTask[],
-  filter: AssigneeFilter
+  filter: AssigneeFilter,
+  hideCompleted = false
 ): OpsProjectTask[] {
-  if (filter === 'all') return tasks
-  return tasks
-    .map(task => filterTaskTree(task, filter))
+  let result =
+    filter === 'all'
+      ? tasks
+      : tasks
+          .map(task => filterTaskTree(task, filter))
+          .filter((task): task is OpsProjectTask => task !== null)
+
+  if (!hideCompleted) return result
+
+  return result
+    .map(task => hideCompletedTaskTree(task))
     .filter((task): task is OpsProjectTask => task !== null)
 }

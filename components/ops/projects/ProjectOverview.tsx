@@ -131,30 +131,38 @@ export function ProjectOverview({ project }: { project: OpsProjectDetail }) {
 
         <section className="ops-project-overview-card">
           <h2 className="ops-project-overview-card-title">Task health</h2>
-          <ul className="ops-project-overview-health">
-            <li>
-              <span className="ops-project-overview-health-value tabular-nums">{overdueTasks}</span>
-              <span className="ops-project-overview-health-label">Overdue</span>
-            </li>
-            <li>
-              <span className="ops-project-overview-health-value tabular-nums">{unassignedTasks}</span>
-              <span className="ops-project-overview-health-label">Unassigned open</span>
-            </li>
-            <li>
-              <span className="ops-project-overview-health-value tabular-nums">{project.phaseCount}</span>
-              <span className="ops-project-overview-health-label">Phases</span>
-            </li>
-          </ul>
-          <div className="ops-project-overview-status-grid">
-            {TASK_STATUSES.map(status => {
-              const count = allTasks.filter(task => task.status === status).length
-              return (
-                <div key={status} className={`ops-project-overview-status ops-project-overview-status--${status}`}>
-                  <span className="ops-project-overview-status-count tabular-nums">{count}</span>
-                  <span className="ops-project-overview-status-label">{TASK_STATUS_LABELS[status]}</span>
-                </div>
-              )
-            })}
+          <div className="ops-project-overview-health">
+            <div className="ops-project-overview-health-alerts">
+              <div
+                className={`ops-project-overview-health-alert${overdueTasks > 0 ? ' ops-project-overview-health-alert--hot' : ''}`}
+              >
+                <span className="ops-project-overview-health-alert-label">Overdue</span>
+                <span className="ops-project-overview-health-alert-value tabular-nums">{overdueTasks}</span>
+              </div>
+              <div
+                className={`ops-project-overview-health-alert${unassignedTasks > 0 ? ' ops-project-overview-health-alert--warn' : ''}`}
+              >
+                <span className="ops-project-overview-health-alert-label">Unassigned open</span>
+                <span className="ops-project-overview-health-alert-value tabular-nums">{unassignedTasks}</span>
+              </div>
+            </div>
+            <div className="ops-project-overview-health-breakdown">
+              <p className="ops-project-overview-health-breakdown-title">By status</p>
+              <div className="ops-project-overview-status-grid">
+                {TASK_STATUSES.map(status => {
+                  const count = allTasks.filter(task => task.status === status).length
+                  return (
+                    <div
+                      key={status}
+                      className={`ops-project-overview-status ops-project-overview-status--${status}`}
+                    >
+                      <span className="ops-project-overview-status-label">{TASK_STATUS_LABELS[status]}</span>
+                      <span className="ops-project-overview-status-count tabular-nums">{count}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           </div>
         </section>
 

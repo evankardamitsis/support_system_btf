@@ -299,14 +299,26 @@ function TaskRow({
   )
 }
 
+function groupTasksByPhase(tasks: OpsProjectTask[]) {
+  const tasksByPhase = new Map<string | null, OpsProjectTask[]>()
+  for (const task of tasks) {
+    const key = task.phaseId
+    if (!tasksByPhase.has(key)) tasksByPhase.set(key, [])
+    tasksByPhase.get(key)!.push(task)
+  }
+  return tasksByPhase
+}
+
 export function ProjectListView({
   project,
+  visibleTasks,
   staff,
   hideEmptyPhases = false,
   onOpenTask,
   onRefresh,
 }: {
   project: OpsProjectDetail
+  visibleTasks?: OpsProjectTask[]
   staff: StaffOption[]
   hideEmptyPhases?: boolean
   onOpenTask: (taskId: string) => void
@@ -324,12 +336,8 @@ export function ProjectListView({
     })
   }
 
-  const tasksByPhase = new Map<string | null, OpsProjectTask[]>()
-  for (const task of project.tasks) {
-    const key = task.phaseId
-    if (!tasksByPhase.has(key)) tasksByPhase.set(key, [])
-    tasksByPhase.get(key)!.push(task)
-  }
+  const progressByPhase = groupTasksByPhase(project.tasks)
+  const displayByPhase = groupTasksByPhase(visibleTasks ?? project.tasks)
 
   function handlePhaseStatus(phaseId: string, status: PhaseStatus) {
     startTransition(async () => {
@@ -341,14 +349,16 @@ export function ProjectListView({
     })
   }
 
-  const unphased = tasksByPhase.get(null) ?? []
+  const unphasedDisplay = displayByPhase.get(null) ?? []
+  const unphasedProgress = progressByPhase.get(null) ?? []
 
   return (
     <div className="ops-list-view">
       {project.phases.map((phase, index) => {
-        const phaseTasks = tasksByPhase.get(phase.id) ?? []
+        const phaseTasks = displayByPhase.get(phase.id) ?? []
+        const progressTasks = progressByPhase.get(phase.id) ?? []
         if (hideEmptyPhases && phaseTasks.length === 0) return null
-        const doneCount = phaseTasks.filter(t => t.status === 'done').length
+        const doneCount = progressTasks.filter(t => t.status === 'done').length
         return (
           <PhaseSection
             key={phase.id}
@@ -356,7 +366,7 @@ export function ProjectListView({
             title={phase.name}
             toneIndex={index}
             status={phase.status}
-            taskCount={phaseTasks.length}
+            taskCount={progressTasks.length}
             doneCount={doneCount}
             collapsed={collapsedPhases.has(phase.id)}
             onToggle={togglePhase}
@@ -364,7 +374,9 @@ export function ProjectListView({
             pending={pending}
           >
             {phaseTasks.length === 0 ? (
-              <p className="ops-list-empty">No tasks in this phase</p>
+              progressTasks.length === 0 ? (
+                <p className="ops-list-empty">No tasks in this phase</p>
+              ) : null
             ) : (
               phaseTasks.map(task => (
                 <TaskRow
@@ -383,18 +395,18 @@ export function ProjectListView({
         )
       })}
 
-      {unphased.length > 0 ? (
+      {unphasedProgress.length > 0 || unphasedDisplay.length > 0 ? (
         <PhaseSection
           phaseId="__unassigned__"
           title="Unassigned"
           toneIndex={PHASE_TONE_COUNT}
-          taskCount={unphased.length}
-          doneCount={unphased.filter(t => t.status === 'done').length}
+          taskCount={unphasedProgress.length}
+          doneCount={unphasedProgress.filter(t => t.status === 'done').length}
           collapsed={collapsedPhases.has('__unassigned__')}
           onToggle={togglePhase}
           pending={pending}
         >
-          {unphased.map(task => (
+          {unphasedDisplay.map(task => (
             <TaskRow
               key={task.id}
               task={task}

@@ -639,6 +639,22 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   --ops-accent-completed: #93c5fd;
   --ops-progress-label: #c4b5fd;
   --ops-progress-copy: #ddd6fe;
+  --ops-shadow-panel:
+    inset 0 1px 0 color-mix(in srgb, white 3%, transparent),
+    0 1px 3px color-mix(in srgb, black 14%, transparent),
+    0 6px 14px color-mix(in srgb, black 8%, transparent);
+  --ops-shadow-card:
+    inset 0 1px 0 color-mix(in srgb, white 4%, transparent),
+    0 1px 2px color-mix(in srgb, black 20%, transparent),
+    0 4px 12px color-mix(in srgb, black 12%, transparent);
+  --ops-shadow-card-hover:
+    inset 0 1px 0 color-mix(in srgb, white 5%, transparent),
+    0 2px 6px color-mix(in srgb, black 26%, transparent),
+    0 8px 20px color-mix(in srgb, black 16%, transparent);
+  --ops-shadow-card-drag:
+    inset 0 1px 0 color-mix(in srgb, white 4%, transparent),
+    0 6px 20px color-mix(in srgb, black 32%, transparent),
+    0 14px 32px color-mix(in srgb, black 20%, transparent);
 }
 
 @media (min-width: 1280px) {
@@ -2637,7 +2653,149 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 [data-theme="dashboard"] .ops-project-filters {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
   flex-shrink: 0;
+}
+
+[data-theme="dashboard"] .ops-project-filter-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+[data-theme="dashboard"] .ops-project-filter-check-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+[data-theme="dashboard"] .ops-project-filter-check-ui {
+  flex-shrink: 0;
+}
+
+[data-theme="dashboard"] .ops-project-filter-check-box {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 0.3rem;
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  background: color-mix(in srgb, var(--ops-surface-2, var(--dash-chrome)) 80%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 4%, transparent);
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease,
+    transform 120ms ease;
+}
+
+[data-theme="dashboard"] .ops-project-filter-check:hover .ops-project-filter-check-box {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+
+[data-theme="dashboard"] .ops-project-filter-check:active .ops-project-filter-check-box {
+  transform: scale(0.94);
+}
+
+[data-theme="dashboard"] .ops-project-filter-check-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  width: 0.62rem;
+  transition: opacity 160ms ease, transform 200ms ease;
+}
+
+[data-theme="dashboard"] .ops-project-filter-check-bar {
+  display: block;
+  height: 0.1rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-2) 70%, transparent);
+  transition:
+    transform 220ms cubic-bezier(0.34, 1.2, 0.64, 1),
+    opacity 180ms ease;
+}
+
+[data-theme="dashboard"] .ops-project-filter-check-bar--done {
+  background: color-mix(in srgb, var(--ops-accent-done, #4ade80) 85%, transparent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--ops-accent-done, #4ade80) 35%, transparent);
+}
+
+[data-theme="dashboard"] .ops-project-filter-check-mark {
+  position: absolute;
+  width: 0.42rem;
+  height: 0.24rem;
+  border-left: 2px solid #0e0e0e;
+  border-bottom: 2px solid #0e0e0e;
+  transform: rotate(-45deg) scale(0.6);
+  opacity: 0;
+  transition:
+    transform 220ms cubic-bezier(0.34, 1.35, 0.64, 1),
+    opacity 160ms ease;
+}
+
+[data-theme="dashboard"] .ops-project-filter-check-input:checked + .ops-project-filter-check-ui .ops-project-filter-check-box {
+  border-color: color-mix(in srgb, var(--accent) 70%, var(--border));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 92%, white) 0%,
+    var(--accent) 100%
+  );
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent),
+    0 0 12px color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+[data-theme="dashboard"] .ops-project-filter-check-input:checked + .ops-project-filter-check-ui .ops-project-filter-check-bars {
+  opacity: 0;
+  transform: scale(0.72);
+}
+
+[data-theme="dashboard"] .ops-project-filter-check-input:checked + .ops-project-filter-check-ui .ops-project-filter-check-bar--done {
+  transform: translateX(0.35rem);
+}
+
+[data-theme="dashboard"] .ops-project-filter-check-input:checked + .ops-project-filter-check-ui .ops-project-filter-check-mark {
+  transform: rotate(-45deg) scale(1);
+  opacity: 1;
+}
+
+[data-theme="dashboard"] .ops-project-filter-check-input:focus-visible + .ops-project-filter-check-ui .ops-project-filter-check-box {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+[data-theme="dashboard"] .ops-project-filter-check-label {
+  font-size: 0.75rem;
+  color: var(--text-2);
+  transition: color 180ms ease;
+}
+
+[data-theme="dashboard"] .ops-project-filter-check:hover .ops-project-filter-check-label {
+  color: var(--text-1);
+}
+
+[data-theme="dashboard"] .ops-project-filter-check-input:checked ~ .ops-project-filter-check-label {
+  color: color-mix(in srgb, var(--accent) 78%, var(--text-1));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="dashboard"] .ops-project-filter-check-box,
+  [data-theme="dashboard"] .ops-project-filter-check-bars,
+  [data-theme="dashboard"] .ops-project-filter-check-bar,
+  [data-theme="dashboard"] .ops-project-filter-check-mark,
+  [data-theme="dashboard"] .ops-project-filter-check-label {
+    transition: none;
+  }
 }
 
 [data-theme="dashboard"] .ops-project-filter-select {
@@ -3421,6 +3579,7 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   padding: 1rem 1.125rem;
   border: 1px solid var(--ops-border-soft, var(--border));
   background: var(--ops-surface, color-mix(in srgb, var(--dash-chrome) 65%, transparent));
+  box-shadow: var(--ops-shadow-panel);
 }
 
 [data-theme="dashboard"] .ops-project-overview-card--wide {
@@ -3491,57 +3650,137 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 }
 
 [data-theme="dashboard"] .ops-project-overview-health {
-  list-style: none;
-  margin: 0 0 1rem;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
-}
-
-[data-theme="dashboard"] .ops-project-overview-health li {
-  padding: 0.65rem 0.75rem;
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--ops-border-soft, var(--border));
   background: var(--ops-surface-muted, color-mix(in srgb, var(--dash-chrome) 60%, transparent));
+  box-shadow: var(--ops-shadow-panel);
+  overflow: hidden;
 }
 
-[data-theme="dashboard"] .ops-project-overview-health-value {
-  display: block;
-  font-size: 1.125rem;
+[data-theme="dashboard"] .ops-project-overview-health-alerts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+[data-theme="dashboard"] .ops-project-overview-health-alert {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid var(--ops-border-soft, var(--border));
+  background: color-mix(in srgb, var(--ops-surface, var(--dash-chrome)) 45%, transparent);
+}
+
+[data-theme="dashboard"] .ops-project-overview-health-alert + .ops-project-overview-health-alert {
+  border-left: 1px solid var(--ops-border-soft, var(--border));
+}
+
+[data-theme="dashboard"] .ops-project-overview-health-alert--hot {
+  background: color-mix(in srgb, #ef4444 8%, var(--ops-surface-muted, var(--dash-chrome)));
+}
+
+[data-theme="dashboard"] .ops-project-overview-health-alert--hot .ops-project-overview-health-alert-value {
+  color: #fca5a5;
+}
+
+[data-theme="dashboard"] .ops-project-overview-health-alert--warn {
+  background: color-mix(in srgb, var(--ops-accent-review, #f59e0b) 8%, var(--ops-surface-muted, var(--dash-chrome)));
+}
+
+[data-theme="dashboard"] .ops-project-overview-health-alert--warn .ops-project-overview-health-alert-value {
+  color: #fcd34d;
+}
+
+[data-theme="dashboard"] .ops-project-overview-health-alert-label {
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  font-family: var(--font-dm-mono);
+}
+
+[data-theme="dashboard"] .ops-project-overview-health-alert-value {
+  font-size: 1.25rem;
   font-weight: 600;
+  line-height: 1;
   color: var(--text-1);
 }
 
-[data-theme="dashboard"] .ops-project-overview-health-label {
-  display: block;
-  margin-top: 0.15rem;
+[data-theme="dashboard"] .ops-project-overview-health-breakdown {
+  padding: 0.75rem 0.85rem 0.85rem;
+}
+
+[data-theme="dashboard"] .ops-project-overview-health-breakdown-title {
+  margin: 0 0 0.55rem;
   font-size: 0.6875rem;
-  color: var(--text-3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ops-progress-copy, #ddd6fe);
+  font-family: var(--font-dm-mono);
 }
 
 [data-theme="dashboard"] .ops-project-overview-status-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.5rem;
+  gap: 0.4rem;
 }
 
 [data-theme="dashboard"] .ops-project-overview-status {
-  padding: 0.55rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.45rem;
   border: 1px solid var(--ops-border-soft, var(--border));
-  text-align: center;
+  border-left-width: 3px;
+  background: color-mix(in srgb, var(--ops-surface, var(--dash-chrome)) 55%, transparent);
 }
 
-[data-theme="dashboard"] .ops-project-overview-status-count {
-  display: block;
-  font-size: 0.9375rem;
-  font-weight: 600;
+[data-theme="dashboard"] .ops-project-overview-status--backlog {
+  border-left-color: var(--ops-accent-backlog, #94a3b8);
+}
+
+[data-theme="dashboard"] .ops-project-overview-status--in_progress {
+  border-left-color: var(--ops-accent-progress, #a78bfa);
+}
+
+[data-theme="dashboard"] .ops-project-overview-status--review {
+  border-left-color: var(--ops-accent-review, #fbbf24);
+}
+
+[data-theme="dashboard"] .ops-project-overview-status--done {
+  border-left-color: var(--ops-accent-done, #4ade80);
 }
 
 [data-theme="dashboard"] .ops-project-overview-status-label {
-  display: block;
-  margin-top: 0.1rem;
-  font-size: 0.625rem;
-  color: var(--text-3);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+  font-family: var(--font-dm-mono);
+  line-height: 1.2;
+}
+
+[data-theme="dashboard"] .ops-project-overview-status--backlog .ops-project-overview-status-label {
+  color: color-mix(in srgb, var(--ops-accent-backlog, #94a3b8) 88%, white);
+}
+
+[data-theme="dashboard"] .ops-project-overview-status--in_progress .ops-project-overview-status-label {
+  color: var(--ops-progress-label, #c4b5fd);
+}
+
+[data-theme="dashboard"] .ops-project-overview-status--review .ops-project-overview-status-label {
+  color: color-mix(in srgb, var(--ops-accent-review, #fbbf24) 88%, white);
+}
+
+[data-theme="dashboard"] .ops-project-overview-status--done .ops-project-overview-status-label {
+  color: color-mix(in srgb, var(--ops-accent-done, #4ade80) 88%, white);
+}
+
+[data-theme="dashboard"] .ops-project-overview-status-count {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-1);
 }
 
 [data-theme="dashboard"] .ops-project-overview-phases {
@@ -3616,6 +3855,15 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 }
 
 @media (max-width: 640px) {
+  [data-theme="dashboard"] .ops-project-overview-health-alerts {
+    grid-template-columns: 1fr;
+  }
+
+  [data-theme="dashboard"] .ops-project-overview-health-alert + .ops-project-overview-health-alert {
+    border-left: none;
+    border-top: 1px solid var(--ops-border-soft, var(--border));
+  }
+
   [data-theme="dashboard"] .ops-project-overview-status-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -3847,7 +4095,13 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   gap: 0.4rem;
   border-left: 3px solid var(--border);
   cursor: grab;
-  transition: opacity 120ms ease, transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  box-shadow: var(--ops-shadow-card);
+  transition: opacity 120ms ease, transform 160ms ease, box-shadow 160ms ease, border-color 120ms ease;
+}
+
+[data-theme="dashboard"] .ops-kanban-card:hover:not(.ops-kanban-card--dragging) {
+  transform: translateY(-1px);
+  box-shadow: var(--ops-shadow-card-hover);
 }
 
 [data-theme="dashboard"] .ops-kanban-card:active {
@@ -3857,7 +4111,7 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 [data-theme="dashboard"] .ops-kanban-card--dragging {
   opacity: 0.45;
   transform: scale(0.98);
-  box-shadow: 0 4px 16px color-mix(in srgb, black 25%, transparent);
+  box-shadow: var(--ops-shadow-card-drag);
 }
 
 [data-theme="dashboard"] .ops-kanban-drag-handle {
@@ -4081,6 +4335,7 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   border: 1px solid var(--ops-border-soft, var(--border));
   border-left-width: 3px;
   background: var(--ops-surface-muted, color-mix(in srgb, var(--dash-chrome) 28%, transparent));
+  box-shadow: var(--ops-shadow-panel);
 }
 
 [data-theme="dashboard"] .ops-list-phase--tone-0 {
@@ -4854,6 +5109,7 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   align-items: center;
   gap: 0.625rem;
   padding: 0.375rem 0.5rem 0.375rem 0.375rem;
+  cursor: pointer;
   transition: opacity 150ms ease;
 }
 
@@ -4952,7 +5208,12 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   background: var(--accent);
   border: none;
   border-radius: 0;
+  cursor: pointer;
   transition: background 150ms ease, transform 100ms ease, opacity 150ms ease;
+}
+
+[data-theme="dashboard"] .dash-btn-primary:disabled {
+  cursor: not-allowed;
 }
 
 [data-theme="dashboard"] .dash-btn-primary:hover {
