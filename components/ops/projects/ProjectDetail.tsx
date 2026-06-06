@@ -45,11 +45,7 @@ export function ProjectDetail({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const [view, setView] = useState<'overview' | 'kanban' | 'list'>(() =>
-    typeof window !== 'undefined' && window.matchMedia('(min-width: 1025px)').matches
-      ? 'kanban'
-      : 'list'
-  )
+  const [view, setView] = useState<'overview' | 'kanban' | 'list'>('list')
   const [assigneeFilter, setAssigneeFilter] = useState<AssigneeFilter>('all')
   const [hideCompleted, setHideCompleted] = useState(false)
   const [headerExpanded, setHeaderExpanded] = useState(false)
@@ -96,23 +92,42 @@ export function ProjectDetail({
     [project, visibleTasks]
   )
 
-  const activeTaskId = searchParams.get('task')
+  const [taskDrawerId, setTaskDrawerId] = useState<string | null>(() => searchParams.get('task'))
+
   const activeTask = useMemo(
-    () => (activeTaskId ? findProjectTask(project.tasks, activeTaskId) : null),
-    [activeTaskId, project.tasks]
+    () => (taskDrawerId ? findProjectTask(project.tasks, taskDrawerId) : null),
+    [taskDrawerId, project.tasks]
   )
 
+  useEffect(() => {
+    function syncFromHistory() {
+      setTaskDrawerId(new URLSearchParams(window.location.search).get('task'))
+    }
+
+    window.addEventListener('popstate', syncFromHistory)
+    return () => window.removeEventListener('popstate', syncFromHistory)
+  }, [])
+
+  function syncTaskUrl(taskId: string | null) {
+    const params = new URLSearchParams(window.location.search)
+    if (taskId) params.set('task', taskId)
+    else params.delete('task')
+    const qs = params.toString()
+    const href = qs ? `${pathname}?${qs}` : pathname
+    window.history.replaceState(window.history.state, '', href)
+    startTransition(() => {
+      router.replace(href, { scroll: false })
+    })
+  }
+
   function openTask(taskId: string) {
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('task', taskId)
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    setTaskDrawerId(taskId)
+    syncTaskUrl(taskId)
   }
 
   function closeTask() {
-    const params = new URLSearchParams(searchParams.toString())
-    params.delete('task')
-    const qs = params.toString()
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+    setTaskDrawerId(null)
+    syncTaskUrl(null)
   }
 
   useEffect(() => {

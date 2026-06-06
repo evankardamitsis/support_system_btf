@@ -24,6 +24,8 @@ import type {
 } from '@/lib/ops/projects/types'
 import { runWithToast } from '@/lib/notify'
 
+const DRAWER_ANIM_MS = 180
+
 type StaffOption = AssigneeOption
 
 function DrawerAccordion({
@@ -152,6 +154,29 @@ export function ProjectTaskDrawer({
   const [filesOpen, setFilesOpen] = useState(false)
   const [fileCount, setFileCount] = useState(0)
   const [syncedRevision, setSyncedRevision] = useState('')
+  const [mounted, setMounted] = useState(open)
+  const [closing, setClosing] = useState(false)
+  const [cachedTask, setCachedTask] = useState<OpsProjectTask | null>(task)
+
+  if (open && task) {
+    if (!mounted) setMounted(true)
+    if (closing) setClosing(false)
+    if (cachedTask !== task) setCachedTask(task)
+  } else if (mounted && !closing) {
+    setClosing(true)
+  }
+
+  useEffect(() => {
+    if (!closing) return
+    const timer = window.setTimeout(() => {
+      setMounted(false)
+      setClosing(false)
+      setCachedTask(null)
+    }, DRAWER_ANIM_MS)
+    return () => window.clearTimeout(timer)
+  }, [closing])
+
+  const drawerTask = task ?? cachedTask
 
   const taskRevision = task
     ? `${task.id}:${project.updatedAt}:${task.title}:${task.description ?? ''}:${task.dueDate ?? ''}:${task.subtasks.length}`
@@ -184,37 +209,38 @@ export function ProjectTaskDrawer({
   }, [open, task, project.id])
 
   useEffect(() => {
-    if (!open) return
+    if (!mounted || closing) return
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose()
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [open, onClose])
+  }, [mounted, closing, onClose])
 
   useEffect(() => {
-    if (!open) return
+    if (!mounted) return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = prev
     }
-  }, [open])
+  }, [mounted])
 
-  if (!open || !task) return null
+  if (!mounted || !drawerTask) return null
 
-  const parentTask = findParentProjectTask(project.tasks, task.id)
-  const isSubtask = Boolean(task.parentId)
+  const activeTask: OpsProjectTask = drawerTask
+  const parentTask = findParentProjectTask(project.tasks, activeTask.id)
+  const isSubtask = Boolean(activeTask.parentId)
   const canManageSubtasks = !isSubtask
-  const doneSubtasks = task.subtasks.filter(sub => sub.status === 'done').length
-  const subtaskCount = task.subtasks.length
+  const doneSubtasks = activeTask.subtasks.filter(sub => sub.status === 'done').length
+  const subtaskCount = activeTask.subtasks.length
   const hasDescription = Boolean(description.trim())
   const hasSubtasks = subtaskCount > 0
   const hasFiles = fileCount > 0
 
   function persist(patch: Parameters<typeof updateTask>[1], toast: { loading: string; success: string }) {
     startTransition(async () => {
-      const ok = await runWithToast(() => updateTask(task!.id, patch), toast)
+      const ok = await runWithToast(() => updateTask(activeTask.id, patch), toast)
       if (ok === null) return
       onRefresh()
     })
@@ -222,8 +248,8 @@ export function ProjectTaskDrawer({
 
   function handleTitleBlur() {
     const next = title.trim()
-    if (!next || next === task!.title) {
-      setTitle(task!.title)
+    if (!next || next === activeTask.title) {
+      setTitle(activeTask.title)
       return
     }
     persist({ title: next }, { loading: 'Saving title…', success: 'Title updated' })
@@ -231,14 +257,14 @@ export function ProjectTaskDrawer({
 
   function handleDescriptionBlur() {
     const next = description.trim() || null
-    if (next === (task!.description?.trim() || null)) return
+    if (next === (activeTask.description?.trim() || null)) return
     persist({ description: next }, { loading: 'Saving description…', success: 'Description updated' })
   }
 
   function handleDueDateChange(value: string) {
     setDueDate(value)
     const next = value || null
-    if (next === task!.dueDate) return
+    if (next === activeTask.dueDate) return
     persist({ dueDate: next }, { loading: 'Saving due date…', success: 'Due date updated' })
   }
 
@@ -251,8 +277,8 @@ export function ProjectTaskDrawer({
         () =>
           createTask({
             projectId: project.id,
-            phaseId: task!.phaseId,
-            parentId: task!.id,
+            phaseId: activeTask.phaseId,
+            parentId: activeTask.id,
             title: nextTitle,
           }),
         { loading: 'Adding subtask…', success: 'Subtask added' }
@@ -267,13 +293,13 @@ export function ProjectTaskDrawer({
 
   return (
     <div
-      className="ops-task-drawer-root"
+      className={`ops-task-drawer-root${closing ? ' ops-task-drawer-root--closing' : ''}`}
       onMouseDown={event => {
         if (event.target === event.currentTarget) onClose()
       }}
     >
       <aside
-        className="ops-task-drawer"
+        className={`ops-task-drawer${closing ? ' ops-task-drawer--closing' : ''}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="ops-task-drawer-title"
@@ -291,11 +317,11 @@ export function ProjectTaskDrawer({
               </button>
             ) : null}
             <div className="ops-task-drawer-head-meta">
-              {task.phaseName ? (
+              {activeTask.phaseName ? (
                 <span
-                  className={`ops-task-drawer-phase ${phaseToneLabelClass(phaseToneIndexFromPhaseId(task.phaseId, project.phases))}`}
+                  className={`ops-task-drawer-phase ${phaseToneLabelClass(phaseToneIndexFromPhaseId(activeTask.phaseId, project.phases))}`}
                 >
-                  {task.phaseName}
+                  {activeTask.phaseName}
                 </span>
               ) : null}
               {isSubtask ? <span className="ops-task-drawer-kind">Subtask</span> : null}
@@ -326,10 +352,10 @@ export function ProjectTaskDrawer({
         <div className="ops-task-drawer-body">
           <section className="ops-task-drawer-primary" aria-label="Task workflow">
             <TaskStatusSelect
-              value={task.status}
+              value={activeTask.status}
               disabled={pending}
               className="ops-task-drawer-status-select"
-              aria-label={`Status for ${task.title}`}
+              aria-label={`Status for ${activeTask.title}`}
               onChange={(status: TaskStatus) =>
                 persist({ status }, { loading: 'Updating status…', success: 'Status updated' })
               }
@@ -338,10 +364,10 @@ export function ProjectTaskDrawer({
               <label className="ops-task-drawer-field">
                 <span className="ops-task-drawer-field-label">Priority</span>
                 <TaskPrioritySelect
-                  value={task.priority}
+                  value={activeTask.priority}
                   disabled={pending}
                   className="ops-task-drawer-select"
-                  aria-label={`Priority for ${task.title}`}
+                  aria-label={`Priority for ${activeTask.title}`}
                   onChange={(priority: TaskPriority) =>
                     persist({ priority }, { loading: 'Updating priority…', success: 'Priority updated' })
                   }
@@ -351,11 +377,11 @@ export function ProjectTaskDrawer({
                 <label className="ops-task-drawer-field">
                   <span className="ops-task-drawer-field-label">Assignee</span>
                   <EditableAssigneeSelect
-                    value={task.assigneeId}
+                    value={activeTask.assigneeId}
                     options={staff}
                     disabled={pending}
                     className="ops-task-assignee ops-task-drawer-assignee"
-                    ariaLabel={`Assignee for ${task.title}`}
+                    ariaLabel={`Assignee for ${activeTask.title}`}
                     onChange={assigneeId =>
                       persist(
                         { assigneeId },
@@ -385,7 +411,7 @@ export function ProjectTaskDrawer({
                   <span className="ops-task-drawer-field-label">Phase</span>
                   <select
                     className="btf-input ops-task-drawer-select-native"
-                    value={task.phaseId ?? ''}
+                    value={activeTask.phaseId ?? ''}
                     disabled={pending}
                     onChange={e =>
                       persist(
@@ -456,7 +482,7 @@ export function ProjectTaskDrawer({
                 onToggle={() => setSubtasksOpen(open => !open)}
               >
                 <ul className="ops-task-drawer-subtasks">
-                  {task.subtasks.map(sub => (
+                  {activeTask.subtasks.map(sub => (
                     <li key={sub.id} className="ops-task-drawer-subtask">
                       <TaskStatusSelect
                         value={sub.status}
@@ -522,7 +548,7 @@ export function ProjectTaskDrawer({
               >
                 <ProjectFilePanel
                   projectId={project.id}
-                  taskId={task.id}
+                  taskId={activeTask.id}
                   title="Files"
                   emptyLabel=""
                   embedded
@@ -537,7 +563,7 @@ export function ProjectTaskDrawer({
             ) : (
               <ProjectFilePanel
                 projectId={project.id}
-                taskId={task.id}
+                taskId={activeTask.id}
                 title="Files"
                 emptyLabel=""
                 embedded
@@ -552,7 +578,7 @@ export function ProjectTaskDrawer({
             )}
           </div>
 
-          <ProjectTaskComments taskId={task.id} staff={staff} embedded concise hideEmpty />
+          <ProjectTaskComments taskId={activeTask.id} staff={staff} embedded concise hideEmpty />
         </div>
       </aside>
     </div>
