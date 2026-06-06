@@ -25,7 +25,7 @@ function revalidateOfferPaths() {
 export async function submitFinancialOffer(
   raw: unknown,
   options: { sendEmail?: boolean } = {}
-): Promise<{ id: string; pdfBase64: string }> {
+): Promise<{ id: string }> {
   const { supabase, user } = await requireStaff()
   const companyProfile = await getCompanyProfile(supabase)
   const offer = parseOfferBody(raw, companyProfile.upfrontPercent)
@@ -40,7 +40,7 @@ export async function submitFinancialOffer(
   }
 
   const pdf = await renderOffer(offer, company)
-  let emailedAt: string | null = null
+  const id = await saveFinancialOfferRecord(supabase, user.id, offer, null)
 
   if (options.sendEmail && offer.clientEmail) {
     const emailed = await sendFinancialOfferEmail({
@@ -50,13 +50,21 @@ export async function submitFinancialOffer(
       pdf,
     })
     if (!emailed.sent) throw new Error(emailed.error)
-    emailedAt = new Date().toISOString()
+
+    const { error } = await supabase
+      .from('financial_offers')
+      .update({
+        client_email: offer.clientEmail,
+        emailed_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+
+    if (error) throw new Error(error.message)
   }
 
-  const id = await saveFinancialOfferRecord(supabase, user.id, offer, emailedAt)
   revalidateOfferPaths()
 
-  return { id, pdfBase64: pdf.toString('base64') }
+  return { id }
 }
 
 export async function resendFinancialOfferEmail(

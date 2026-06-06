@@ -56,16 +56,40 @@ function parseZeptoFailure(status: number, bodyText: string): string {
       }
     }
     const details = data.error?.details ?? []
-    const recipientIssue = details.some(
+
+    for (const detail of details) {
+      if (detail.code === 'SERR_157') {
+        return (
+          'Invalid ZeptoMail Send Mail Token. Copy the API token from Agent → SMTP/API (API tab), ' +
+          'not the SMTP password.'
+        )
+      }
+      if (detail.code === 'SM_111') {
+        return (
+          'EMAIL_FROM uses a domain that is not verified in ZeptoMail. Verify the domain in your Agent ' +
+          'or use a sender address on a verified domain.'
+        )
+      }
+      if (detail.code === 'SM_128') {
+        return 'ZeptoMail account is pending review. Complete account approval in ZeptoMail before sending.'
+      }
+      if (detail.code === 'SM_113' && detail.target?.includes('from')) {
+        return (
+          'EMAIL_FROM is invalid for ZeptoMail. Use Name <you@verified-domain.com> on a verified domain.'
+        )
+      }
+    }
+
+    const recipientTarget = details.some(
       detail =>
-        detail.code === 'SM_113' ||
-        detail.code === 'SMI_116' ||
-        detail.target?.includes('to') ||
-        detail.target?.includes('cc') ||
-        detail.target?.includes('bcc')
+        (detail.code === 'SM_113' || detail.code === 'SMI_116') &&
+        (detail.target?.includes('to') || detail.target?.includes('cc') || detail.target?.includes('bcc'))
     )
-    if (recipientIssue) {
-      return 'Invalid recipient email address. Check the client email and try again.'
+    if (recipientTarget) {
+      return (
+        'ZeptoMail rejected the recipient field. A valid Gmail address is usually fine — check ' +
+        'ZEPTOMAIL_API_KEY and EMAIL_FROM (verified sender domain).'
+      )
     }
   } catch {
     // fall through to status-based message

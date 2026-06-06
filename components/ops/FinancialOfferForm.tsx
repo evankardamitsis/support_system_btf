@@ -21,9 +21,11 @@ import { notifyError, runWithToast } from '@/lib/notify'
 
 const emptyLine = (): FinancialOfferLineItem => ({ work: '', cost: 0 })
 
-function downloadPdfBase64(base64: string, filename: string) {
-  const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0))
-  const blob = new Blob([bytes], { type: 'application/pdf' })
+async function downloadOfferPdf(offerId: string, filename: string) {
+  const response = await fetch(`/api/ops/financial-offers/${offerId}/pdf`)
+  if (!response.ok) throw new Error('Could not download the offer PDF')
+
+  const blob = await response.blob()
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url
@@ -159,7 +161,11 @@ export function FinancialOfferForm({ savedIbans, upfrontPercent }: FinancialOffe
       )
       if (result === null) return
 
-      downloadPdfBase64(result.pdfBase64, offerFilename(payload.clientName))
+      try {
+        await downloadOfferPdf(result.id, offerFilename(payload.clientName))
+      } catch (err) {
+        notifyError(err instanceof Error ? err.message : 'Could not download the offer PDF')
+      }
     })
   }
 
