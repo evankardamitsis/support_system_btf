@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { GripVertical } from 'lucide-react'
 import { updateTask } from '@/app/actions/projects'
-import { PriorityBadge, TaskStatusSelect } from '@/components/ops/projects/StatusSelect'
+import { TaskPrioritySelect, TaskStatusSelect } from '@/components/ops/projects/StatusSelect'
 import {
   EditableAssigneeSelect,
   type AssigneeOption,
@@ -14,6 +14,7 @@ import {
   TASK_STATUS_LABELS,
   type OpsProjectDetail,
   type OpsProjectTask,
+  type TaskPriority,
   type TaskStatus,
 } from '@/lib/ops/projects/types'
 import { runWithToast } from '@/lib/notify'
@@ -25,6 +26,7 @@ function KanbanCard({
   staff,
   onStatusChange,
   onAssigneeChange,
+  onPriorityChange,
   pending,
   isDragging,
   onDragStart,
@@ -34,6 +36,7 @@ function KanbanCard({
   staff: AssigneeOption[]
   onStatusChange: (taskId: string, status: TaskStatus) => void
   onAssigneeChange: (taskId: string, assigneeId: string | null) => void
+  onPriorityChange: (taskId: string, priority: TaskPriority) => void
   pending: boolean
   isDragging: boolean
   onDragStart: (taskId: string) => void
@@ -43,7 +46,7 @@ function KanbanCard({
 
   return (
     <div
-      className={`ops-kanban-card ops-kanban-card--${task.status}${isDragging ? ' ops-kanban-card--dragging' : ''}`}
+      className={`ops-kanban-card ops-kanban-card--${task.status}${task.priority === 'high' ? ' ops-kanban-card--priority-high' : ''}${isDragging ? ' ops-kanban-card--dragging' : ''}`}
       draggable={!pending}
       onDragStart={e => {
         const target = e.target as HTMLElement
@@ -63,7 +66,6 @@ function KanbanCard({
           <GripVertical size={14} />
         </span>
         <p className="ops-kanban-card-title">{task.title}</p>
-        <PriorityBadge priority={task.priority} />
       </div>
       {task.phaseName ? (
         <span className="ops-kanban-phase-chip">{task.phaseName}</span>
@@ -96,13 +98,22 @@ function KanbanCard({
           </ul>
         </div>
       ) : null}
-      <TaskStatusSelect
-        value={task.status}
-        disabled={pending}
-        className="ops-kanban-status-select"
-        aria-label={`Status for ${task.title}`}
-        onChange={status => onStatusChange(task.id, status)}
-      />
+      <div className="ops-kanban-card-controls">
+        <TaskPrioritySelect
+          value={task.priority}
+          disabled={pending}
+          className="ops-kanban-priority-select"
+          aria-label={`Priority for ${task.title}`}
+          onChange={priority => onPriorityChange(task.id, priority)}
+        />
+        <TaskStatusSelect
+          value={task.status}
+          disabled={pending}
+          className="ops-kanban-status-select"
+          aria-label={`Status for ${task.title}`}
+          onChange={status => onStatusChange(task.id, status)}
+        />
+      </div>
     </div>
   )
 }
@@ -126,7 +137,10 @@ export function ProjectKanban({
     setTasks(project.tasks)
   }
 
-  function patchTask(taskId: string, patch: Partial<Pick<OpsProjectTask, 'status' | 'assigneeId' | 'assigneeName'>>) {
+  function patchTask(
+    taskId: string,
+    patch: Partial<Pick<OpsProjectTask, 'status' | 'assigneeId' | 'assigneeName' | 'priority'>>
+  ) {
     setTasks(current => current.map(t => (t.id === taskId ? { ...t, ...patch } : t)))
   }
 
@@ -138,6 +152,23 @@ export function ProjectKanban({
       const ok = await runWithToast(() => updateTask(taskId, { status }), {
         loading: 'Moving task…',
         success: 'Task moved',
+      })
+      if (ok === null) {
+        setTasks(previous)
+        return
+      }
+      router.refresh()
+    })
+  }
+
+  function persistPriorityChange(taskId: string, priority: TaskPriority) {
+    const previous = tasks
+    patchTask(taskId, { priority })
+
+    startTransition(async () => {
+      const ok = await runWithToast(() => updateTask(taskId, { priority }), {
+        loading: 'Updating priority…',
+        success: 'Priority updated',
       })
       if (ok === null) {
         setTasks(previous)
@@ -178,7 +209,10 @@ export function ProjectKanban({
         const isDropTarget = dropTarget === status && draggedTaskId !== null
 
         return (
-          <div key={status} className={`ops-kanban-column ops-kanban-column--${status}`}>
+          <div
+            key={status}
+            className={`ops-kanban-column ops-kanban-column--${status}${isDropTarget ? ' ops-kanban-column--drop-target' : ''}`}
+          >
             <div className={`ops-kanban-column-head ops-kanban-column-head--${status}`}>
               <span className="ops-kanban-column-label">{TASK_STATUS_LABELS[status]}</span>
               <span className={`ops-kanban-count ops-kanban-count--${status}`}>
@@ -225,6 +259,7 @@ export function ProjectKanban({
                     staff={staff}
                     onStatusChange={persistStatusChange}
                     onAssigneeChange={persistAssigneeChange}
+                    onPriorityChange={persistPriorityChange}
                     pending={pending}
                     isDragging={draggedTaskId === task.id}
                     onDragStart={setDraggedTaskId}

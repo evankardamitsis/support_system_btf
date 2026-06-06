@@ -3,7 +3,12 @@
 import { useState, useTransition } from 'react'
 import { createPhase, createTask } from '@/app/actions/projects'
 import type { AssigneeOption } from '@/components/tickets/EditableAssigneeSelect'
-import type { OpsProjectDetail } from '@/lib/ops/projects/types'
+import {
+  TASK_PRIORITIES,
+  TASK_PRIORITY_LABELS,
+  type OpsProjectDetail,
+  type TaskPriority,
+} from '@/lib/ops/projects/types'
 import { runWithToast } from '@/lib/notify'
 
 export function ProjectAddPanel({
@@ -21,6 +26,7 @@ export function ProjectAddPanel({
   const [newTaskPhaseId, setNewTaskPhaseId] = useState('')
   const [newTaskAssigneeId, setNewTaskAssigneeId] = useState('')
   const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>('normal')
 
   function handleAddPhase(e: React.FormEvent) {
     e.preventDefault()
@@ -46,12 +52,14 @@ export function ProjectAddPanel({
             projectId: project.id,
             phaseId: newTaskPhaseId || null,
             assigneeId: newTaskAssigneeId || null,
+            priority: newTaskPriority,
             title: newTaskTitle,
           }),
         { loading: 'Adding task…', success: 'Task added' }
       )
       setNewTaskTitle('')
       setNewTaskAssigneeId('')
+      setNewTaskPriority('normal')
       onRefresh()
     })
   }
@@ -113,6 +121,19 @@ export function ProjectAddPanel({
           placeholder="New task title"
           disabled={pending}
         />
+        <select
+          className={`btf-input ops-priority-select ops-priority-select--${newTaskPriority}`}
+          value={newTaskPriority}
+          onChange={e => setNewTaskPriority(e.target.value as TaskPriority)}
+          disabled={pending}
+          aria-label="Priority for new task"
+        >
+          {TASK_PRIORITIES.map(p => (
+            <option key={p} value={p}>
+              {TASK_PRIORITY_LABELS[p]}
+            </option>
+          ))}
+        </select>
         {staff.length > 0 ? (
           <select
             className="btf-input"

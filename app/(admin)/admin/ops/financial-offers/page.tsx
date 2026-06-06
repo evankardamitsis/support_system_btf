@@ -17,7 +17,7 @@ export default async function FinancialOffersPage() {
       : {}
 
   return (
-    <div className="space-y-6 w-full max-w-5xl">
+    <div className="space-y-6 w-full">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <PageHeader
           title="Financial offers"

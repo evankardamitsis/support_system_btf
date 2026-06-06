@@ -3,7 +3,11 @@
 import { useState, useTransition } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { createTask, updatePhaseStatus, updateTask } from '@/app/actions/projects'
-import { PhaseStatusSelect, PriorityBadge, TaskStatusSelect } from '@/components/ops/projects/StatusSelect'
+import {
+  PhaseStatusSelect,
+  TaskPrioritySelect,
+  TaskStatusSelect,
+} from '@/components/ops/projects/StatusSelect'
 import {
   EditableAssigneeSelect,
   type AssigneeOption,
@@ -13,6 +17,7 @@ import type {
   OpsProjectPhase,
   OpsProjectTask,
   PhaseStatus,
+  TaskPriority,
   TaskStatus,
 } from '@/lib/ops/projects/types'
 import { runWithToast } from '@/lib/notify'
@@ -89,6 +94,15 @@ function PhaseSection({
       </div>
       {!collapsed ? (
         <div id={`ops-phase-body-${phaseId}`} className="ops-list-phase-body">
+          {taskCount > 0 ? (
+            <div className="ops-list-col-head" aria-hidden>
+              <span>Task</span>
+              <span>Priority</span>
+              <span>Status</span>
+              <span>Assignee</span>
+              <span />
+            </div>
+          ) : null}
           {children}
         </div>
       ) : null}
@@ -130,6 +144,13 @@ function TaskRow({
     }).then(() => onRefresh())
   }
 
+  function handlePriorityChange(priority: TaskPriority) {
+    runWithToast(() => updateTask(task.id, { priority }), {
+      loading: 'Updating priority…',
+      success: 'Priority updated',
+    }).then(() => onRefresh())
+  }
+
   function handleAddSubtask(e: React.FormEvent) {
     e.preventDefault()
     if (!subtaskTitle.trim()) return
@@ -150,68 +171,90 @@ function TaskRow({
   }
 
   return (
-    <div
-      className={`ops-list-task ops-list-task--${task.status}${depth > 0 ? ' ops-list-task--subtask' : ''}`}
-      style={{ paddingLeft: `${depth * 1.25}rem` }}
-    >
-      <div className={`ops-list-task-row ops-list-task-row--${task.status}`}>
-        <span className={`ops-list-status-stripe ops-list-status-stripe--${task.status}`} aria-hidden />
-        <span className="ops-list-task-title">{task.title}</span>
-        <PriorityBadge priority={task.priority} />
-        <TaskStatusSelect
-          value={task.status}
-          disabled={pending}
-          className="ops-list-select"
-          aria-label={`Status for ${task.title}`}
-          onChange={handleStatusChange}
-        />
-        {staff.length > 0 ? (
-          <EditableAssigneeSelect
-            value={task.assigneeId}
-            options={staff}
-            disabled={pending}
-            className="ops-task-assignee"
-            ariaLabel={`Assignee for ${task.title}`}
-            onChange={handleAssigneeChange}
-          />
-        ) : null}
-        {depth === 0 ? (
-          <button
-            type="button"
-            className="ops-list-add-subtask"
-            onClick={() => setAddingSubtask(v => !v)}
-            disabled={pending}
-          >
-            + Subtask
-          </button>
+    <div className={`ops-list-task-group${depth > 0 ? ' ops-list-task-group--nested' : ''}`}>
+      <div
+        className={`ops-list-task ops-list-task--${task.status}${task.priority === 'high' ? ' ops-list-task--priority-high' : ''}`}
+      >
+        <div className={`ops-list-task-grid ops-list-task-grid--${task.status}`}>
+          <div className="ops-list-task-main" data-label="Task">
+            <span className="ops-list-task-title">{task.title}</span>
+          </div>
+          <div className="ops-list-task-priority" data-label="Priority">
+            <TaskPrioritySelect
+              value={task.priority}
+              disabled={pending}
+              className="ops-list-select"
+              aria-label={`Priority for ${task.title}`}
+              onChange={handlePriorityChange}
+            />
+          </div>
+          <div className="ops-list-task-status" data-label="Status">
+            <TaskStatusSelect
+              value={task.status}
+              disabled={pending}
+              className="ops-list-select"
+              aria-label={`Status for ${task.title}`}
+              onChange={handleStatusChange}
+            />
+          </div>
+          <div className="ops-list-task-assignee" data-label="Assignee">
+            {staff.length > 0 ? (
+              <EditableAssigneeSelect
+                value={task.assigneeId}
+                options={staff}
+                disabled={pending}
+                className="ops-task-assignee"
+                ariaLabel={`Assignee for ${task.title}`}
+                onChange={handleAssigneeChange}
+              />
+            ) : (
+              <span className="ops-list-task-empty">—</span>
+            )}
+          </div>
+          <div className="ops-list-task-actions">
+            {depth === 0 ? (
+              <button
+                type="button"
+                className="ops-list-add-subtask"
+                onClick={() => setAddingSubtask(v => !v)}
+                disabled={pending}
+              >
+                + Subtask
+              </button>
+            ) : null}
+          </div>
+        </div>
+        {addingSubtask ? (
+          <form onSubmit={handleAddSubtask} className="ops-list-inline-form">
+            <input
+              className="btf-input"
+              value={subtaskTitle}
+              onChange={e => setSubtaskTitle(e.target.value)}
+              placeholder="Subtask title"
+              disabled={pending}
+              autoFocus
+            />
+            <button type="submit" className="dash-btn-primary btn-primary" disabled={pending}>
+              Add
+            </button>
+          </form>
         ) : null}
       </div>
-      {addingSubtask ? (
-        <form onSubmit={handleAddSubtask} className="ops-list-inline-form">
-          <input
-            className="btf-input"
-            value={subtaskTitle}
-            onChange={e => setSubtaskTitle(e.target.value)}
-            placeholder="Subtask title"
-            disabled={pending}
-            autoFocus
-          />
-          <button type="submit" className="dash-btn-primary btn-primary" disabled={pending}>
-            Add
-          </button>
-        </form>
+      {task.subtasks.length > 0 ? (
+        <div className="ops-list-subtasks">
+          {task.subtasks.map(sub => (
+            <TaskRow
+              key={sub.id}
+              task={sub}
+              phases={phases}
+              staff={staff}
+              depth={depth + 1}
+              pending={pending}
+              onRefresh={onRefresh}
+            />
+          ))}
+        </div>
       ) : null}
-      {task.subtasks.map(sub => (
-        <TaskRow
-          key={sub.id}
-          task={sub}
-          phases={phases}
-          staff={staff}
-          depth={depth + 1}
-          pending={pending}
-          onRefresh={onRefresh}
-        />
-      ))}
     </div>
   )
 }
@@ -219,10 +262,12 @@ function TaskRow({
 export function ProjectListView({
   project,
   staff,
+  hideEmptyPhases = false,
   onRefresh,
 }: {
   project: OpsProjectDetail
   staff: StaffOption[]
+  hideEmptyPhases?: boolean
   onRefresh: () => void
 }) {
   const [pending, startTransition] = useTransition()
@@ -260,6 +305,7 @@ export function ProjectListView({
     <div className="ops-list-view">
       {project.phases.map((phase, index) => {
         const phaseTasks = tasksByPhase.get(phase.id) ?? []
+        if (hideEmptyPhases && phaseTasks.length === 0) return null
         const doneCount = phaseTasks.filter(t => t.status === 'done').length
         return (
           <PhaseSection
@@ -276,7 +322,7 @@ export function ProjectListView({
             pending={pending}
           >
             {phaseTasks.length === 0 ? (
-              <p className="dash-meta px-4 py-2">No tasks in this phase</p>
+              <p className="ops-list-empty">No tasks in this phase</p>
             ) : (
               phaseTasks.map(task => (
                 <TaskRow

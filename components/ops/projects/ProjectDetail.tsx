@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { ChevronDown, Plus } from 'lucide-react'
 import { deleteProject, updateProjectCost, updateProjectStatus } from '@/app/actions/projects'
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
@@ -14,6 +14,7 @@ import {
   formatProjectDate,
   parseProjectCostInput,
 } from '@/lib/ops/projects/display'
+import { filterProjectTasks, type AssigneeFilter } from '@/lib/ops/projects/filter-tasks'
 import type { OpsProjectDetail, ProjectStatus } from '@/lib/ops/projects/types'
 import { notifyError, runWithToast } from '@/lib/notify'
 
@@ -35,6 +36,7 @@ export function ProjectDetail({
 }) {
   const router = useRouter()
   const [view, setView] = useState<'kanban' | 'list'>('kanban')
+  const [assigneeFilter, setAssigneeFilter] = useState<AssigneeFilter>('all')
   const [headerExpanded, setHeaderExpanded] = useState(true)
   const [showAddPanel, setShowAddPanel] = useState(false)
   const [pending, startTransition] = useTransition()
@@ -52,6 +54,16 @@ export function ProjectDetail({
 
   const pct =
     project.taskCount > 0 ? Math.round((project.doneTaskCount / project.taskCount) * 100) : 0
+
+  const filteredTasks = useMemo(
+    () => filterProjectTasks(project.tasks, assigneeFilter),
+    [project.tasks, assigneeFilter]
+  )
+
+  const filteredProject = useMemo(
+    () => ({ ...project, tasks: filteredTasks }),
+    [project, filteredTasks]
+  )
 
   function handleStatusChange(status: ProjectStatus) {
     startTransition(async () => {
@@ -108,7 +120,7 @@ export function ProjectDetail({
       </Link>
 
       <header
-        className={`ops-project-head${headerExpanded ? ' ops-project-head--expanded' : ' ops-project-head--collapsed'}`}
+        className={`ops-project-head ops-project-head--status-${project.status}${headerExpanded ? ' ops-project-head--expanded' : ' ops-project-head--collapsed'}`}
       >
         <div className="ops-project-head-grid">
           <button
@@ -312,12 +324,39 @@ export function ProjectDetail({
         />
       ) : null}
 
-      {view === 'kanban' ? (
-        <ProjectKanban project={project} staff={staff} />
+      {staff.length > 0 ? (
+        <div className="ops-project-filters">
+          <select
+            className="btf-input ops-project-filter-select"
+            value={assigneeFilter}
+            onChange={e => setAssigneeFilter(e.target.value)}
+            aria-label="Filter tasks by assignee"
+          >
+            <option value="all">All assignees</option>
+            <option value="unassigned">Unassigned</option>
+            {staff.map(member => (
+              <option key={member.id} value={member.id}>
+                {member.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
+
+      {assigneeFilter !== 'all' && filteredTasks.length === 0 ? (
+        <div className="dash-empty">
+          <p className="dash-empty-title">No tasks for this assignee</p>
+          <p className="dash-empty-hint">
+            Try another assignee or switch back to all assignees.
+          </p>
+        </div>
+      ) : view === 'kanban' ? (
+        <ProjectKanban project={filteredProject} staff={staff} />
       ) : (
         <ProjectListView
-          project={project}
+          project={filteredProject}
           staff={staff}
+          hideEmptyPhases={assigneeFilter !== 'all'}
           onRefresh={() => router.refresh()}
         />
       )}

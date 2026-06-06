@@ -1,7 +1,10 @@
 import {
+  TASK_PRIORITIES,
+  TASK_PRIORITY_LABELS,
   TASK_STATUSES,
   TASK_STATUS_LABELS,
   type PhaseStatus,
+  type TaskPriority,
   type TaskStatus,
 } from '@/lib/ops/projects/types'
 
@@ -81,11 +84,41 @@ export function TaskStatusBadge({ status }: { status: TaskStatus }) {
   )
 }
 
-export function PriorityBadge({ priority }: { priority: 'low' | 'normal' | 'high' }) {
+export function TaskPrioritySelect({
+  value,
+  onChange,
+  disabled,
+  className = '',
+  'aria-label': ariaLabel,
+}: {
+  value: TaskPriority
+  onChange: (priority: TaskPriority) => void
+  disabled?: boolean
+  className?: string
+  'aria-label'?: string
+}) {
+  return (
+    <select
+      className={`btf-input ops-priority-select ops-priority-select--${value} ${className}`.trim()}
+      value={value}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      onChange={e => onChange(e.target.value as TaskPriority)}
+    >
+      {TASK_PRIORITIES.map(p => (
+        <option key={p} value={p}>
+          {TASK_PRIORITY_LABELS[p]}
+        </option>
+      ))}
+    </select>
+  )
+}
+
+export function PriorityBadge({ priority }: { priority: TaskPriority }) {
   if (priority === 'normal') return null
   return (
     <span className={`ops-priority-badge ops-priority-badge--${priority}`}>
-      {priority === 'high' ? 'High' : 'Low'}
+      {TASK_PRIORITY_LABELS[priority]}
     </span>
   )
 }

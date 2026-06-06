@@ -10,7 +10,7 @@ export default async function CompanySettingsPage() {
   const { profile, ibans } = await getCompanyProfileForOffers(supabase)
 
   return (
-    <div className="space-y-6 w-full max-w-3xl">
+    <div className="space-y-6 w-full max-w-4xl">
       <PageHeader
         title="Company settings"
         description="Letterhead, contact details, default upfront %, and IBANs used on financial offers."

@@ -11,7 +11,7 @@ export default async function NewFinancialOfferPage() {
   const { profile, ibans } = await getCompanyProfileForOffers(supabase)
 
   return (
-    <div className="space-y-6 w-full max-w-3xl">
+    <div className="space-y-6 w-full max-w-4xl">
       <Link href="/admin/ops/financial-offers" className="dash-back">
         ← Back to offers
       </Link>
