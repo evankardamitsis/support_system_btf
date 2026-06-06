@@ -99,8 +99,13 @@ export async function getOpsDashboard(
   let unassignedTasksCount = 0
   const attentionItems: OpsAttentionItem[] = []
 
+  const dueSoonEnd = new Date(`${today}T12:00:00`)
+  dueSoonEnd.setDate(dueSoonEnd.getDate() + 3)
+  const dueSoonEndStr = dueSoonEnd.toISOString().slice(0, 10)
+
   if (activeProjectIds.length > 0) {
-    const [{ data: overdueTasks }, { data: unassignedTasks }] = await Promise.all([
+    const [{ data: overdueTasks }, { data: unassignedTasks }, { data: dueSoonTasks }] =
+      await Promise.all([
       supabase
         .from('ops_project_tasks')
         .select('id, title, due_date, project_id, priority')
@@ -121,6 +126,17 @@ export async function getOpsDashboard(
         .is('parent_id', null)
         .order('updated_at', { ascending: false })
         .limit(12),
+      supabase
+        .from('ops_project_tasks')
+        .select('id, title, due_date, project_id, priority')
+        .in('project_id', activeProjectIds)
+        .is('deleted_at', null)
+        .neq('status', 'done')
+        .not('due_date', 'is', null)
+        .gte('due_date', today)
+        .lte('due_date', dueSoonEndStr)
+        .order('due_date', { ascending: true })
+        .limit(8),
     ])
 
     overdueTasksCount = overdueTasks?.length ?? 0
@@ -150,6 +166,25 @@ export async function getOpsDashboard(
         href: `/admin/ops/projects/${task.project_id}?task=${task.id}`,
         tone: 'info',
         sort: 30,
+      })
+    }
+
+    for (const task of dueSoonTasks ?? []) {
+      if (
+        attentionItems.some(
+          item => item.id === `task-overdue-${task.id}` || item.id === `task-due-${task.id}`
+        )
+      ) {
+        continue
+      }
+      attentionItems.push({
+        id: `task-due-${task.id}`,
+        kind: 'task',
+        title: task.title,
+        meta: `${projectNames.get(task.project_id) ?? 'Project'} · due ${task.due_date}`,
+        href: `/admin/ops/projects/${task.project_id}?task=${task.id}`,
+        tone: task.priority === 'high' ? 'warn' : 'info',
+        sort: 22,
       })
     }
 
@@ -188,6 +223,35 @@ export async function getOpsDashboard(
     })
   }
 
+  for (const contract of hostingContracts) {
+    if (contract.status !== 'active') continue
+    const days = daysUntilExpiry(contract.periodEnd)
+    if (days <= 14 || days > 30) continue
+    if (attentionItems.some(item => item.id === `hosting-${contract.id}`)) continue
+    attentionItems.push({
+      id: `hosting-30-${contract.id}`,
+      kind: 'hosting',
+      title: contract.name,
+      meta: `${contract.clientName} · renews in ${days} days`,
+      href: `/admin/ops/hosting-maintenance/${contract.id}`,
+      tone: 'info',
+      sort: 18,
+    })
+  }
+
+  for (const contract of hostingContracts) {
+    if (contract.status !== 'expired') continue
+    attentionItems.push({
+      id: `hosting-expired-${contract.id}`,
+      kind: 'hosting',
+      title: contract.name,
+      meta: `${contract.clientName} · expired ${contract.periodEnd}`,
+      href: `/admin/ops/hosting-maintenance/${contract.id}`,
+      tone: 'danger',
+      sort: 12,
+    })
+  }
+
   const { data: staleOpenOffers } = await supabase
     .from('financial_offers')
     .select('id, client_name, created_at, emailed_at')
@@ -209,6 +273,44 @@ export async function getOpsDashboard(
     })
   }
 
+  if (options.includeProjects) {
+    const { data: acceptedWithoutProject } = await supabase
+      .from('financial_offers')
+      .select('id, client_name, accepted_at')
+      .eq('status', 'accepted')
+      .is('deleted_at', null)
+      .order('accepted_at', { ascending: false })
+      .limit(10)
+
+    const offerIds = (acceptedWithoutProject ?? []).map(row => row.id)
+    const linkedOfferIds = new Set<string>()
+
+    if (offerIds.length > 0) {
+      const { data: linkedProjects } = await supabase
+        .from('ops_projects')
+        .select('financial_offer_id')
+        .in('financial_offer_id', offerIds)
+        .is('deleted_at', null)
+
+      for (const row of linkedProjects ?? []) {
+        if (row.financial_offer_id) linkedOfferIds.add(row.financial_offer_id)
+      }
+    }
+
+    for (const offer of acceptedWithoutProject ?? []) {
+      if (linkedOfferIds.has(offer.id)) continue
+      attentionItems.push({
+        id: `offer-no-project-${offer.id}`,
+        kind: 'offer',
+        title: offer.client_name,
+        meta: 'Accepted offer · no project yet',
+        href: `/admin/ops/financial-offers/${offer.id}`,
+        tone: 'warn',
+        sort: 32,
+      })
+    }
+  }
+
   attentionItems.sort((a, b) => a.sort - b.sort || a.title.localeCompare(b.title))
 
   return {
@@ -226,6 +328,6 @@ export async function getOpsDashboard(
       totalAmount: getOfferProjectTotal(row),
       acceptedAt: row.acceptedAt,
     })),
-    attentionItems: attentionItems.slice(0, 12),
+    attentionItems: attentionItems.slice(0, 16),
   }
 }

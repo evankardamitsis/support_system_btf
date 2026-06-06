@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import { MetricStrip } from '@/components/dashboard/MetricStrip'
 import { PageHeader } from '@/components/dashboard/PageHeader'
+import { OpsAttentionSection } from '@/components/ops/OpsAttentionSection'
 import { OpsQuickActions } from '@/components/ops/OpsQuickActions'
 import { formatOfferCurrency } from '@/lib/ops/financial-offer/calculate'
 import type { OpsDashboardData } from '@/lib/ops/dashboard/service'
@@ -15,10 +16,6 @@ const PROJECT_STATUS_LABELS = {
   archived: 'Archived',
 } as const
 
-function attentionToneClass(tone: 'danger' | 'warn' | 'info') {
-  return `ops-attention-item ops-attention-item--${tone}`
-}
-
 export function OpsDashboard({
   data,
   isAdmin,
@@ -26,10 +23,6 @@ export function OpsDashboard({
   data: OpsDashboardData
   isAdmin: boolean
 }) {
-  const attentionRules = isAdmin
-    ? 'Active hosting renewing within 14 days · overdue tasks · projects past target · unassigned top-level tasks · open offers not emailed'
-    : 'Active hosting renewing within 14 days · open offers not emailed'
-
   const metricItems = [
     {
       label: 'Open offers',
@@ -129,36 +122,7 @@ export function OpsDashboard({
       ) : null}
 
       <div className="ops-dashboard-grid">
-        <section className="ops-dashboard-panel">
-          <div className="ops-dashboard-panel-head ops-dashboard-panel-head--stacked">
-            <div>
-              <h2 className="dash-section-title">Needs attention</h2>
-              <p className="ops-dashboard-attention-rules">{attentionRules}</p>
-            </div>
-            <span className="ops-dashboard-panel-meta">{data.attentionItems.length} items</span>
-          </div>
-          {data.attentionItems.length === 0 ? (
-            <div className="dash-empty ops-dashboard-empty">
-              <p className="dash-empty-title">All clear</p>
-              <p className="dash-empty-hint">No overdue tasks, renewals, or open follow-ups right now.</p>
-            </div>
-          ) : (
-            <ul className="ops-attention-list">
-              {data.attentionItems.map(item => (
-                <li key={item.id}>
-                  <Link href={item.href} className={attentionToneClass(item.tone)}>
-                    <div className="ops-attention-copy">
-                      <span className="ops-attention-kind">{item.kind}</span>
-                      <span className="ops-attention-title">{item.title}</span>
-                      <span className="ops-attention-meta">{item.meta}</span>
-                    </div>
-                    <ChevronRight size={16} className="ops-attention-chevron" aria-hidden />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        <OpsAttentionSection items={data.attentionItems} isAdmin={isAdmin} />
 
         <section className="ops-dashboard-panel">
           <div className="ops-dashboard-panel-head">

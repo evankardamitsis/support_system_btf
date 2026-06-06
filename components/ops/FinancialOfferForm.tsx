@@ -44,12 +44,28 @@ type FinancialOfferFormProps = {
   savedIbans: SavedCompanyIban[]
   upfrontPercent: number
   clients: OfferClientOption[]
+  initialClientId?: string
 }
 
-export function FinancialOfferForm({ savedIbans, upfrontPercent, clients }: FinancialOfferFormProps) {
-  const [clientId, setClientId] = useState('')
-  const [clientName, setClientName] = useState('')
-  const [clientEmail, setClientEmail] = useState('')
+function initialOfferClient(clients: OfferClientOption[], initialClientId?: string) {
+  const client = initialClientId ? clients.find(row => row.id === initialClientId) : undefined
+  return {
+    clientId: client?.id ?? '',
+    clientName: client?.name ?? '',
+    clientEmail: client?.email ?? '',
+  }
+}
+
+export function FinancialOfferForm({
+  savedIbans,
+  upfrontPercent,
+  clients,
+  initialClientId,
+}: FinancialOfferFormProps) {
+  const initialClient = initialOfferClient(clients, initialClientId)
+  const [clientId, setClientId] = useState(initialClient.clientId)
+  const [clientName, setClientName] = useState(initialClient.clientName)
+  const [clientEmail, setClientEmail] = useState(initialClient.clientEmail)
   const [lineItems, setLineItems] = useState<FinancialOfferLineItem[]>([
     { work: '', cost: 0 },
     { work: '', cost: 0 },

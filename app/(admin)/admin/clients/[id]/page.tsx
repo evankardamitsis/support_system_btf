@@ -165,7 +165,7 @@ export default async function AdminClientDetailPage({
         <ClientHostingLifecycleSection contracts={clientOps.hosting} />
       ) : null}
 
-      <ClientOpsSection ops={clientOps} />
+      <ClientOpsSection ops={clientOps} clientId={id} />
 
       <section className="space-y-3 anim-fade-up anim-fade-up-5">
         <div className="flex flex-wrap items-center justify-between gap-3">

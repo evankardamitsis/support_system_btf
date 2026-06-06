@@ -9,7 +9,7 @@ export function ilikePattern(term: string) {
   return `%${escaped}%`
 }
 
-function mergeById<T extends { id: string }>(rows: T[], limit: number) {
+export function mergeById<T extends { id: string }>(rows: T[], limit: number) {
   const seen = new Map<string, T>()
   for (const row of rows) {
     if (!seen.has(row.id)) seen.set(row.id, row)

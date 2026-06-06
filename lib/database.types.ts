@@ -548,6 +548,60 @@ export interface Database {
           },
         ]
       }
+      ops_notifications: {
+        Row: {
+          id: string
+          user_id: string
+          type:
+            | 'task_assigned'
+            | 'task_due'
+            | 'task_overdue'
+            | 'offer_accepted'
+            | 'hosting_renewal'
+            | 'project_completed'
+          title: string
+          body: string | null
+          href: string
+          dedupe_key: string | null
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type:
+            | 'task_assigned'
+            | 'task_due'
+            | 'task_overdue'
+            | 'offer_accepted'
+            | 'hosting_renewal'
+            | 'project_completed'
+          title: string
+          body?: string | null
+          href: string
+          dedupe_key?: string | null
+          read_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?:
+            | 'task_assigned'
+            | 'task_due'
+            | 'task_overdue'
+            | 'offer_accepted'
+            | 'hosting_renewal'
+            | 'project_completed'
+          title?: string
+          body?: string | null
+          href?: string
+          dedupe_key?: string | null
+          read_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       ops_project_files: {
         Row: {
           id: string

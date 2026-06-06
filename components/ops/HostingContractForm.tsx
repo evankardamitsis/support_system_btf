@@ -29,9 +29,11 @@ function normalizePeriodType(value: string | undefined): HostingMaintenancePerio
 export function HostingContractForm({
   clients,
   contract,
+  initialClientId,
 }: {
   clients: ClientOption[]
   contract?: HostingContractRecord
+  initialClientId?: string
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -41,7 +43,10 @@ export function HostingContractForm({
   const initialEnd = contract?.periodEnd ?? periodEndFromStart(initialStart, initialPeriodType)
 
   const [name, setName] = useState(contract?.name ?? '')
-  const [clientId, setClientId] = useState(contract?.clientId ?? '')
+  const [clientId, setClientId] = useState(
+    contract?.clientId ??
+      (initialClientId && clients.some(row => row.id === initialClientId) ? initialClientId : '')
+  )
   const [costAmount, setCostAmount] = useState(
     contract?.costAmount != null ? String(contract.costAmount) : ''
   )

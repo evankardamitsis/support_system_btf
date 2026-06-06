@@ -10,6 +10,10 @@ import {
   getProjectIdForOffer,
   listOpsProjects,
 } from '@/lib/ops/projects/service'
+import {
+  notifyProjectCompleted,
+  notifyTaskAssigned,
+} from '@/lib/ops/notifications/service'
 import type {
   PhaseStatus,
   ProjectStatus,
@@ -17,6 +21,14 @@ import type {
   TaskPriority,
   TaskStatus,
 } from '@/lib/ops/projects/types'
+import { tryCreateAdminClient } from '@/lib/supabase/admin'
+
+function projectNameFromRelation(
+  relation: { name: string } | { name: string }[] | null | undefined
+) {
+  if (!relation) return 'Project'
+  return Array.isArray(relation) ? (relation[0]?.name ?? 'Project') : relation.name
+}
 
 async function assertStaffAssignee(
   supabase: Awaited<ReturnType<typeof import('@/lib/supabase/server').createClient>>,
@@ -279,7 +291,7 @@ export async function completeProject(projectId: string) {
 
   const { data: project } = await supabase
     .from('ops_projects')
-    .select('id, status')
+    .select('id, name, status, lead_id')
     .eq('id', projectId)
     .is('deleted_at', null)
     .single()
@@ -313,6 +325,15 @@ export async function completeProject(projectId: string) {
     .eq('id', projectId)
 
   if (projectError) throw new Error(projectError.message)
+
+  const adminResult = tryCreateAdminClient()
+  if (!('error' in adminResult)) {
+    await notifyProjectCompleted(adminResult.client, {
+      projectId,
+      projectName: project.name,
+      leadId: project.lead_id,
+    })
+  }
 
   revalidateProjectPaths(projectId)
 }
@@ -463,7 +484,7 @@ export async function updateTask(
 
   const { data: task } = await supabase
     .from('ops_project_tasks')
-    .select('project_id')
+    .select('project_id, title, assignee_id, ops_projects(name)')
     .eq('id', taskId)
     .is('deleted_at', null)
     .single()
@@ -483,6 +504,23 @@ export async function updateTask(
 
   const { error } = await supabase.from('ops_project_tasks').update(updates).eq('id', taskId)
   if (error) throw new Error(error.message)
+
+  if (
+    patch.assigneeId !== undefined &&
+    patch.assigneeId &&
+    patch.assigneeId !== task.assignee_id
+  ) {
+    const adminResult = tryCreateAdminClient()
+    if (!('error' in adminResult)) {
+      await notifyTaskAssigned(adminResult.client, {
+        assigneeId: patch.assigneeId,
+        taskId,
+        taskTitle: task.title,
+        projectId: task.project_id,
+        projectName: projectNameFromRelation(task.ops_projects),
+      })
+    }
+  }
 
   await supabase
     .from('ops_projects')

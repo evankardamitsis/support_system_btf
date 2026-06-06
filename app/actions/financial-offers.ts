@@ -15,7 +15,9 @@ import {
   resolveOfferCompany,
   saveFinancialOfferRecord,
 } from '@/lib/ops/financial-offer/service'
+import { listStaffUserIds, notifyOfferAccepted } from '@/lib/ops/notifications/service'
 import type { FinancialOfferRecord } from '@/lib/ops/financial-offer/types'
+import { tryCreateAdminClient } from '@/lib/supabase/admin'
 
 function revalidateOfferPaths(offerId?: string) {
   revalidatePath('/admin/ops/financial-offers', 'layout')
@@ -109,7 +111,7 @@ export async function acceptFinancialOffer(offerId: string): Promise<void> {
 
   const { data: existing, error: loadError } = await supabase
     .from('financial_offers')
-    .select('id, status')
+    .select('id, status, client_name')
     .eq('id', offerId)
     .is('deleted_at', null)
     .single()
@@ -127,6 +129,21 @@ export async function acceptFinancialOffer(offerId: string): Promise<void> {
     .eq('id', offerId)
 
   if (error) throw new Error(error.message)
+
+  const adminResult = tryCreateAdminClient()
+  if (!('error' in adminResult)) {
+    const staffIds = await listStaffUserIds(adminResult.client)
+    await notifyOfferAccepted(
+      adminResult.client,
+      {
+        offerId,
+        clientName: existing.client_name,
+        acceptedByUserId: user.id,
+      },
+      staffIds
+    )
+  }
+
   revalidateOfferPaths(offerId)
 }
 

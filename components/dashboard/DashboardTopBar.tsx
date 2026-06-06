@@ -10,6 +10,8 @@ import Link from 'next/link'
 import { ProductAreaSwitcher } from '@/components/admin/ProductAreaSwitcher'
 import { getAdminProductArea, getAdminProductAreaConfig } from '@/lib/admin/product-areas'
 import { DashboardSearch } from './DashboardSearch'
+import { OpsDashboardSearch } from './OpsDashboardSearch'
+import { OpsNotificationBell } from './OpsNotificationBell'
 
 function initials(n?: string, e?: string) {
   if (n) {
@@ -87,7 +89,12 @@ export function DashboardTopBar({
       </div>
 
       <div className="flex-1 flex justify-center min-w-0">
-        {variant === 'admin' && adminArea === 'ops' ? null : (
+        {variant === 'admin' && adminArea === 'ops' ? (
+          <OpsDashboardSearch
+            isAdmin={userRole === 'admin'}
+            placeholder="Search projects, offers, hosting…"
+          />
+        ) : (
           <DashboardSearch
             variant={variant}
             placeholder={variant === 'admin' ? 'Search tickets, clients…' : 'Search tickets…'}
@@ -95,7 +102,9 @@ export function DashboardTopBar({
         )}
       </div>
 
-      <div className="relative shrink-0" ref={ref}>
+      <div className="flex items-center gap-2 shrink-0">
+        {variant === 'admin' && adminArea === 'ops' ? <OpsNotificationBell /> : null}
+        <div className="relative" ref={ref}>
         <button
           type="button"
           onClick={() => setOpen(!open)}
@@ -127,6 +136,7 @@ export function DashboardTopBar({
             </button>
           </div>
         ) : null}
+        </div>
       </div>
     </header>
   )

@@ -22,15 +22,17 @@ type StaffOption = { id: string; name: string }
 export function NewProjectForm({
   clients,
   staff,
+  initialClientId,
 }: {
   clients: ClientOption[]
   staff: StaffOption[]
+  initialClientId?: string
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [isInternal, setIsInternal] = useState(false)
   const [templateKey, setTemplateKey] = useState<ProjectTemplateKey>('blank')
-  const [clientId, setClientId] = useState('')
+  const [clientId, setClientId] = useState(initialClientId ?? '')
   const [leadId, setLeadId] = useState('')
 
   const staffOptions = useMemo(

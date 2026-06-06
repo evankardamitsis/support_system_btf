@@ -5,13 +5,21 @@ import { requireStaff } from '@/lib/auth/require-staff'
 import { getCompanyProfileForOffers } from '@/lib/ops/company-profile'
 import { createClient } from '@/lib/supabase/server'
 
-export default async function NewFinancialOfferPage() {
+export default async function NewFinancialOfferPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ client?: string }>
+}) {
   await requireStaff()
+  const { client: clientParam } = await searchParams
   const supabase = await createClient()
   const [{ profile, ibans }, { data: clients }] = await Promise.all([
     getCompanyProfileForOffers(supabase),
     supabase.from('clients').select('id, name, email').order('name'),
   ])
+  const clientRows = clients ?? []
+  const initialClientId =
+    clientParam && clientRows.some(row => row.id === clientParam) ? clientParam : undefined
 
   return (
     <div className="space-y-6 w-full max-w-4xl">
@@ -27,7 +35,8 @@ export default async function NewFinancialOfferPage() {
       <FinancialOfferForm
         savedIbans={ibans}
         upfrontPercent={profile.upfrontPercent}
-        clients={clients ?? []}
+        clients={clientRows}
+        initialClientId={initialClientId}
       />
     </div>
   )

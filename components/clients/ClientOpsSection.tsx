@@ -19,7 +19,13 @@ const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
   archived: 'Archived',
 }
 
-export function ClientOpsSection({ ops }: { ops: ClientOpsSummary }) {
+export function ClientOpsSection({
+  ops,
+  clientId,
+}: {
+  ops: ClientOpsSummary
+  clientId: string
+}) {
   const hasAny = ops.projects.length > 0 || ops.offers.length > 0 || ops.hosting.length > 0
 
   if (!hasAny) {
@@ -27,7 +33,7 @@ export function ClientOpsSection({ ops }: { ops: ClientOpsSummary }) {
       <section className="client-ops-section space-y-3 anim-fade-up anim-fade-up-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="dash-section-title">Operations</h2>
-          <OpsQuickActions />
+          <OpsQuickActions clientId={clientId} />
         </div>
         <div className="dash-empty">
           <p className="dash-empty-title">No OPS records yet</p>
@@ -43,7 +49,7 @@ export function ClientOpsSection({ ops }: { ops: ClientOpsSummary }) {
     <section className="client-ops-section space-y-6 anim-fade-up anim-fade-up-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="dash-section-title">Operations</h2>
-        <OpsQuickActions />
+        <OpsQuickActions clientId={clientId} />
       </div>
 
       {ops.projects.length > 0 ? (
