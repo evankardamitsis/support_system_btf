@@ -5875,7 +5875,8 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 }
 
 [data-theme="dashboard"] .ops-notify-popover-mark-all,
-[data-theme="dashboard"] .ops-notify-popover-clear-all {
+[data-theme="dashboard"] .ops-notify-popover-clear-all,
+[data-theme="dashboard"] .ops-notify-popover-test-sound {
   height: auto;
   min-height: 0;
   padding: 0.125rem 0.375rem;
@@ -5897,6 +5898,15 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 
 [data-theme="dashboard"] .ops-notify-popover-clear-all:hover {
   color: var(--text-2);
+  background: color-mix(in srgb, var(--text-2) 8%, transparent);
+}
+
+[data-theme="dashboard"] .ops-notify-popover-test-sound {
+  color: var(--text-2);
+}
+
+[data-theme="dashboard"] .ops-notify-popover-test-sound:hover {
+  color: var(--text-1);
   background: color-mix(in srgb, var(--text-2) 8%, transparent);
 }
 

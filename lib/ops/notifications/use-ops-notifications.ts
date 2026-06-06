@@ -10,7 +10,7 @@ import {
   mapOpsNotificationRow,
 } from '@/lib/ops/notifications/service'
 import type { OpsNotificationRecord } from '@/lib/ops/notifications/types'
-import { playNotificationChime, primeNotificationAudio } from '@/lib/ui/play-notification-chime'
+import { playNotificationChime } from '@/lib/ui/play-notification-chime'
 
 type NotificationRow = Database['public']['Tables']['ops_notifications']['Row']
 
@@ -49,8 +49,8 @@ export function useOpsNotifications() {
   const [items, setItems] = useState<OpsNotificationRecord[]>([])
   const [realtimeConnected, setRealtimeConnected] = useState(false)
   const itemsRef = useRef<OpsNotificationRecord[]>([])
-  const realtimeReadyRef = useRef(false)
   const channelRef = useRef<RealtimeChannel | null>(null)
+  const hasLoadedOnceRef = useRef(false)
 
   itemsRef.current = items
 
@@ -70,19 +70,15 @@ export function useOpsNotifications() {
   }, [])
 
   const applyInsert = useCallback((row: OpsNotificationRecord) => {
-    let isNewUnread = false
+    if (itemsRef.current.some(item => item.id === row.id)) return
 
-    setItems(prev => {
-      if (prev.some(item => item.id === row.id)) return prev
-      isNewUnread = !row.readAt
-      return upsertNotification(prev, row)
-    })
+    const isNewUnread = !row.readAt
+
+    setItems(prev => upsertNotification(prev, row))
 
     if (isNewUnread) {
       setUnreadCount(count => count + 1)
-      if (realtimeReadyRef.current) {
-        void playNotificationChime()
-      }
+      playNotificationChime()
     }
   }, [])
 
@@ -109,29 +105,29 @@ export function useOpsNotifications() {
         countUnreadOpsNotifications(supabase, user.id),
         listOpsNotifications(supabase, user.id, LIST_LIMIT),
       ])
+
+      const previousIds = new Set(itemsRef.current.map(item => item.id))
+      const newUnread = notifications.filter(
+        item => !item.readAt && !previousIds.has(item.id)
+      )
+
       setUnreadCount(count)
       setItems(notifications)
       setError(null)
+
+      if (hasLoadedOnceRef.current && newUnread.length > 0) {
+        playNotificationChime()
+      }
+      hasLoadedOnceRef.current = true
     } catch (err) {
       setUnreadCount(0)
       setItems([])
       setError(err instanceof Error ? err.message : 'Could not load notifications')
     } finally {
       setLoading(false)
-      realtimeReadyRef.current = true
     }
 
     return user.id
-  }, [])
-
-  useEffect(() => {
-    const primeOnce = () => {
-      void primeNotificationAudio()
-      document.removeEventListener('pointerdown', primeOnce, true)
-    }
-
-    document.addEventListener('pointerdown', primeOnce, true)
-    return () => document.removeEventListener('pointerdown', primeOnce, true)
   }, [])
 
   useEffect(() => {

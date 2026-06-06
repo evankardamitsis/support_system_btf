@@ -1,107 +1,308 @@
-let audioContext: AudioContext | null = null
+const CHIME_VOLUME = 0.44
+const CHIME_VERSION = 11
 
-function getAudioContext(): AudioContext | null {
+let chimeSrc: string | null = null
+let cachedVersion = 0
+let sharedAudio: HTMLAudioElement | null = null
+let primed = false
+let pendingChime = false
+let initialized = false
+
+type ChimeTone = {
+  freq: number
+  start: number
+  duration: number
+  gain: number
+  overtone?: number
+}
+
+const NOTE_SPACING = 0.2
+const NOTE_DURATION = 0.18
+const NOTE_OVERTONE = 0.07
+
+function midiToFreq(midi: number) {
+  return 440 * Math.pow(2, (midi - 69) / 12)
+}
+
+// Master of Puppets intro: opening power-chord roots (+1 octave).
+const MOP_INTRO_MIDI = [
+  64, // E4 — E5 power chord
+  62, // D4 — D5
+] as const
+
+const CHIME_TONES: ChimeTone[] = MOP_INTRO_MIDI.map((midi, index) => ({
+  freq: midiToFreq(midi),
+  start: index * NOTE_SPACING,
+  duration: NOTE_DURATION,
+  gain: 0.5,
+  overtone: NOTE_OVERTONE,
+}))
+
+function smoothStep(t: number) {
+  const clamped = Math.max(0, Math.min(1, t))
+  return clamped * clamped * (3 - 2 * clamped)
+}
+
+function toneEnvelope(elapsed: number, duration: number) {
+  if (elapsed < 0 || elapsed >= duration) return 0
+
+  const attackMs = 0.008
+  const releaseMs = 0.028
+  const body = smoothStep(elapsed / attackMs) * Math.exp(-elapsed * 10)
+
+  if (elapsed <= duration - releaseMs) return body
+
+  const release = smoothStep((duration - elapsed) / releaseMs)
+  return body * release
+}
+
+function toneAt(time: number, tone: ChimeTone) {
+  const elapsed = time - tone.start
+  const envelope = toneEnvelope(elapsed, tone.duration)
+  if (envelope <= 0) return 0
+
+  const phase = 2 * Math.PI * tone.freq * time
+  const fundamental = Math.sin(phase)
+  const overtone =
+    tone.overtone != null ? Math.sin(phase * 2) * tone.overtone : 0
+
+  return (fundamental + overtone) * tone.gain * envelope
+}
+
+function applyReverbTail(
+  dry: Float32Array,
+  sampleRate: number,
+  tailSec = 0.45,
+) {
+  const tailSamples = Math.floor(sampleRate * tailSec)
+  const length = dry.length + tailSamples
+  const output = new Float32Array(length)
+
+  const combDelays = [
+    Math.floor(sampleRate * 0.0297),
+    Math.floor(sampleRate * 0.0371),
+    Math.floor(sampleRate * 0.0411),
+    Math.floor(sampleRate * 0.0437),
+  ]
+  const combBuffers = combDelays.map((delay) => new Float32Array(delay))
+  const combIndices = combDelays.map(() => 0)
+  const combFeedback = 0.74
+  const wetMix = 0.3
+  const dampStates = combDelays.map(() => 0)
+
+  for (let i = 0; i < length; i++) {
+    const input = i < dry.length ? dry[i]! : 0
+    let wet = 0
+
+    for (let c = 0; c < combDelays.length; c++) {
+      const delay = combDelays[c]!
+      const buf = combBuffers[c]!
+      const idx = combIndices[c]!
+      const delayed = buf[idx]!
+      const damp = dampStates[c]!
+      const filtered = delayed * 0.72 + damp * 0.28
+      dampStates[c] = filtered
+      buf[idx] = input + filtered * combFeedback
+      combIndices[c] = (idx + 1) % delay
+      wet += delayed
+    }
+
+    const drySample = i < dry.length ? dry[i]! : 0
+    output[i] = drySample + (wet / combDelays.length) * wetMix
+  }
+
+  const fadeStart = dry.length
+  for (let i = fadeStart; i < length; i++) {
+    const fade = smoothStep((length - i) / tailSamples)
+    output[i] = output[i]! * fade
+  }
+
+  output[length - 1] = 0
+  return output
+}
+
+function buildChimeSrc() {
+  const sampleRate = 22050
+  const lastTone = CHIME_TONES[CHIME_TONES.length - 1]!
+  const dryDuration = lastTone.start + lastTone.duration + 0.02
+  const drySamples = Math.floor(sampleRate * dryDuration)
+  const dry = new Float32Array(drySamples)
+
+  for (let i = 0; i < drySamples; i++) {
+    const time = i / sampleRate
+    let sample = 0
+    for (const tone of CHIME_TONES) {
+      sample += toneAt(time, tone)
+    }
+    dry[i] = sample
+  }
+
+  const samples = applyReverbTail(dry, sampleRate)
+  const numSamples = samples.length
+  const dataSize = numSamples * 2
+  const buffer = new ArrayBuffer(44 + dataSize)
+  const view = new DataView(buffer)
+
+  const writeString = (offset: number, value: string) => {
+    for (let i = 0; i < value.length; i++) {
+      view.setUint8(offset + i, value.charCodeAt(i))
+    }
+  }
+
+  writeString(0, 'RIFF')
+  view.setUint32(4, 36 + dataSize, true)
+  writeString(8, 'WAVE')
+  writeString(12, 'fmt ')
+  view.setUint32(16, 16, true)
+  view.setUint16(20, 1, true)
+  view.setUint16(22, 1, true)
+  view.setUint32(24, sampleRate, true)
+  view.setUint32(28, sampleRate * 2, true)
+  view.setUint16(32, 2, true)
+  view.setUint16(34, 16, true)
+  writeString(36, 'data')
+  view.setUint32(40, dataSize, true)
+
+  let peak = 0
+  for (let i = 0; i < numSamples; i++) {
+    peak = Math.max(peak, Math.abs(samples[i]!))
+  }
+
+  const normalize = peak > 0 ? 0.88 / peak : 1
+
+  for (let i = 0; i < numSamples; i++) {
+    const value = samples[i]! * normalize
+    const clamped = Math.max(-1, Math.min(1, value))
+    view.setInt16(44 + i * 2, Math.floor(clamped * 32767), true)
+  }
+
+  view.setInt16(44 + (numSamples - 1) * 2, 0, true)
+
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]!)
+  }
+
+  return `data:audio/wav;base64,${btoa(binary)}`
+}
+
+function getChimeSrc() {
+  if (!chimeSrc || cachedVersion !== CHIME_VERSION) {
+    chimeSrc = buildChimeSrc()
+    cachedVersion = CHIME_VERSION
+  }
+  return chimeSrc
+}
+
+function getSharedAudio(): HTMLAudioElement | null {
   if (typeof window === 'undefined') return null
 
-  if (!audioContext) {
-    const AudioCtx =
-      window.AudioContext ||
-      (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-    if (!AudioCtx) return null
-    audioContext = new AudioCtx()
+  const src = getChimeSrc()
+  if (!sharedAudio) {
+    sharedAudio = new Audio(src)
+    sharedAudio.preload = 'auto'
+    sharedAudio.volume = CHIME_VOLUME
+    return sharedAudio
   }
 
-  return audioContext
-}
-
-export async function primeNotificationAudio() {
-  const ctx = getAudioContext()
-  if (!ctx || ctx.state === 'running') return
-  try {
-    await ctx.resume()
-  } catch {
-    // Browser may block until a user gesture; a later click will retry.
-  }
-}
-
-function playLuxuryChime(ctx: AudioContext, start: number) {
-  const master = ctx.createGain()
-  master.gain.setValueAtTime(0.0001, start)
-  master.gain.exponentialRampToValueAtTime(0.11, start + 0.035)
-  master.gain.exponentialRampToValueAtTime(0.035, start + 0.2)
-  master.gain.exponentialRampToValueAtTime(0.0001, start + 0.62)
-
-  const filter = ctx.createBiquadFilter()
-  filter.type = 'lowpass'
-  filter.frequency.setValueAtTime(3200, start)
-  filter.frequency.exponentialRampToValueAtTime(780, start + 0.5)
-  filter.Q.setValueAtTime(0.85, start)
-  filter.connect(master)
-  master.connect(ctx.destination)
-
-  const playBellTone = (
-    frequency: number,
-    at: number,
-    duration: number,
-    volume: number
-  ) => {
-    const toneGain = ctx.createGain()
-    toneGain.gain.setValueAtTime(0.0001, at)
-    toneGain.gain.exponentialRampToValueAtTime(volume, at + 0.012)
-    toneGain.gain.exponentialRampToValueAtTime(0.0001, at + duration)
-    toneGain.connect(filter)
-
-    const body = ctx.createOscillator()
-    body.type = 'triangle'
-    body.frequency.setValueAtTime(frequency, at)
-    body.connect(toneGain)
-
-    const chorus = ctx.createOscillator()
-    chorus.type = 'triangle'
-    chorus.frequency.setValueAtTime(frequency * 1.004, at)
-    const chorusGain = ctx.createGain()
-    chorusGain.gain.setValueAtTime(0.38, at)
-    chorus.connect(chorusGain)
-    chorusGain.connect(toneGain)
-
-    const shimmer = ctx.createOscillator()
-    shimmer.type = 'sine'
-    shimmer.frequency.setValueAtTime(frequency * 2.02, at)
-    const shimmerGain = ctx.createGain()
-    shimmerGain.gain.setValueAtTime(0.14, at)
-    shimmer.connect(shimmerGain)
-    shimmerGain.connect(toneGain)
-
-    body.start(at)
-    chorus.start(at)
-    shimmer.start(at)
-    body.stop(at + duration)
-    chorus.stop(at + duration)
-    shimmer.stop(at + duration)
+  if (sharedAudio.src !== src) {
+    sharedAudio.src = src
+    sharedAudio.load()
   }
 
-  // Ascending D-major sparkle: F#5 → A5 → D6
-  playBellTone(739.99, start, 0.3, 0.52)
-  playBellTone(880, start + 0.075, 0.34, 0.42)
-  playBellTone(1174.66, start + 0.155, 0.42, 0.28)
+  return sharedAudio
 }
 
-export async function playNotificationChime() {
-  if (typeof window === 'undefined') return
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-  if (document.visibilityState !== 'visible') return
+async function playChimeNow(): Promise<void> {
+  if (typeof window === 'undefined') {
+    throw new Error('Audio is not available')
+  }
+  if (document.visibilityState !== 'visible') {
+    throw new Error('Tab is not visible')
+  }
 
-  const ctx = getAudioContext()
-  if (!ctx) return
+  const audio = getSharedAudio()
+  if (!audio) throw new Error('Audio is not supported')
 
-  try {
-    if (ctx.state === 'suspended') {
-      await ctx.resume()
+  audio.volume = CHIME_VOLUME
+  if (!audio.paused) {
+    audio.pause()
+  }
+  audio.currentTime = 0
+  await audio.play()
+  primed = true
+  pendingChime = false
+}
+
+function flushPendingChime() {
+  if (!pendingChime) return
+  void playChimeNow().catch(() => {
+    pendingChime = true
+  })
+}
+
+function unlockFromGesture() {
+  const audio = getSharedAudio()
+  if (!audio) return
+
+  if (!primed) {
+    audio.volume = 0.001
+    if (!audio.paused) {
+      audio.pause()
     }
-    if (ctx.state !== 'running') return
-  } catch {
+    audio.currentTime = 0
+    const prime = audio.play()
+    if (!prime) return
+    prime
+      .then(() => {
+        audio.pause()
+        audio.volume = CHIME_VOLUME
+        audio.currentTime = 0
+        primed = true
+        flushPendingChime()
+      })
+      .catch(() => {
+        // Still waiting for a stronger user gesture.
+      })
     return
   }
 
-  playLuxuryChime(ctx, ctx.currentTime)
+  flushPendingChime()
+}
+
+/** Call once when the dashboard mounts — keeps audio ready for realtime notifications. */
+export function initNotificationAudio() {
+  if (typeof window === 'undefined' || initialized) return
+  initialized = true
+
+  getChimeSrc()
+
+  for (const event of ['pointerdown', 'keydown', 'touchstart', 'mousedown'] as const) {
+    window.addEventListener(event, unlockFromGesture, { capture: true, passive: true })
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      flushPendingChime()
+    }
+  })
+}
+
+export function playNotificationChime() {
+  void playChimeNow().catch(() => {
+    pendingChime = true
+  })
+}
+
+/** User-initiated test — runs inside a click handler so browsers allow playback. */
+export async function testNotificationChime(): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await playChimeNow()
+    return { ok: true }
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : 'Could not play notification sound'
+    return { ok: false, error: message }
+  }
 }

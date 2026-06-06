@@ -15,7 +15,6 @@ import {
 } from '@/lib/ops/notifications/service'
 import { useOpsNotifications } from '@/lib/ops/notifications/use-ops-notifications'
 import type { OpsNotificationRecord } from '@/lib/ops/notifications/types'
-import { primeNotificationAudio } from '@/lib/ui/play-notification-chime'
 import { formatDateTimeHuman } from '@/lib/tickets/display'
 
 const TYPE_LABELS: Record<OpsNotificationRecord['type'], string> = {
@@ -108,7 +107,6 @@ export function OpsNotificationBell() {
       notifications={notifications}
       open={open}
       onOpenChange={nextOpen => {
-        void primeNotificationAudio()
         setOpen(nextOpen)
         if (nextOpen) void refresh()
       }}

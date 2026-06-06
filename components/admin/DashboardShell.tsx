@@ -1,6 +1,7 @@
 'use client'
 
 import { ResolveCelebrationProvider } from '@/components/admin/ResolveCelebrationProvider'
+import { NotificationAudioInit } from '@/components/dashboard/NotificationAudioInit'
 import { useSidebarOpen } from '@/lib/ui/use-sidebar-open'
 import { AdminSidebar } from './Sidebar'
 import { TopBar } from './TopBar'
@@ -17,6 +18,7 @@ export function DashboardShell({ children, userName, userEmail, userRole }: Dash
 
   return (
     <ResolveCelebrationProvider>
+    <NotificationAudioInit />
     <div data-theme="dashboard" className="flex flex-col h-screen overflow-hidden dash-shell">
       <TopBar
         userName={userName}

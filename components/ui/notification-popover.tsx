@@ -87,6 +87,7 @@ export type NotificationPopoverProps = {
   onDismissItem?: (id: string) => void
   onMarkAllRead?: () => void
   onClearAll?: () => void
+  onTestSound?: () => void
   unreadCount?: number
   loading?: boolean
   error?: string | null
@@ -104,6 +105,7 @@ export function NotificationPopover({
   onDismissItem,
   onMarkAllRead,
   onClearAll,
+  onTestSound,
   unreadCount: unreadCountProp,
   loading = false,
   error = null,
@@ -123,6 +125,7 @@ export function NotificationPopover({
     unreadCountProp ?? notifications.filter(notification => !notification.read).length
   const showMarkAll = unreadCount > 0 && onMarkAllRead
   const showClearAll = notifications.length > 0 && onClearAll
+  const showHeadActions = Boolean(onTestSound || showMarkAll || showClearAll)
 
   useEffect(() => {
     setPortalReady(true)
@@ -190,8 +193,19 @@ export function NotificationPopover({
           >
           <div className="ops-notify-popover-head">
             <h3 className="ops-notify-popover-head-title">Notifications</h3>
-            {showMarkAll || showClearAll ? (
+            {showHeadActions ? (
               <div className="ops-notify-popover-head-actions">
+                {onTestSound ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="ops-notify-popover-test-sound"
+                    onClick={onTestSound}
+                  >
+                    Test sound
+                  </Button>
+                ) : null}
                 {showMarkAll ? (
                   <Button
                     type="button"
