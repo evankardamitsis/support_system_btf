@@ -80,33 +80,33 @@ export function FinancialOffersList({
           {offers.map(offer => (
             <div key={offer.id} className="financial-offers-entry">
               <div className="financial-offers-grid financial-offers-row">
-                <div className="financial-offers-cell min-w-0" data-label="Client">
+                <div className="financial-offers-cell financial-offers-cell-primary min-w-0" data-label="Client">
                   <p className="financial-offers-client">{offer.clientName}</p>
                   {offer.clientEmail ? (
-                    <p className="dash-meta truncate">{offer.clientEmail}</p>
+                    <p className="ops-card-meta truncate">{offer.clientEmail}</p>
                   ) : (
-                    <p className="dash-meta">No email saved</p>
+                    <p className="ops-card-meta">No email saved</p>
                   )}
                 </div>
-                <div className="financial-offers-cell tabular-nums" data-label="Total">
+                <div className="financial-offers-cell financial-offers-cell-total tabular-nums" data-label="Total">
                   {formatOfferCurrency(offer.totalAmount)}
                 </div>
-                <div className="financial-offers-cell tabular-nums" data-label="Upfront">
+                <div className="financial-offers-cell financial-offers-cell-upfront tabular-nums" data-label="Upfront">
                   {formatOfferCurrency(offer.upfrontAmount)}
                 </div>
-                <div className="financial-offers-cell" data-label="Status">
+                <div className="financial-offers-cell financial-offers-cell-status" data-label="Status">
                   {offer.status === 'accepted' ? (
                     <span className="financial-offers-active-badge">Accepted</span>
                   ) : (
                     <span className="dash-meta">Open</span>
                   )}
                 </div>
-                <div className="financial-offers-cell" data-label="Created">
+                <div className="financial-offers-cell financial-offers-cell-created" data-label="Created">
                   <time dateTime={offer.createdAt} className="dash-meta">
                     {formatDateTimeHuman(offer.createdAt)}
                   </time>
                 </div>
-                <div className="financial-offers-cell" data-label="Email">
+                <div className="financial-offers-cell financial-offers-cell-email" data-label="Email">
                   {offer.emailedAt ? (
                     <span className="financial-offers-sent-badge">Sent</span>
                   ) : (

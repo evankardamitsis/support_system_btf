@@ -36,7 +36,7 @@ export default async function HostingContractDetailPage({
         ← Back to hosting
       </Link>
 
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="dash-page-toolbar flex flex-wrap items-start justify-between gap-4">
         <PageHeader
           title={contract.name}
           description={`${contract.clientName} · ${formatHostingContractCost(contract.costAmount, contract.periodType, contract.customPeriod)} · ${HOSTING_CONTRACT_STATUS_LABELS[contract.status]}`}

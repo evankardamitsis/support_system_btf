@@ -67,7 +67,7 @@ export function NewClientForm() {
                 disabled={pending}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
                 <label className="dash-label">Contact name</label>
                 <input
@@ -91,7 +91,7 @@ export function NewClientForm() {
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
                 <label className="dash-label">Billing cycle day</label>
                 <input
@@ -139,7 +139,7 @@ export function NewClientForm() {
               </div>
             </div>
 
-            <div className={`grid gap-4 ${isHoursBasedPackage(packageName) ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            <div className={`grid gap-4 ${isHoursBasedPackage(packageName) ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
               {isHoursBasedPackage(packageName) ? (
                 <div>
                   <label className="dash-label">
@@ -190,7 +190,7 @@ export function NewClientForm() {
             </label>
 
             {customDates ? (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div>
                   <label className="dash-label">Start</label>
                   <input

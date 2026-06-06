@@ -172,7 +172,7 @@ export function FinancialOfferForm({ savedIbans, upfrontPercent }: FinancialOffe
   return (
     <div className="financial-offer-form space-y-6">
       <section className="dash-panel px-5 py-5 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div>
             <label className="dash-label" htmlFor="offer-client-name">
               Client name <span className="dash-label-required">*</span>
@@ -254,7 +254,7 @@ export function FinancialOfferForm({ savedIbans, upfrontPercent }: FinancialOffe
           <label className="dash-label" htmlFor="offer-hosting-amount">
             Hosting & maintenance <span className="dash-meta">(optional)</span>
           </label>
-          <div className="financial-offer-hosting grid grid-cols-1 sm:grid-cols-[8rem_8rem_1fr] gap-2 max-w-xl">
+          <div className="financial-offer-hosting grid grid-cols-1 lg:grid-cols-[8rem_8rem_1fr] gap-2 max-w-xl">
             <input
               id="offer-hosting-amount"
               type="number"

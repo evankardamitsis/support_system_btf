@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { formatProjectCost, formatProjectDate } from '@/lib/ops/projects/display'
 import type { OpsProjectRecord, ProjectStatus } from '@/lib/ops/projects/types'
@@ -78,41 +79,47 @@ export function ProjectsList({ projects }: { projects: OpsProjectRecord[] }) {
                   href={`/admin/ops/projects/${project.id}`}
                   className="ops-projects-grid ops-projects-row"
                 >
-                  <div className="ops-projects-cell min-w-0" data-label="Project">
+                  <div className="ops-projects-cell ops-projects-cell-primary min-w-0" data-label="Project">
                     <p className="ops-projects-name">{project.name}</p>
-                    {project.financialOfferId ? (
-                      <p className="dash-meta">From offer</p>
-                    ) : null}
+                    <p className="ops-card-meta">
+                      {project.isInternal
+                        ? 'Internal'
+                        : (project.clientName ?? 'No client')}
+                      {project.financialOfferId ? ' · From offer' : ''}
+                    </p>
                   </div>
-                  <div className="ops-projects-cell" data-label="Client">
+                  <div className="ops-projects-cell ops-projects-cell-client" data-label="Client">
                     {project.isInternal ? (
                       <span className="ops-projects-internal-badge">Internal</span>
                     ) : (
                       <span>{project.clientName ?? '—'}</span>
                     )}
                   </div>
-                  <div className="ops-projects-cell" data-label="Status">
+                  <div className="ops-projects-cell ops-projects-cell-status" data-label="Status">
                     <span className={`ops-projects-status ops-projects-status--${project.status}`}>
                       {STATUS_LABELS[project.status]}
                     </span>
                   </div>
-                  <div className="ops-projects-cell" data-label="Progress">
+                  <div className="ops-projects-cell ops-projects-cell-progress" data-label="Progress">
                     <span className="tabular-nums">
                       {project.doneTaskCount}/{project.taskCount}
                     </span>
                     <span className="dash-meta ml-2">{pct}%</span>
                   </div>
-                  <div className="ops-projects-cell tabular-nums" data-label="Cost">
+                  <div className="ops-projects-cell ops-projects-cell-cost tabular-nums" data-label="Cost">
                     {formatProjectCost(project.costAmount)}
                   </div>
-                  <div className="ops-projects-cell tabular-nums" data-label="Start">
+                  <div className="ops-projects-cell ops-projects-cell-start tabular-nums" data-label="Start">
                     <time dateTime={project.startDate ?? undefined}>{formatProjectDate(project.startDate)}</time>
                   </div>
-                  <div className="ops-projects-cell tabular-nums" data-label="Target">
+                  <div className="ops-projects-cell ops-projects-cell-target tabular-nums" data-label="Target">
                     <time dateTime={project.targetDate ?? undefined}>{formatProjectDate(project.targetDate)}</time>
                   </div>
-                  <div className="ops-projects-cell" data-label="Lead">
+                  <div className="ops-projects-cell ops-projects-cell-lead" data-label="Lead">
                     <span className="dash-meta">{project.leadName ?? '—'}</span>
+                  </div>
+                  <div className="ops-projects-cell-chevron" aria-hidden>
+                    <ChevronRight size={15} />
                   </div>
                 </Link>
               )

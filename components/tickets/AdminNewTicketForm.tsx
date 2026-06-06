@@ -81,7 +81,7 @@ export function AdminNewTicketForm({
           <p className="dash-meta mt-1">Teammate is notified by email when assigned.</p>
         </div>
       ) : null}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div>
           <label className="dash-label">Type</label>
           <select name="type" defaultValue="task" className="dash-select w-full text-sm" disabled={pending}>

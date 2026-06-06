@@ -192,7 +192,7 @@ export function NewProjectForm({
               <p className="dash-meta mt-1">Optional. Set manually or leave blank.</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
                 <label className="dash-label">Start date</label>
                 <input type="date" name="startDate" className="btf-input w-full" disabled={pending} />

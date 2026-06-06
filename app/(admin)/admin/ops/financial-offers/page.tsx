@@ -18,15 +18,15 @@ export default async function FinancialOffersPage() {
 
   return (
     <div className="space-y-6 w-full">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <PageHeader
-          title="Financial offers"
-          description="Saved offer history — download PDFs or resend to clients."
-        />
-        <Link href="/admin/ops/financial-offers/new" className="dash-btn-primary btn-primary shrink-0">
-          New offer
-        </Link>
-      </div>
+      <PageHeader
+        title="Financial offers"
+        description="Saved offer history — download PDFs or resend to clients."
+        action={
+          <Link href="/admin/ops/financial-offers/new" className="dash-btn-primary btn-primary">
+            New offer
+          </Link>
+        }
+      />
 
       <FinancialOffersList offers={offers} isAdmin={isAdmin} offerProjectIds={offerProjectIds} />
     </div>

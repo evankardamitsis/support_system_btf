@@ -54,7 +54,7 @@ export function InviteClientTeamForm() {
           account. Ticket notification emails still go only to your main contact address.
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div>
             <label className="dash-label" htmlFor="client-team-full-name">
               Full name <span className="dash-label-required">*</span>

@@ -10,18 +10,15 @@ export default async function HostingMaintenancePage() {
 
   return (
     <div className="space-y-6 w-full">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <PageHeader
-          title="Hosting & maintenance"
-          description="Track hosting contracts, expiry dates, and send renewal reminders to clients."
-        />
-        <Link
-          href="/admin/ops/hosting-maintenance/new"
-          className="dash-btn-primary btn-primary shrink-0"
-        >
-          New contract
-        </Link>
-      </div>
+      <PageHeader
+        title="Hosting & maintenance"
+        description="Track hosting contracts, expiry dates, and send renewal reminders to clients."
+        action={
+          <Link href="/admin/ops/hosting-maintenance/new" className="dash-btn-primary btn-primary">
+            New contract
+          </Link>
+        }
+      />
 
       <HostingContractsList contracts={contracts} />
     </div>

@@ -54,7 +54,7 @@ export function CompanyProfileForm({ profile, ibans }: CompanyProfileFormProps) 
           Used on financial offer PDFs — letterhead, contact details, and default upfront %.
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="sm:col-span-2">
             <label className="dash-label" htmlFor="company-name">
               Company name
@@ -163,7 +163,7 @@ export function CompanyProfileForm({ profile, ibans }: CompanyProfileFormProps) 
 
         {showNewIban ? (
           <form
-            className="company-iban-form grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 border border-[var(--border)]"
+            className="company-iban-form grid grid-cols-1 lg:grid-cols-2 gap-3 p-4 border border-[var(--border)]"
             onSubmit={e => {
               e.preventDefault()
               const formData = new FormData(e.currentTarget)

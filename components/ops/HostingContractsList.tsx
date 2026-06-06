@@ -129,30 +129,31 @@ export function HostingContractsList({ contracts }: { contracts: HostingContract
               const expiring = isExpiringSoon(contract.periodEnd, contract.status)
               return (
                 <div key={contract.id} className={`ops-hosting-grid ops-hosting-row${expiring ? ' ops-hosting-row--expiring' : ''}`}>
-                  <div className="ops-hosting-cell min-w-0" data-label="Name">
+                  <div className="ops-hosting-cell ops-hosting-cell-primary min-w-0" data-label="Name">
                     <Link
                       href={`/admin/ops/hosting-maintenance/${contract.id}`}
                       className="ops-hosting-name"
                     >
                       {contract.name}
                     </Link>
+                    <p className="ops-card-meta">{contract.clientName}</p>
                   </div>
-                  <div className="ops-hosting-cell" data-label="Client">
+                  <div className="ops-hosting-cell ops-hosting-cell-client" data-label="Client">
                     {contract.clientName}
                   </div>
-                  <div className="ops-hosting-cell tabular-nums" data-label="Cost">
+                  <div className="ops-hosting-cell ops-hosting-cell-cost tabular-nums" data-label="Cost">
                     {formatHostingContractCost(
                       contract.costAmount,
                       contract.periodType,
                       contract.customPeriod
                     )}
                   </div>
-                  <div className="ops-hosting-cell tabular-nums" data-label="Period">
+                  <div className="ops-hosting-cell ops-hosting-cell-period tabular-nums" data-label="Period">
                     <time dateTime={contract.periodStart}>{formatHostingDate(contract.periodStart)}</time>
                     <span className="dash-meta mx-1">→</span>
                     <time dateTime={contract.periodEnd}>{formatHostingDate(contract.periodEnd)}</time>
                   </div>
-                  <div className="ops-hosting-cell" data-label="Expires">
+                  <div className="ops-hosting-cell ops-hosting-cell-expires" data-label="Expires">
                     <span className={expiring ? 'ops-hosting-expiry--soon' : days < 0 ? 'ops-hosting-expiry--past' : ''}>
                       {formatHostingDate(contract.periodEnd)}
                     </span>
@@ -162,7 +163,7 @@ export function HostingContractsList({ contracts }: { contracts: HostingContract
                       </span>
                     ) : null}
                   </div>
-                  <div className="ops-hosting-cell" data-label="Status">
+                  <div className="ops-hosting-cell ops-hosting-cell-status" data-label="Status">
                     <span className={`ops-hosting-status ops-hosting-status--${contract.status}`}>
                       {HOSTING_CONTRACT_STATUS_LABELS[contract.status]}
                     </span>

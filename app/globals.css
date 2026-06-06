@@ -1138,30 +1138,12 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   background: color-mix(in srgb, var(--dash-chrome) 50%, transparent);
 }
 
-@media (max-width: 767px) {
-  [data-theme="dashboard"] .financial-offers-grid-head {
-    display: none;
-  }
+[data-theme="dashboard"] .ops-card-meta {
+  display: none;
+}
 
-  [data-theme="dashboard"] .financial-offers-row {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-  }
-
-  [data-theme="dashboard"] .financial-offers-cell::before {
-    content: attr(data-label);
-    display: block;
-    font-size: 0.625rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-3);
-    font-family: var(--font-dm-mono);
-    margin-bottom: 0.15rem;
-  }
-
-  [data-theme="dashboard"] .financial-offers-actions {
-    justify-content: flex-start;
-  }
+[data-theme="dashboard"] .ops-projects-cell-chevron {
+  display: none;
 }
 
 /* Ops projects */
@@ -2290,7 +2272,7 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   border-color: color-mix(in srgb, #f87171 50%, var(--border));
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   [data-theme="dashboard"] .ops-project-head--expanded {
     padding: 1rem;
   }
@@ -3185,85 +3167,9 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   margin-bottom: 0.25rem;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   [data-theme="dashboard"] .ops-kanban {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  [data-theme="dashboard"] .ops-list-col-head {
-    display: none;
-  }
-
-  [data-theme="dashboard"] .ops-list-task-grid {
-    grid-template-columns: 1fr;
-    gap: 0.45rem;
-    padding-block: 0.85rem;
-  }
-
-  [data-theme="dashboard"] .ops-list-task-main {
-    padding-bottom: 0.15rem;
-  }
-
-  [data-theme="dashboard"] .ops-list-task-priority[data-label]::before,
-  [data-theme="dashboard"] .ops-list-task-status[data-label]::before,
-  [data-theme="dashboard"] .ops-list-task-assignee[data-label]::before {
-    content: attr(data-label);
-    display: block;
-    font-size: 0.625rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-3);
-    font-family: var(--font-dm-mono);
-    margin-bottom: 0.2rem;
-  }
-
-  [data-theme="dashboard"] .ops-list-task-actions {
-    justify-content: flex-start;
-    padding-top: 0.15rem;
-  }
-
-  [data-theme="dashboard"] .ops-projects-grid-head {
-    display: none;
-  }
-
-  [data-theme="dashboard"] .ops-projects-row {
-    grid-template-columns: 1fr;
-    gap: 0.35rem;
-  }
-
-  [data-theme="dashboard"] .ops-projects-cell::before {
-    content: attr(data-label);
-    display: block;
-    font-size: 0.625rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-3);
-    font-family: var(--font-dm-mono);
-    margin-bottom: 0.15rem;
-  }
-
-  [data-theme="dashboard"] .ops-hosting-grid-head {
-    display: none;
-  }
-
-  [data-theme="dashboard"] .ops-hosting-row {
-    grid-template-columns: 1fr;
-    gap: 0.35rem;
-  }
-
-  [data-theme="dashboard"] .ops-hosting-cell::before {
-    content: attr(data-label);
-    display: block;
-    font-size: 0.625rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-3);
-    font-family: var(--font-dm-mono);
-    margin-bottom: 0.15rem;
-  }
-
-  [data-theme="dashboard"] .ops-hosting-actions {
-    justify-content: flex-start;
   }
 }
 
@@ -4939,8 +4845,8 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   border-top: none;
 }
 
-/* ─── Mobile table cards (tickets) — compact 2-line rows ───────────────────── */
-@media (max-width: 720px) {
+/* ─── Tablet + mobile table cards (tickets) — compact 2-line rows ───────────── */
+@media (max-width: 1024px) {
   [data-theme="dashboard"] .tickets-table-header {
     display: none;
   }
@@ -5171,6 +5077,349 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   [data-theme="dashboard"] .tickets-table {
     border-left: none;
     border-right: none;
+  }
+
+  /* ─── Ops mobile cards — compact 2-line rows (matches tickets) ───────────── */
+  [data-theme="dashboard"] .ops-layout {
+    margin-left: -0.25rem;
+    margin-right: -0.25rem;
+  }
+
+  [data-theme="dashboard"] .ops-projects-filters {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+    margin: 0 -0.25rem;
+    padding: 0 0.25rem;
+  }
+
+  [data-theme="dashboard"] .ops-projects-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  [data-theme="dashboard"] .ops-projects-filter {
+    flex-shrink: 0;
+  }
+
+  [data-theme="dashboard"] .financial-offers-grid-head,
+  [data-theme="dashboard"] .ops-hosting-grid-head,
+  [data-theme="dashboard"] .ops-projects-grid-head,
+  [data-theme="dashboard"] .ops-list-col-head {
+    display: none;
+  }
+
+  [data-theme="dashboard"] .financial-offers-table,
+  [data-theme="dashboard"] .ops-hosting-table,
+  [data-theme="dashboard"] .ops-projects-table {
+    border-left: none;
+    border-right: none;
+  }
+
+  [data-theme="dashboard"] .financial-offers-cell[data-label]::before,
+  [data-theme="dashboard"] .ops-hosting-cell[data-label]::before,
+  [data-theme="dashboard"] .ops-projects-cell[data-label]::before,
+  [data-theme="dashboard"] .ops-list-task-priority[data-label]::before,
+  [data-theme="dashboard"] .ops-list-task-status[data-label]::before,
+  [data-theme="dashboard"] .ops-list-task-assignee[data-label]::before {
+    display: none;
+  }
+
+  [data-theme="dashboard"] .ops-card-meta {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.625rem;
+    line-height: 1.35;
+    color: var(--text-3);
+  }
+
+  [data-theme="dashboard"] .financial-offers-row,
+  [data-theme="dashboard"] .ops-hosting-row,
+  [data-theme="dashboard"] .ops-projects-row {
+    position: relative;
+    align-items: center;
+    gap: 0.25rem 0.375rem;
+    padding: 0.5rem 0.625rem;
+    min-height: 0;
+  }
+
+  [data-theme="dashboard"] .financial-offers-row {
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    padding-right: 2.75rem;
+  }
+
+  [data-theme="dashboard"] .financial-offers-cell-primary {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  [data-theme="dashboard"] .financial-offers-client {
+    font-size: 0.8125rem;
+    line-height: 1.3;
+  }
+
+  [data-theme="dashboard"] .financial-offers-cell-status {
+    grid-row: 2;
+    grid-column: 1;
+  }
+
+  [data-theme="dashboard"] .financial-offers-cell-email {
+    grid-row: 2;
+    grid-column: 2;
+  }
+
+  [data-theme="dashboard"] .financial-offers-cell-total {
+    grid-row: 2;
+    grid-column: 3;
+    font-size: 0.6875rem;
+    color: var(--text-2);
+  }
+
+  [data-theme="dashboard"] .financial-offers-cell-upfront {
+    display: none;
+  }
+
+  [data-theme="dashboard"] .financial-offers-cell-created {
+    grid-row: 2;
+    grid-column: 4;
+    justify-self: end;
+    font-size: 0.6875rem;
+  }
+
+  [data-theme="dashboard"] .financial-offers-actions {
+    position: absolute;
+    top: 0.375rem;
+    right: 0.375rem;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    max-width: 5.5rem;
+    justify-content: flex-end;
+  }
+
+  [data-theme="dashboard"] .financial-offers-action {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  [data-theme="dashboard"] .ops-hosting-row {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    padding-right: 0.625rem;
+  }
+
+  [data-theme="dashboard"] .ops-hosting-cell-primary {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  [data-theme="dashboard"] .ops-hosting-name {
+    font-size: 0.8125rem;
+    line-height: 1.3;
+  }
+
+  [data-theme="dashboard"] .ops-hosting-cell-client,
+  [data-theme="dashboard"] .ops-hosting-cell-period {
+    display: none;
+  }
+
+  [data-theme="dashboard"] .ops-hosting-cell-status {
+    grid-row: 2;
+    grid-column: 1;
+  }
+
+  [data-theme="dashboard"] .ops-hosting-cell-cost {
+    grid-row: 2;
+    grid-column: 2;
+    font-size: 0.6875rem;
+    color: var(--text-2);
+  }
+
+  [data-theme="dashboard"] .ops-hosting-cell-expires {
+    grid-row: 2;
+    grid-column: 3;
+    justify-self: end;
+    font-size: 0.6875rem;
+  }
+
+  [data-theme="dashboard"] .ops-hosting-actions {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    padding-top: 0.15rem;
+  }
+
+  [data-theme="dashboard"] .ops-hosting-actions-main {
+    flex-direction: row;
+    flex: 1;
+    gap: 0.35rem;
+  }
+
+  [data-theme="dashboard"] .ops-hosting-action {
+    width: auto;
+    min-height: 1.625rem;
+    padding: 0.25rem 0.5rem;
+    flex: 1 1 auto;
+  }
+
+  [data-theme="dashboard"] .ops-hosting-action--danger {
+    flex: 0 0 auto;
+    min-height: auto;
+    padding: 0.15rem 0;
+    text-decoration: underline;
+  }
+
+  [data-theme="dashboard"] .ops-hosting-action--danger.ops-hosting-action--solo {
+    min-height: 1.625rem;
+    padding: 0.25rem 0.5rem;
+    text-decoration: none;
+    border: 1px solid var(--border);
+  }
+
+  [data-theme="dashboard"] .ops-projects-row {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    padding-right: 1.75rem;
+  }
+
+  [data-theme="dashboard"] .ops-projects-cell-primary {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  [data-theme="dashboard"] .ops-projects-name {
+    font-size: 0.8125rem;
+    line-height: 1.3;
+  }
+
+  [data-theme="dashboard"] .ops-projects-cell-client,
+  [data-theme="dashboard"] .ops-projects-cell-start,
+  [data-theme="dashboard"] .ops-projects-cell-target,
+  [data-theme="dashboard"] .ops-projects-cell-lead {
+    display: none;
+  }
+
+  [data-theme="dashboard"] .ops-projects-cell-status {
+    grid-row: 2;
+    grid-column: 1;
+  }
+
+  [data-theme="dashboard"] .ops-projects-cell-progress {
+    grid-row: 2;
+    grid-column: 2;
+    font-size: 0.6875rem;
+    color: var(--text-2);
+  }
+
+  [data-theme="dashboard"] .ops-projects-cell-cost {
+    grid-row: 2;
+    grid-column: 3;
+    justify-self: end;
+    font-size: 0.6875rem;
+  }
+
+  [data-theme="dashboard"] .ops-projects-cell-chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    color: var(--text-3);
+    opacity: 0.75;
+  }
+
+  [data-theme="dashboard"] .ops-list-task-grid {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    gap: 0.25rem 0.375rem;
+    padding-block: 0.5rem;
+  }
+
+  [data-theme="dashboard"] .ops-list-task-main {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    padding-bottom: 0;
+  }
+
+  [data-theme="dashboard"] .ops-list-task-title {
+    font-size: 0.8125rem;
+    line-height: 1.3;
+  }
+
+  [data-theme="dashboard"] .ops-list-task-priority {
+    grid-row: 2;
+    grid-column: 1;
+  }
+
+  [data-theme="dashboard"] .ops-list-task-status {
+    grid-row: 2;
+    grid-column: 2;
+  }
+
+  [data-theme="dashboard"] .ops-list-task-assignee {
+    grid-row: 2;
+    grid-column: 3;
+    min-width: 0;
+  }
+
+  [data-theme="dashboard"] .ops-list-task-actions {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    justify-content: flex-start;
+    padding-top: 0.1rem;
+  }
+
+  [data-theme="dashboard"] .ops-kanban {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  [data-theme="dashboard"] .dash-page-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  [data-theme="dashboard"] .dash-page-toolbar .dash-page-header-action,
+  [data-theme="dashboard"] .dash-page-toolbar > :last-child {
+    width: 100%;
+  }
+
+  [data-theme="dashboard"] .financial-offer-hosting {
+    max-width: none;
+  }
+
+  [data-theme="dashboard"] .ops-project-filter-select {
+    min-width: 0;
+    flex: 1;
+  }
+
+  [data-theme="dashboard"] .ops-project-head--expanded,
+  [data-theme="dashboard"] .ops-project-head--collapsed {
+    padding: 1rem 0.625rem;
+  }
+
+  [data-theme="dashboard"] .ops-project-head--expanded .ops-project-toolbar,
+  [data-theme="dashboard"] .ops-project-head--collapsed .ops-project-toolbar {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  [data-theme="dashboard"] .financial-offers-email-panel-fields {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  [data-theme="dashboard"] .financial-offers-email-panel-fields .dash-btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  [data-theme="dashboard"] .financial-offer-line {
+    grid-template-columns: 1fr !important;
   }
 }
 
@@ -5960,9 +6209,9 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   text-transform: uppercase;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 1024px) {
   [data-theme="dashboard"] .dash-main-inner {
-    padding: 1rem 0.875rem;
+    padding: 1.25rem 1.125rem;
   }
 
   [data-theme="dashboard"] .entity-card {
@@ -6314,6 +6563,21 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   [data-theme="dashboard"] .ticket-detail-hours-readout {
     align-items: flex-start;
     text-align: left;
+  }
+}
+
+/* ─── Phone refinements (≤640px) ───────────────────────────────────────────── */
+@media (max-width: 640px) {
+  [data-theme="dashboard"] .dash-main-inner {
+    padding: 1rem 0.875rem;
+  }
+
+  [data-theme="dashboard"] .ops-kanban {
+    grid-template-columns: 1fr;
+  }
+
+  [data-theme="dashboard"] .metric-strip-wrap.is-open .metric-strip {
+    grid-template-columns: 1fr;
   }
 }
 

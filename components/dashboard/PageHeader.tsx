@@ -10,7 +10,7 @@ export function PageHeader({
   action?: ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between anim-fade-up anim-fade-up-1">
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between anim-fade-up anim-fade-up-1">
       <div>
         <h1 className="dash-title">{title}</h1>
         {description ? <p className="dash-subtitle">{description}</p> : null}
