@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime, formatDateTimeCompact } from '@/lib/dates'
 import type { TicketPriority, TicketStatus } from '@/lib/types'
 
 export function formatTicketId(id: string) {
@@ -9,21 +10,12 @@ export function formatHoursShort(hours: number): string {
 }
 
 export function formatDateTimeHuman(dateStr: string): string {
-  return new Date(dateStr).toLocaleString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  return formatDateTime(dateStr)
 }
 
 /** Compact resolved timestamp for table cells */
 export function formatResolvedAtTable(dateStr: string): string {
-  const d = new Date(dateStr)
-  const datePart = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-  const timePart = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-  return `${datePart} · ${timePart}`
+  return formatDateTimeCompact(dateStr)
 }
 
 export function formatRelativeTime(dateStr: string) {
@@ -34,7 +26,7 @@ export function formatRelativeTime(dateStr: string) {
   if (h < 24) return `${h}h ago`
   const d = Math.floor(h / 24)
   if (d < 7) return `${d}d ago`
-  return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  return formatDate(dateStr)
 }
 
 export const priorityAccent: Record<TicketPriority, string> = {
@@ -53,6 +45,7 @@ export function isRecentlyUpdated(dateStr: string) {
 export function ticketRowStatusClass(status: TicketStatus): string {
   if (status === 'open') return ' tickets-row--status-open'
   if (status === 'waiting_on_client') return ' tickets-row--status-waiting'
+  if (status === 'on_hold') return ' tickets-row--status-hold'
   return ''
 }
 

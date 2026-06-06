@@ -1,3 +1,4 @@
+import { formatDateRange } from '@/lib/dates'
 import { createClient } from '@/lib/supabase/server'
 import { getRetainerForClient } from '@/lib/retainers/active'
 import { formatPeriodCost } from '@/lib/retainers/packages'
@@ -64,16 +65,7 @@ export async function ClientRetainerSection({
               ) : null}
             </div>
             <p className="retainer-panel-period tabular-nums">
-              {new Date(r.period_start).toLocaleDateString('en-GB', {
-                day: 'numeric',
-                month: 'short',
-              })}
-              {' – '}
-              {new Date(r.period_end).toLocaleDateString('en-GB', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric',
-              })}
+              {formatDateRange(r.period_start, r.period_end)}
             </p>
           </div>
 

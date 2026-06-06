@@ -1,3 +1,4 @@
+import { formatDate } from '@/lib/dates'
 import { formatStaffRole, type StaffRole } from '@/lib/team/roles'
 import { PendingInviteActions } from '@/components/team/PendingInviteActions'
 
@@ -68,11 +69,7 @@ export function TeamList({
                 <span className="entity-stat">
                   <span className="entity-stat-label">Joined</span>
                   <span className="entity-stat-value tabular-nums">
-                    {new Date(m.created_at).toLocaleDateString('en-GB', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
+                    {formatDate(m.created_at)}
                   </span>
                 </span>
               </div>
@@ -100,10 +97,7 @@ export function TeamList({
                 <span className="entity-stat">
                   <span className="entity-stat-label">Expires</span>
                   <span className="entity-stat-value tabular-nums">
-                    {new Date(inv.expires_at).toLocaleDateString('en-GB', {
-                      day: 'numeric',
-                      month: 'short',
-                    })}
+                    {formatDate(inv.expires_at)}
                   </span>
                 </span>
                 {canManageInvites ? (

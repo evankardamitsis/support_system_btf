@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { tryCreateAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth/require-admin'
+import { requireStaff } from '@/lib/auth/require-staff'
 import { insertRetainerPeriod } from '@/lib/retainers/insert-period'
 import { currentBillingPeriod } from '@/lib/retainers/period'
 import { isHoursBasedPackage, packageLabel } from '@/lib/retainers/billing-model'
@@ -13,6 +14,47 @@ export type DeleteClientResult = { ok: true } | { ok: false; error: string }
 
 function parsePackage(raw: string | null): RetainerPackage {
   return parseRetainerPackage(raw)
+}
+
+function revalidateClientPickers() {
+  revalidatePath('/admin/clients')
+  revalidatePath('/admin/ops/hosting-maintenance')
+  revalidatePath('/admin/ops/hosting-maintenance/new')
+  revalidatePath('/admin/ops/projects/new')
+  revalidatePath('/admin/tickets/new')
+}
+
+/** Minimal client for ops flows (hosting, projects) — no retainer period. */
+export async function createQuickClient(input: {
+  name: string
+  email: string
+  contactName?: string | null
+}): Promise<{ id: string; name: string }> {
+  const { supabase } = await requireStaff()
+  const name = input.name.trim()
+  const email = input.email.trim().toLowerCase()
+  const contactName = input.contactName?.trim() || null
+
+  if (!name) throw new Error('Company name is required')
+  if (!email || !email.includes('@')) throw new Error('A valid email is required')
+
+  const { data: client, error } = await supabase
+    .from('clients')
+    .insert({
+      name,
+      email,
+      contact_name: contactName,
+      plan_name: null,
+      billing_cycle_day: 1,
+      sla_response_hours: 8,
+    })
+    .select('id, name')
+    .single()
+
+  if (error || !client) throw new Error(error?.message ?? 'Failed to create client')
+
+  revalidateClientPickers()
+  return { id: client.id, name: client.name }
 }
 
 export async function createClientAction(formData: FormData): Promise<string> {
@@ -83,6 +125,27 @@ export async function generateInviteLink(clientId: string): Promise<string> {
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
   return `${baseUrl}/auth/register?token=${token.token}`
+}
+
+export async function updateClientApprovalReminders(
+  clientId: string,
+  enabled: boolean
+): Promise<void> {
+  const { isAdmin } = await requireAdmin()
+  if (!isAdmin) throw new Error('Only admins can change client reminder settings')
+
+  const adminResult = tryCreateAdminClient()
+  if ('error' in adminResult) throw new Error(adminResult.error)
+
+  const { error } = await adminResult.client
+    .from('clients')
+    .update({ approval_reminders_enabled: enabled })
+    .eq('id', clientId)
+
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/admin/clients/${clientId}`)
+  revalidatePath('/admin/clients')
 }
 
 export async function deleteClient(clientId: string): Promise<DeleteClientResult> {

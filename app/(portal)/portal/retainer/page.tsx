@@ -1,3 +1,4 @@
+import { formatDateRange } from '@/lib/dates'
 import { requirePortalClient } from '@/lib/auth/portal-context'
 import { PageHeader } from '@/components/dashboard/PageHeader'
 import { MetricStrip } from '@/components/dashboard/MetricStrip'
@@ -38,7 +39,7 @@ export default async function RetainerPage() {
         title="My Plan"
         description={
           retainer
-            ? `Current period · ${new Date(retainer.period_start).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' })} – ${new Date(retainer.period_end).toLocaleDateString('en-GB', { month: 'short', day: 'numeric', year: 'numeric' })}`
+            ? `Current period · ${formatDateRange(retainer.period_start, retainer.period_end)}`
             : hoursBilling
               ? 'Your support plan and included hours'
               : 'Your support plan'

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { UsageBar } from '@/components/dashboard/UsageBar'
+import { formatDateRange } from '@/lib/dates'
 import { StatusFlag } from '@/components/dashboard/StatusFlag'
 import { PackageChip } from '@/components/retainers/PackageChip'
 import { formatPeriodCost } from '@/lib/retainers/packages'
@@ -69,16 +70,7 @@ export function RetainersList({ retainers }: { retainers: RetainerListItem[] }) 
               <div className="retainers-cell retainers-cell-client min-w-0">
                 <p className="retainers-client-name">{r.clientName ?? 'Unknown client'}</p>
                 <p className="retainers-client-meta tabular-nums">
-                  {new Date(r.period_start).toLocaleDateString('en-GB', {
-                    day: 'numeric',
-                    month: 'short',
-                  })}
-                  <span className="retainers-period-sep"> – </span>
-                  {new Date(r.period_end).toLocaleDateString('en-GB', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: '2-digit',
-                  })}
+                  {formatDateRange(r.period_start, r.period_end)}
                 </p>
                 {isDanger ? (
                   <StatusFlag
@@ -96,16 +88,7 @@ export function RetainersList({ retainers }: { retainers: RetainerListItem[] }) 
 
               <div className="retainers-cell" data-label="Period">
                 <p className="retainers-period tabular-nums">
-                  {new Date(r.period_start).toLocaleDateString('en-GB', {
-                    day: 'numeric',
-                    month: 'short',
-                  })}
-                  <span className="retainers-period-sep"> – </span>
-                  {new Date(r.period_end).toLocaleDateString('en-GB', {
-                    day: 'numeric',
-                    month: 'short',
-                    year: '2-digit',
-                  })}
+                  {formatDateRange(r.period_start, r.period_end)}
                 </p>
               </div>
 

@@ -1,7 +1,9 @@
+import { formatDate } from '@/lib/dates'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { GenerateInviteSection } from './GenerateInviteSection'
+import { ClientApprovalRemindersToggle } from '@/components/clients/ClientApprovalRemindersToggle'
 import { DeleteClientButton } from '@/components/clients/DeleteClientButton'
 import { requireAdmin } from '@/lib/auth/require-admin'
 import { MetricStrip } from '@/components/dashboard/MetricStrip'
@@ -85,13 +87,7 @@ export default async function AdminClientDetailPage({
           { label: 'Contact', value: client.contact_name ?? '—' },
           {
             label: 'Renewal',
-            value: client.renewal_date
-              ? new Date(client.renewal_date).toLocaleDateString('en-GB', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })
-              : '—',
+            value: formatDate(client.renewal_date),
           },
           {
             label: 'Retainer',
@@ -109,6 +105,12 @@ export default async function AdminClientDetailPage({
             accent: openTickets > 0 ? '#60a5fa' : undefined,
           },
         ]}
+      />
+
+      <ClientApprovalRemindersToggle
+        clientId={id}
+        enabled={client.approval_reminders_enabled ?? true}
+        canManage={isAdmin}
       />
 
       <ClientRetainerSection clientId={id} canManageLifecycle={isAdmin} />

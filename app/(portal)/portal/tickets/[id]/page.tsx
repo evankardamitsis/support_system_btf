@@ -9,6 +9,7 @@ import { WorkApprovalModal } from '@/components/tickets/WorkApprovalModal'
 import { ExtraHoursApprovalModal } from '@/components/tickets/ExtraHoursApprovalModal'
 import { TicketCommentForm } from '@/components/tickets/TicketCommentForm'
 import { PortalTicketHoursSummary } from '@/components/portal/PortalTicketHoursSummary'
+import { formatDate } from '@/lib/dates'
 import { formatDateTimeHuman } from '@/lib/tickets/display'
 import { isTicketClosed } from '@/lib/tickets/closed'
 import { requirePortalClient } from '@/lib/auth/portal-context'
@@ -172,7 +173,7 @@ export default async function PortalTicketDetailPage({
             {[
               { label: 'Type', value: ticket.type },
               { label: 'Priority', value: ticket.priority },
-              { label: 'Opened', value: new Date(ticket.created_at).toLocaleDateString('en-GB') },
+              { label: 'Opened', value: formatDate(ticket.created_at) },
               { label: 'Updated', value: relativeTime(ticket.updated_at) },
               ...(ticket.resolved_at &&
               (ticket.status === 'resolved' || ticket.status === 'closed')

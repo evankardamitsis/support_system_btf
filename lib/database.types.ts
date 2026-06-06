@@ -52,6 +52,7 @@ export interface Database {
           retainer_frozen_at: string | null
           retainer_canceled_at: string | null
           sla_response_hours: number
+          approval_reminders_enabled: boolean
           created_at: string
         }
         Insert: {
@@ -66,6 +67,7 @@ export interface Database {
           retainer_frozen_at?: string | null
           retainer_canceled_at?: string | null
           sla_response_hours?: number
+          approval_reminders_enabled?: boolean
           created_at?: string
         }
         Update: {
@@ -80,6 +82,7 @@ export interface Database {
           retainer_frozen_at?: string | null
           retainer_canceled_at?: string | null
           sla_response_hours?: number
+          approval_reminders_enabled?: boolean
           created_at?: string
         }
         Relationships: []
@@ -131,7 +134,7 @@ export interface Database {
           assigned_to: string | null
           title: string
           description: string | null
-          status: 'open' | 'in_progress' | 'waiting_on_client' | 'resolved' | 'closed'
+          status: 'open' | 'in_progress' | 'waiting_on_client' | 'on_hold' | 'resolved' | 'closed'
           priority: 'low' | 'normal' | 'high' | 'critical'
           type: 'bug' | 'task' | 'request' | 'question'
           created_at: string
@@ -149,6 +152,9 @@ export interface Database {
           completion_disputed_at: string | null
           extra_hours_active_at: string | null
           hours_overage_note: string | null
+          approval_reminder_count: number
+          approval_reminder_sent_at: string | null
+          on_hold_at: string | null
         }
         Insert: {
           id?: string
@@ -157,7 +163,7 @@ export interface Database {
           assigned_to?: string | null
           title: string
           description?: string | null
-          status?: 'open' | 'in_progress' | 'waiting_on_client' | 'resolved' | 'closed'
+          status?: 'open' | 'in_progress' | 'waiting_on_client' | 'on_hold' | 'resolved' | 'closed'
           priority?: 'low' | 'normal' | 'high' | 'critical'
           type?: 'bug' | 'task' | 'request' | 'question'
           created_at?: string
@@ -175,6 +181,9 @@ export interface Database {
           completion_disputed_at?: string | null
           extra_hours_active_at?: string | null
           hours_overage_note?: string | null
+          approval_reminder_count?: number
+          approval_reminder_sent_at?: string | null
+          on_hold_at?: string | null
         }
         Update: {
           id?: string
@@ -183,7 +192,7 @@ export interface Database {
           assigned_to?: string | null
           title?: string
           description?: string | null
-          status?: 'open' | 'in_progress' | 'waiting_on_client' | 'resolved' | 'closed'
+          status?: 'open' | 'in_progress' | 'waiting_on_client' | 'on_hold' | 'resolved' | 'closed'
           priority?: 'low' | 'normal' | 'high' | 'critical'
           type?: 'bug' | 'task' | 'request' | 'question'
           created_at?: string
@@ -201,6 +210,9 @@ export interface Database {
           completion_disputed_at?: string | null
           extra_hours_active_at?: string | null
           hours_overage_note?: string | null
+          approval_reminder_count?: number
+          approval_reminder_sent_at?: string | null
+          on_hold_at?: string | null
         }
         Relationships: []
       }
@@ -276,6 +288,8 @@ export interface Database {
           submitted_at: string
           approved_at: string | null
           hours_log_id: string | null
+          reminder_count: number
+          reminder_sent_at: string | null
         }
         Insert: {
           id?: string
@@ -288,6 +302,8 @@ export interface Database {
           submitted_at?: string
           approved_at?: string | null
           hours_log_id?: string | null
+          reminder_count?: number
+          reminder_sent_at?: string | null
         }
         Update: {
           id?: string
@@ -300,6 +316,8 @@ export interface Database {
           submitted_at?: string
           approved_at?: string | null
           hours_log_id?: string | null
+          reminder_count?: number
+          reminder_sent_at?: string | null
         }
         Relationships: []
       }
@@ -470,6 +488,65 @@ export interface Database {
           created_at?: string
         }
         Relationships: []
+      }
+      ops_hosting_contracts: {
+        Row: {
+          id: string
+          name: string
+          client_id: string
+          period_type: 'month' | 'year' | 'custom'
+          custom_period: string | null
+          cost_amount: number
+          period_start: string
+          period_end: string
+          status: 'active' | 'expired' | 'canceled'
+          renewal_notified_at: string | null
+          notes: string | null
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          client_id: string
+          period_type?: 'month' | 'year' | 'custom'
+          custom_period?: string | null
+          cost_amount: number
+          period_start: string
+          period_end: string
+          status?: 'active' | 'expired' | 'canceled'
+          renewal_notified_at?: string | null
+          notes?: string | null
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          client_id?: string
+          period_type?: 'month' | 'year' | 'custom'
+          custom_period?: string | null
+          cost_amount?: number
+          period_start?: string
+          period_end?: string
+          status?: 'active' | 'expired' | 'canceled'
+          renewal_notified_at?: string | null
+          notes?: string | null
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'ops_hosting_contracts_client_id_fkey'
+            columns: ['client_id']
+            isOneToOne: false
+            referencedRelation: 'clients'
+            referencedColumns: ['id']
+          },
+        ]
       }
       ops_project_phases: {
         Row: {

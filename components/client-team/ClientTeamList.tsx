@@ -1,4 +1,5 @@
 import type { ClientPendingInvite, ClientTeamMember } from '@/lib/client-team/action-results'
+import { formatDate } from '@/lib/dates'
 import { PendingClientInviteActions } from '@/components/client-team/PendingClientInviteActions'
 
 function initials(name: string) {
@@ -51,11 +52,7 @@ export function ClientTeamList({
                 <span className="entity-stat">
                   <span className="entity-stat-label">Joined</span>
                   <span className="entity-stat-value tabular-nums">
-                    {new Date(m.created_at).toLocaleDateString('en-GB', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
+                    {formatDate(m.created_at)}
                   </span>
                 </span>
               </div>
@@ -90,10 +87,7 @@ export function ClientTeamList({
                 <span className="entity-stat">
                   <span className="entity-stat-label">Expires</span>
                   <span className="entity-stat-value tabular-nums">
-                    {new Date(inv.expires_at).toLocaleDateString('en-GB', {
-                      day: 'numeric',
-                      month: 'short',
-                    })}
+                    {formatDate(inv.expires_at)}
                   </span>
                 </span>
                 <PendingClientInviteActions inviteId={inv.id} inviteUrl={inv.invite_url} />

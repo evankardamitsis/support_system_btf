@@ -7,6 +7,7 @@ const statuses: { value: TicketStatus; label: string }[] = [
   { value: 'open', label: 'Open' },
   { value: 'in_progress', label: 'In progress' },
   { value: 'waiting_on_client', label: 'Waiting' },
+  { value: 'on_hold', label: 'On hold' },
   { value: 'resolved', label: 'Resolved' },
   { value: 'closed', label: 'Closed' },
 ]

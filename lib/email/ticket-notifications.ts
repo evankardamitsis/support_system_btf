@@ -1,3 +1,4 @@
+import { formatDate, formatDateRange } from '@/lib/dates'
 import { getRetainerForClient } from '@/lib/retainers/active'
 import { retainerTracksHours } from '@/lib/retainers/billing-model'
 import { renewalDateFromPeriodEnd } from '@/lib/retainers/period'
@@ -33,27 +34,6 @@ function resolvedHoursMessage(estimatedHours: number | null, actualHours: number
   return `Actual time logged: <strong>${actual}h</strong> — <strong>${diffLabel}h less</strong> than the approved estimate of ${estimate}h.`
 }
 
-function formatDateLong(dateStr: string): string {
-  return new Date(`${dateStr}T12:00:00Z`).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
-}
-
-function formatPeriodRange(periodStart: string, periodEnd: string): string {
-  const start = new Date(periodStart).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-  })
-  const end = new Date(periodEnd).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
-  return `${start} – ${end}`
-}
-
 function retainerRemainingMessage(input: {
   hoursTotal: number
   hoursUsed: number
@@ -63,7 +43,7 @@ function retainerRemainingMessage(input: {
   const total = Number(input.hoursTotal)
   const used = Number(input.hoursUsed)
   const remaining = total - used
-  const period = formatPeriodRange(input.periodStart, input.periodEnd)
+  const period = formatDateRange(input.periodStart, input.periodEnd)
   const remainingLabel = formatHours(Math.abs(remaining))
 
   if (remaining < -0.01) {
@@ -238,8 +218,8 @@ export async function notifyClientNewRetainer(input: {
   }
 
   const packageLabel = formatPackageName(input.packageName)
-  const duration = formatPeriodRange(input.periodStart, input.periodEnd)
-  const renewalDate = formatDateLong(renewalDateFromPeriodEnd(input.periodEnd))
+  const duration = formatDateRange(input.periodStart, input.periodEnd)
+  const renewalDate = formatDate(renewalDateFromPeriodEnd(input.periodEnd))
   const url = `${appOrigin()}/portal/retainer`
   const isFixed = input.packageName === 'fixed'
   const body = isFixed
@@ -646,6 +626,137 @@ export async function notifyStaffEstimateApproved(input: {
       sent: false,
       error:
         'Estimate was approved but the team notification email could not be sent. Check ZEPTOMAIL_API_KEY and EMAIL_FROM.',
+    }
+  }
+
+  return { sent: true }
+}
+
+function approvalReminderCopy(input: {
+  kind: 'estimate' | 'work' | 'extra_hours'
+  reminderNumber: 1 | 2
+  ticketTitle: string
+  ticketRef: string
+  estimatedHours?: number
+  extraHours?: number
+}): { subject: string; title: string; body: string; cta: string } {
+  const followUp =
+    input.reminderNumber === 1
+      ? 'This is a friendly reminder — we are still waiting for your approval.'
+      : 'This is a final reminder — please approve soon so we can continue or close this ticket.'
+
+  if (input.kind === 'estimate') {
+    const hours =
+      input.estimatedHours != null
+        ? input.estimatedHours.toFixed(2).replace(/\.00$/, '')
+        : null
+    const hoursPart = hours ? `<strong>${hours} hours</strong> ` : ''
+    return {
+      subject: `Reminder ${input.reminderNumber}: approve estimate — ${input.ticketRef}`,
+      title: 'Reminder: approve your ticket estimate',
+      body: `${followUp} BTF is waiting for you to approve the ${hoursPart}estimate for <strong>${input.ticketTitle}</strong> (${input.ticketRef}).`,
+      cta: 'Open portal & approve',
+    }
+  }
+
+  if (input.kind === 'work') {
+    return {
+      subject: `Reminder ${input.reminderNumber}: review completed work — ${input.ticketRef}`,
+      title: 'Reminder: review completed work',
+      body: `${followUp} Please review and approve the completed work on <strong>${input.ticketTitle}</strong> (${input.ticketRef}) so we can close the ticket.`,
+      cta: 'Open portal & review',
+    }
+  }
+
+  const hours = input.extraHours != null ? formatHours(input.extraHours) : null
+  const hoursPart = hours ? `<strong>${hours}h</strong> ` : ''
+  return {
+    subject: `Reminder ${input.reminderNumber}: approve extra hours — ${input.ticketRef}`,
+    title: 'Reminder: approve extra hours',
+    body: `${followUp} Please approve the ${hoursPart}extra hours request on <strong>${input.ticketTitle}</strong> (${input.ticketRef}).`,
+    cta: 'Open portal & review',
+  }
+}
+
+export async function notifyClientApprovalReminder(input: {
+  ticketId: string
+  ticketTitle: string
+  clientId: string
+  kind: 'estimate' | 'work' | 'extra_hours'
+  reminderNumber: 1 | 2
+  estimatedHours?: number
+  extraHours?: number
+}): Promise<NotifyResult> {
+  const recipients = await getClientNotificationEmails(input.clientId)
+  if (!recipients.length) {
+    return {
+      sent: false,
+      error: 'No client email on file — add an email on the client record or invite a portal user',
+    }
+  }
+
+  const url = `${appOrigin()}/portal/tickets/${input.ticketId}`
+  const ticketRef = formatTicketId(input.ticketId)
+  const copy = approvalReminderCopy({
+    kind: input.kind,
+    reminderNumber: input.reminderNumber,
+    ticketTitle: input.ticketTitle,
+    ticketRef,
+    estimatedHours: input.estimatedHours,
+    extraHours: input.extraHours,
+  })
+
+  const sent = await sendEmail({
+    to: recipients,
+    subject: copy.subject,
+    html: emailShell(copy.title, copy.body, copy.cta, url),
+  })
+
+  if (!sent) {
+    return {
+      sent: false,
+      error:
+        'Reminder could not be sent. Check ZEPTOMAIL_API_KEY, ZEPTOMAIL_API_URL, and EMAIL_FROM.',
+    }
+  }
+
+  return { sent: true }
+}
+
+export async function notifyStaffTicketOnHold(input: {
+  ticketId: string
+  ticketTitle: string
+  kind: 'estimate' | 'work'
+}): Promise<NotifyResult> {
+  const recipients = await getStaffNotificationEmails()
+  if (!recipients.length) {
+    return {
+      sent: false,
+      error: 'No admin or agent emails found — ensure staff users have signed up with email',
+    }
+  }
+
+  const url = `${appOrigin()}/admin/tickets/${input.ticketId}`
+  const ticketRef = formatTicketId(input.ticketId)
+  const waitingOn =
+    input.kind === 'estimate' ? 'an estimate approval' : 'a completed-work approval'
+
+  const sent = await sendEmail({
+    to: recipients,
+    subject: `Ticket on hold — no client response — ${ticketRef}`,
+    html: emailShell(
+      'Ticket placed on hold',
+      `The client has not responded to ${waitingOn} for <strong>${input.ticketTitle}</strong> (${ticketRef}) after two reminders. The ticket is now <strong>on hold</strong> until they approve in the portal or your team changes the status.`,
+      'Open ticket',
+      url
+    ),
+  })
+
+  if (!sent) {
+    return {
+      sent: false,
+      error:
+        'Ticket was placed on hold but the team notification email could not be sent. Check ZEPTOMAIL_API_KEY and EMAIL_FROM.',
     }
   }
 

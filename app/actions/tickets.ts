@@ -26,6 +26,7 @@ import {
   TICKET_LOCKED_MESSAGE,
   TICKET_PRIORITY_LOCKED_MESSAGE,
 } from '@/lib/tickets/closed'
+import { approvalReminderResetPatch } from '@/lib/tickets/approval-reminders'
 import { isEstimateLocked } from '@/lib/tickets/estimate'
 import { billApprovedExtraHoursForTicket } from '@/lib/tickets/extra-hours-billing'
 import { resolveHoursOverageNote } from '@/lib/tickets/hours-overage'
@@ -300,6 +301,7 @@ export async function submitEstimateForApproval(ticketId: string) {
       estimate_status: 'pending_approval',
       estimate_submitted_at: now,
       status: 'waiting_on_client',
+      ...approvalReminderResetPatch(),
     })
     .eq('id', ticketId)
 
@@ -360,6 +362,7 @@ export async function approveTicketEstimate(ticketId: string) {
       estimate_status: 'approved',
       estimate_approved_at: now,
       status: 'in_progress',
+      ...approvalReminderResetPatch(),
     })
     .eq('id', ticketId)
     .eq('estimate_status', 'pending_approval')
@@ -420,6 +423,7 @@ export async function submitWorkForClientCheck(ticketId: string) {
       completion_dispute_note: null,
       completion_disputed_at: null,
       status: 'waiting_on_client',
+      ...approvalReminderResetPatch(),
     })
     .eq('id', ticketId)
 
@@ -478,6 +482,7 @@ export async function approveTicketWork(ticketId: string) {
       completion_status: 'approved',
       completion_approved_at: now,
       status: 'in_progress',
+      ...approvalReminderResetPatch(),
     })
     .eq('id', ticketId)
     .eq('completion_status', 'pending_approval')
@@ -551,6 +556,7 @@ export async function disputeTicketWork(ticketId: string, concerns: string) {
       completion_dispute_note: trimmed,
       completion_disputed_at: now,
       status: 'in_progress',
+      ...approvalReminderResetPatch(),
     })
     .eq('id', ticketId)
     .eq('client_id', profile.client_id)

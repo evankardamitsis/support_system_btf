@@ -1,3 +1,4 @@
+import { formatDateInTimeZone } from '@/lib/dates'
 import type {
   FinancialOfferComputed,
   FinancialOfferInput,
@@ -121,12 +122,7 @@ function parseHostingMaintenanceInput(body: Record<string, unknown>): string | n
 }
 
 export function formatOfferDocumentDate(date: Date = new Date()): string {
-  return date.toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'Europe/Athens',
-  })
+  return formatDateInTimeZone(date, 'Europe/Athens')
 }
 
 export function offerFilename(clientName: string): string {

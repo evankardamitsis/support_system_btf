@@ -1,18 +1,22 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createProject } from '@/app/actions/projects'
+import {
+  ClientSelectWithCreate,
+  type ClientOption,
+} from '@/components/clients/ClientSelectWithCreate'
 import { PageHeader } from '@/components/dashboard/PageHeader'
 import { FormPanel } from '@/components/dashboard/FormPanel'
 import { DashCancel } from '@/components/dashboard/DashCancel'
+import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { parseProjectCostInput } from '@/lib/ops/projects/display'
 import { PROJECT_TEMPLATES } from '@/lib/ops/projects/templates'
 import type { ProjectTemplateKey } from '@/lib/ops/projects/types'
 import { notifyError, runWithToast } from '@/lib/notify'
 
-type ClientOption = { id: string; name: string }
 type StaffOption = { id: string; name: string }
 
 export function NewProjectForm({
@@ -26,13 +30,20 @@ export function NewProjectForm({
   const [pending, startTransition] = useTransition()
   const [isInternal, setIsInternal] = useState(false)
   const [templateKey, setTemplateKey] = useState<ProjectTemplateKey>('blank')
+  const [clientId, setClientId] = useState('')
+  const [leadId, setLeadId] = useState('')
+
+  const staffOptions = useMemo(
+    () => staff.map(member => ({ value: member.id, label: member.name })),
+    [staff]
+  )
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const form = new FormData(e.currentTarget)
     const name = String(form.get('name') ?? '')
-    const clientId = isInternal ? null : String(form.get('clientId') ?? '') || null
-    const leadId = String(form.get('leadId') ?? '') || null
+    const resolvedClientId = isInternal ? null : clientId || null
+    const resolvedLeadId = leadId || null
     const description = String(form.get('description') ?? '') || null
     const startDate = String(form.get('startDate') ?? '') || null
     const targetDate = String(form.get('targetDate') ?? '') || null
@@ -52,9 +63,9 @@ export function NewProjectForm({
           createProject({
             name,
             isInternal,
-            clientId,
+            clientId: resolvedClientId,
             templateKey,
-            leadId,
+            leadId: resolvedLeadId,
             description,
             startDate,
             targetDate,
@@ -134,30 +145,29 @@ export function NewProjectForm({
             </label>
 
             {!isInternal ? (
-              <div>
-                <label className="dash-label">Client</label>
-                <select name="clientId" className="btf-input w-full" disabled={pending}>
-                  <option value="">No client linked</option>
-                  {clients.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <ClientSelectWithCreate
+                clients={clients}
+                value={clientId}
+                onChange={setClientId}
+                disabled={pending}
+                selectId="project-client"
+                required={false}
+                placeholder="No client linked"
+              />
             ) : null}
 
-            <div>
-              <label className="dash-label">Project lead</label>
-              <select name="leadId" className="btf-input w-full" disabled={pending}>
-                <option value="">Unassigned</option>
-                {staff.map(s => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <SearchableSelect
+              id="project-lead"
+              label="Project lead"
+              options={staffOptions}
+              value={leadId}
+              onChange={setLeadId}
+              placeholder="Unassigned"
+              searchPlaceholder="Search team…"
+              allowEmpty
+              emptyOptionLabel="Unassigned"
+              disabled={pending}
+            />
 
             <div>
               <label className="dash-label">Description</label>

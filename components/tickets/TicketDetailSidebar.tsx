@@ -29,6 +29,7 @@ import {
   isExtraHoursWorkActive,
   shouldUseStandardResolveFlow,
 } from '@/lib/tickets/extra-hours'
+import { formatDateRange } from '@/lib/dates'
 import { formatDateTimeHuman } from '@/lib/tickets/display'
 import type { TicketStatus } from '@/lib/types'
 
@@ -370,16 +371,7 @@ export function TicketDetailSidebar({
         <section className="ticket-detail-aside-card ticket-detail-aside-card--muted">
           <h3 className="ticket-detail-aside-title">Client retainer</h3>
           <p className="ticket-detail-retainer-period tabular-nums">
-            {new Date(activeRetainer.period_start).toLocaleDateString('en-GB', {
-              day: 'numeric',
-              month: 'short',
-            })}
-            {' – '}
-            {new Date(activeRetainer.period_end).toLocaleDateString('en-GB', {
-              day: 'numeric',
-              month: 'short',
-              year: 'numeric',
-            })}
+            {formatDateRange(activeRetainer.period_start, activeRetainer.period_end)}
           </p>
           {hoursBilling ? (
             <>
@@ -436,7 +428,7 @@ export function TicketDetailSidebar({
             <ul className="ticket-extra-hours-list">
               {extraHours.map(item => {
                 const hours = (item.minutes / 60).toFixed(2).replace(/\.00$/, '')
-                const period = `${new Date(item.period_start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${new Date(item.period_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                const period = formatDateRange(item.period_start, item.period_end)
                 return (
                   <li key={item.id} className="ticket-extra-hours-item">
                     <div className="ticket-extra-hours-item-main">
@@ -491,16 +483,7 @@ export function TicketDetailSidebar({
               <p className="dash-meta leading-relaxed">
                 Request additional hours on this resolved ticket. The client must approve before
                 time is billed to the current retainer period (
-                {new Date(activeRetainer.period_start).toLocaleDateString('en-GB', {
-                  day: 'numeric',
-                  month: 'short',
-                })}
-                {' – '}
-                {new Date(activeRetainer.period_end).toLocaleDateString('en-GB', {
-                  day: 'numeric',
-                  month: 'short',
-                  year: 'numeric',
-                })}
+                {formatDateRange(activeRetainer.period_start, activeRetainer.period_end)}
                 ).
               </p>
               <input

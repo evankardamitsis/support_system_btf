@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { PackageChip } from '@/components/retainers/PackageChip'
+import { formatDate } from '@/lib/dates'
 
 export type ClientListItem = {
   id: string
@@ -59,12 +60,7 @@ export function ClientsList({ clients }: { clients: ClientListItem[] }) {
             <span className="entity-stat">
               <span className="entity-stat-label">Renewal</span>
               <span className="entity-stat-value tabular-nums">
-                {c.renewal_date
-                  ? new Date(c.renewal_date).toLocaleDateString('en-GB', {
-                      day: 'numeric',
-                      month: 'short',
-                    })
-                  : '—'}
+                {formatDate(c.renewal_date)}
               </span>
             </span>
             <span className="entity-stat">

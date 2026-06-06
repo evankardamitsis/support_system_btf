@@ -3,6 +3,14 @@
     {
       "path": "/api/cron/renew-retainers",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/hosting-renewals",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/ticket-approval-reminders",
+      "schedule": "0 8 * * *"
     }
   ]
 }

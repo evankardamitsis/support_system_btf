@@ -33,7 +33,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${dmMono.variable} ${geist.variable}`}>
+    <html lang="en-GB" className={`${dmMono.variable} ${geist.variable}`}>
       <body>
         {children}
         <AppToaster />

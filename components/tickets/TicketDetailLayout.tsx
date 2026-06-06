@@ -19,6 +19,7 @@ import { ResolveHoursModal } from './ResolveHoursModal'
 import { ResolveOfflineModal } from './ResolveOfflineModal'
 import { TicketDetailSidebar, type ExtraHoursItem } from './TicketDetailSidebar'
 import { DeleteTicketButton } from './DeleteTicketButton'
+import { formatDate } from '@/lib/dates'
 import { formatDateTimeHuman, formatTicketId } from '@/lib/tickets/display'
 import { completeExtraHoursWork } from '@/app/actions/extra-hours'
 import { canEditTicketPriority, isTicketClosed } from '@/lib/tickets/closed'
@@ -163,15 +164,8 @@ export function TicketDetailLayout({
     })
   }
 
-  const opened = new Date(createdAt).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
-  const updated = new Date(updatedAt).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-  })
+  const opened = formatDate(createdAt)
+  const updated = formatDate(updatedAt)
 
   return (
     <>

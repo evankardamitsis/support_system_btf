@@ -1,3 +1,4 @@
+import { formatDate } from '@/lib/dates'
 import { formatOfferCurrency } from '@/lib/ops/financial-offer/calculate'
 
 export function formatProjectCost(amount: number | null): string {
@@ -17,10 +18,5 @@ export function parseProjectCostInput(raw: string): number | null {
 }
 
 export function formatProjectDate(dateStr: string | null): string {
-  if (!dateStr) return '—'
-  return new Date(`${dateStr}T12:00:00`).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
+  return formatDate(dateStr)
 }
