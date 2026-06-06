@@ -17,9 +17,10 @@ import {
 } from '@/lib/ops/financial-offer/service'
 import type { FinancialOfferRecord } from '@/lib/ops/financial-offer/types'
 
-function revalidateOfferPaths() {
-  revalidatePath('/admin/ops/financial-offers')
+function revalidateOfferPaths(offerId?: string) {
+  revalidatePath('/admin/ops/financial-offers', 'layout')
   revalidatePath('/admin/ops/financial-offers/new')
+  if (offerId) revalidatePath(`/admin/ops/financial-offers/${offerId}`)
 }
 
 export async function submitFinancialOffer(
@@ -62,7 +63,7 @@ export async function submitFinancialOffer(
     if (error) throw new Error(error.message)
   }
 
-  revalidateOfferPaths()
+  revalidateOfferPaths(id)
 
   return { id }
 }
@@ -100,7 +101,7 @@ export async function resendFinancialOfferEmail(
     .eq('id', offerId)
 
   if (error) throw new Error(error.message)
-  revalidateOfferPaths()
+  revalidateOfferPaths(offerId)
 }
 
 export async function acceptFinancialOffer(offerId: string): Promise<void> {
@@ -126,7 +127,7 @@ export async function acceptFinancialOffer(offerId: string): Promise<void> {
     .eq('id', offerId)
 
   if (error) throw new Error(error.message)
-  revalidateOfferPaths()
+  revalidateOfferPaths(offerId)
 }
 
 export async function deleteFinancialOffer(offerId: string): Promise<void> {
@@ -151,7 +152,21 @@ export async function deleteFinancialOffer(offerId: string): Promise<void> {
     .eq('id', offerId)
 
   if (error) throw new Error(error.message)
-  revalidateOfferPaths()
+  revalidateOfferPaths(offerId)
+}
+
+export async function fetchFinancialOffer(offerId: string): Promise<FinancialOfferRecord | null> {
+  const { supabase } = await requireStaff()
+
+  const { data, error } = await supabase
+    .from('financial_offers')
+    .select('*')
+    .eq('id', offerId)
+    .is('deleted_at', null)
+    .single()
+
+  if (error || !data) return null
+  return mapFinancialOfferRow(data)
 }
 
 export async function listFinancialOffers(): Promise<FinancialOfferRecord[]> {

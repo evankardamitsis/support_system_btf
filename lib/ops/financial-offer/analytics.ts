@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
+import { getOfferProjectTotal, getOfferProjectUpfront } from './calculate'
 import type { FinancialOfferRecord } from './types'
 import { mapFinancialOfferRow } from './service'
 
@@ -28,7 +29,7 @@ export async function getActiveOffersSummary(supabase: Db): Promise<ActiveOffers
   const offers = await listActiveFinancialOffers(supabase)
   return {
     count: offers.length,
-    totalValue: offers.reduce((sum, row) => sum + row.totalAmount, 0),
-    totalUpfront: offers.reduce((sum, row) => sum + row.upfrontAmount, 0),
+    totalValue: offers.reduce((sum, row) => sum + getOfferProjectTotal(row), 0),
+    totalUpfront: offers.reduce((sum, row) => sum + getOfferProjectUpfront(row), 0),
   }
 }

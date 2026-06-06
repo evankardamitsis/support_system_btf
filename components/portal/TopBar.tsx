@@ -5,6 +5,7 @@ import { DashboardTopBar } from '@/components/dashboard/DashboardTopBar'
 type PortalTopBarProps = {
   userName?: string
   userEmail?: string
+  menuOpen?: boolean
   onMenuClick: () => void
 }
 

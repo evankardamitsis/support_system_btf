@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
+import { useModalDialog } from '@/lib/ui/use-modal-dialog'
 import { resolveTicketOffline } from '@/app/actions/tickets'
 import { useResolveCelebration } from '@/components/admin/ResolveCelebrationProvider'
 import { runWithToast } from '@/lib/notify'
@@ -119,17 +120,10 @@ export function ResolveOfflineModal({
   open: boolean
   onClose: () => void
 }) {
-  const dialogRef = useRef<HTMLDialogElement>(null)
-
-  useEffect(() => {
-    const el = dialogRef.current
-    if (!el) return
-    if (open) el.showModal()
-    else el.close()
-  }, [open])
+  const dialogRef = useModalDialog(open, onClose)
 
   return (
-    <dialog ref={dialogRef} className="ticket-modal" onClose={onClose}>
+    <dialog ref={dialogRef} className="ticket-modal">
       {open ? (
         <ResolveOfflineForm
           key={`offline-${ticketId}-${estimatedHours ?? ''}`}

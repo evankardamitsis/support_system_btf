@@ -18,6 +18,51 @@ export function sumLineItems(lineItems: FinancialOfferLineItem[]): number {
   return lineItems.reduce((sum, row) => sum + (Number(row.cost) || 0), 0)
 }
 
+/** Parses the leading amount from strings like `150 € / year`. */
+export function parseHostingAmountFromMaintenance(
+  hostingMaintenance: string | null | undefined
+): number | null {
+  if (!hostingMaintenance?.trim()) return null
+  const match = hostingMaintenance.trim().match(/^([\d]+(?:[.,]\d{1,2})?)\s*€/)
+  if (!match) return null
+  const amount = Number(match[1].replace(',', '.'))
+  return Number.isFinite(amount) && amount > 0 ? amount : null
+}
+
+/**
+ * Project/work total for display and upfront — excludes hosting & maintenance
+ * (stored separately on the offer).
+ */
+export function getOfferProjectTotal(offer: {
+  lineItems: FinancialOfferLineItem[]
+  totalAmount?: number
+  hostingMaintenance?: string | null
+}): number {
+  const fromLineItems = sumLineItems(offer.lineItems)
+  const hosting = parseHostingAmountFromMaintenance(offer.hostingMaintenance)
+
+  if (!hosting || offer.totalAmount == null) {
+    return fromLineItems
+  }
+
+  // Legacy rows may have included hosting in total_amount — subtract when detected.
+  if (Math.abs(offer.totalAmount - fromLineItems - hosting) < 0.02) {
+    return fromLineItems
+  }
+
+  return fromLineItems
+}
+
+export function getOfferProjectUpfront(offer: {
+  lineItems: FinancialOfferLineItem[]
+  upfrontPercent: number
+}): number {
+  return computeFinancialOffer({
+    lineItems: offer.lineItems,
+    upfrontPercent: offer.upfrontPercent,
+  }).upfrontAmount
+}
+
 export function computeFinancialOffer(input: {
   lineItems: FinancialOfferLineItem[]
   upfrontPercent?: number

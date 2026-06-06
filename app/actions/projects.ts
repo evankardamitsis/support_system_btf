@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireAdminPage } from '@/lib/auth/require-admin-page'
 import type { Database } from '@/lib/database.types'
+import { getOfferProjectTotal } from '@/lib/ops/financial-offer/calculate'
 import {
   applyProjectTemplate,
   getOpsProjectDetail,
@@ -119,13 +120,21 @@ export async function createProjectFromOffer(offerId: string, templateKey: Proje
 
   const { data: offer, error: offerError } = await supabase
     .from('financial_offers')
-    .select('id, client_name, status, total_amount')
+    .select('id, client_name, status, total_amount, line_items, hosting_maintenance, upfront_percent')
     .eq('id', offerId)
     .is('deleted_at', null)
     .single()
 
   if (offerError || !offer) throw new Error('Offer not found')
   if (offer.status !== 'accepted') throw new Error('Only accepted offers can become projects')
+
+  const lineItems =
+    (offer.line_items as Array<{ work: string; cost: number }> | null) ?? []
+  const projectCost = getOfferProjectTotal({
+    lineItems,
+    totalAmount: Number(offer.total_amount),
+    hostingMaintenance: offer.hosting_maintenance,
+  })
 
   const { data, error } = await supabase
     .from('ops_projects')
@@ -134,7 +143,7 @@ export async function createProjectFromOffer(offerId: string, templateKey: Proje
       is_internal: false,
       financial_offer_id: offer.id,
       template_key: templateKey,
-      cost_amount: Number(offer.total_amount),
+      cost_amount: projectCost,
       created_by: user.id,
     })
     .select('id')
@@ -144,13 +153,7 @@ export async function createProjectFromOffer(offerId: string, templateKey: Proje
 
   await applyProjectTemplate(supabase, data.id, templateKey)
 
-  const { data: lineItems } = await supabase
-    .from('financial_offers')
-    .select('line_items')
-    .eq('id', offerId)
-    .single()
-
-  const items = (lineItems?.line_items as Array<{ work: string }> | null) ?? []
+  const items = lineItems
   if (items.length && templateKey === 'blank') {
     const { data: phase } = await supabase
       .from('ops_project_phases')

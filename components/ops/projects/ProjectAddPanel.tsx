@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
+import { useModalDialog } from '@/lib/ui/use-modal-dialog'
 import { createPhase, createTask } from '@/app/actions/projects'
 import type { AssigneeOption } from '@/components/tickets/EditableAssigneeSelect'
 import {
@@ -12,14 +13,19 @@ import {
 import { runWithToast } from '@/lib/notify'
 
 export function ProjectAddPanel({
+  open,
+  onClose,
   project,
   staff,
   onRefresh,
 }: {
+  open: boolean
+  onClose: () => void
   project: OpsProjectDetail
   staff: AssigneeOption[]
   onRefresh: () => void
 }) {
+  const dialogRef = useModalDialog(open, onClose)
   const [pending, startTransition] = useTransition()
   const [newPhaseName, setNewPhaseName] = useState('')
   const [addingPhase, setAddingPhase] = useState(false)
@@ -27,6 +33,16 @@ export function ProjectAddPanel({
   const [newTaskAssigneeId, setNewTaskAssigneeId] = useState('')
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>('normal')
+
+  useEffect(() => {
+    if (open) return
+    setNewPhaseName('')
+    setAddingPhase(false)
+    setNewTaskPhaseId('')
+    setNewTaskAssigneeId('')
+    setNewTaskTitle('')
+    setNewTaskPriority('normal')
+  }, [open])
 
   function handleAddPhase(e: React.FormEvent) {
     e.preventDefault()
@@ -46,7 +62,7 @@ export function ProjectAddPanel({
     e.preventDefault()
     if (!newTaskTitle.trim()) return
     startTransition(async () => {
-      await runWithToast(
+      const ok = await runWithToast(
         () =>
           createTask({
             projectId: project.id,
@@ -57,103 +73,156 @@ export function ProjectAddPanel({
           }),
         { loading: 'Adding task…', success: 'Task added' }
       )
-      setNewTaskTitle('')
-      setNewTaskAssigneeId('')
-      setNewTaskPriority('normal')
+      if (ok === null) return
+      onClose()
       onRefresh()
     })
   }
 
   return (
-    <div className="ops-project-add-panel space-y-4">
-      {addingPhase ? (
-        <form onSubmit={handleAddPhase} className="ops-list-inline-form">
-          <input
-            className="btf-input"
-            value={newPhaseName}
-            onChange={e => setNewPhaseName(e.target.value)}
-            placeholder="Phase name"
-            disabled={pending}
-            autoFocus
-          />
-          <button type="submit" className="dash-btn-primary btn-primary" disabled={pending}>
-            Add phase
-          </button>
-          <button
-            type="button"
-            className="dash-btn-ghost"
-            onClick={() => setAddingPhase(false)}
-            disabled={pending}
-          >
-            Cancel
-          </button>
-        </form>
-      ) : (
-        <button
-          type="button"
-          className="dash-btn-ghost"
-          onClick={() => setAddingPhase(true)}
-          disabled={pending}
-        >
-          + Add phase
-        </button>
-      )}
+    <dialog ref={dialogRef} className="ticket-modal ticket-modal--ops-form">
+      {open ? (
+        <div className="ticket-modal-inner">
+          <h2 className="ticket-modal-title">Add task</h2>
+          <p className="ticket-modal-sub">Create a task for {project.name}.</p>
 
-      <form onSubmit={handleAddTask} className="ops-list-inline-form">
-        <select
-          className="btf-input"
-          value={newTaskPhaseId}
-          onChange={e => setNewTaskPhaseId(e.target.value)}
-          disabled={pending}
-          aria-label="Phase for new task"
-        >
-          <option value="">No phase</option>
-          {project.phases.map(p => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-        <input
-          className="btf-input flex-1"
-          value={newTaskTitle}
-          onChange={e => setNewTaskTitle(e.target.value)}
-          placeholder="New task title"
-          disabled={pending}
-        />
-        <select
-          className={`btf-input ops-priority-select ops-priority-select--${newTaskPriority}`}
-          value={newTaskPriority}
-          onChange={e => setNewTaskPriority(e.target.value as TaskPriority)}
-          disabled={pending}
-          aria-label="Priority for new task"
-        >
-          {TASK_PRIORITIES.map(p => (
-            <option key={p} value={p}>
-              {TASK_PRIORITY_LABELS[p]}
-            </option>
-          ))}
-        </select>
-        {staff.length > 0 ? (
-          <select
-            className="btf-input"
-            value={newTaskAssigneeId}
-            onChange={e => setNewTaskAssigneeId(e.target.value)}
-            disabled={pending}
-            aria-label="Assignee for new task"
-          >
-            <option value="">Unassigned</option>
-            {staff.map(s => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        ) : null}
-        <button type="submit" className="dash-btn-primary btn-primary" disabled={pending}>
-          Add task
-        </button>
-      </form>
-    </div>
+          <form onSubmit={handleAddTask} className="ops-add-task-modal-form">
+            <div>
+              <label className="dash-label" htmlFor="ops-new-task-title">
+                Title <span className="dash-label-required">*</span>
+              </label>
+              <input
+                id="ops-new-task-title"
+                className="btf-input w-full"
+                value={newTaskTitle}
+                onChange={e => setNewTaskTitle(e.target.value)}
+                placeholder="Task title"
+                disabled={pending}
+                autoFocus
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="dash-label" htmlFor="ops-new-task-phase">
+                  Phase
+                </label>
+                <select
+                  id="ops-new-task-phase"
+                  className="btf-input w-full"
+                  value={newTaskPhaseId}
+                  onChange={e => setNewTaskPhaseId(e.target.value)}
+                  disabled={pending}
+                >
+                  <option value="">No phase</option>
+                  {project.phases.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="dash-label" htmlFor="ops-new-task-priority">
+                  Priority
+                </label>
+                <select
+                  id="ops-new-task-priority"
+                  className={`btf-input w-full ops-priority-select ops-priority-select--${newTaskPriority}`}
+                  value={newTaskPriority}
+                  onChange={e => setNewTaskPriority(e.target.value as TaskPriority)}
+                  disabled={pending}
+                >
+                  {TASK_PRIORITIES.map(p => (
+                    <option key={p} value={p}>
+                      {TASK_PRIORITY_LABELS[p]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {staff.length > 0 ? (
+              <div>
+                <label className="dash-label" htmlFor="ops-new-task-assignee">
+                  Assignee
+                </label>
+                <select
+                  id="ops-new-task-assignee"
+                  className="btf-input w-full"
+                  value={newTaskAssigneeId}
+                  onChange={e => setNewTaskAssigneeId(e.target.value)}
+                  disabled={pending}
+                >
+                  <option value="">Unassigned</option>
+                  {staff.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+
+            <div className="ticket-modal-actions">
+              <button
+                type="button"
+                className="dash-btn-secondary cursor-pointer"
+                onClick={onClose}
+                disabled={pending}
+              >
+                Cancel
+              </button>
+              <button type="submit" className="dash-btn-primary btn-primary" disabled={pending}>
+                {pending ? 'Adding…' : 'Add task'}
+              </button>
+            </div>
+          </form>
+
+          <div className="ops-add-task-modal-phase">
+            {addingPhase ? (
+              <form onSubmit={handleAddPhase} className="ops-add-task-modal-phase-form">
+                <label className="dash-label" htmlFor="ops-new-phase-name">
+                  Phase name
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    id="ops-new-phase-name"
+                    className="btf-input flex-1 min-w-[10rem]"
+                    value={newPhaseName}
+                    onChange={e => setNewPhaseName(e.target.value)}
+                    placeholder="Phase name"
+                    disabled={pending}
+                    autoFocus
+                  />
+                  <button type="submit" className="dash-btn-primary btn-primary" disabled={pending}>
+                    Add phase
+                  </button>
+                  <button
+                    type="button"
+                    className="dash-btn-ghost"
+                    onClick={() => setAddingPhase(false)}
+                    disabled={pending}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <button
+                type="button"
+                className="dash-btn-ghost text-sm"
+                onClick={() => setAddingPhase(true)}
+                disabled={pending}
+              >
+                + Add phase
+              </button>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </dialog>
   )
 }

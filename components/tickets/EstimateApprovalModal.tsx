@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
+import { useModalDialog } from '@/lib/ui/use-modal-dialog'
 import { useRouter } from 'next/navigation'
 import { approveTicketEstimate } from '@/app/actions/tickets'
 import { PriorityBadge } from '@/components/ui/PriorityBadge'
@@ -19,18 +20,11 @@ export function EstimateApprovalModal({
   priority: TicketPriority
 }) {
   const router = useRouter()
-  const dialogRef = useRef<HTMLDialogElement>(null)
   const [open, setOpen] = useState(true)
+  const dialogRef = useModalDialog(open, () => setOpen(false))
   const [pending, startTransition] = useTransition()
   const hoursLabel = estimatedHours.toFixed(2).replace(/\.00$/, '')
   const priorityLabel = formatTicketPriority(priority)
-
-  useEffect(() => {
-    const el = dialogRef.current
-    if (!el) return
-    if (open) el.showModal()
-    else el.close()
-  }, [open])
 
   function approve() {
     startTransition(async () => {
@@ -68,11 +62,7 @@ export function EstimateApprovalModal({
         </div>
       ) : null}
 
-      <dialog
-        ref={dialogRef}
-        className="ticket-modal ticket-modal--estimate"
-        onClose={() => setOpen(false)}
-      >
+      <dialog ref={dialogRef} className="ticket-modal ticket-modal--estimate">
         <div className="estimate-modal-inner">
           <header className="estimate-modal-head">
             <span className="estimate-modal-eyebrow">Action required</span>

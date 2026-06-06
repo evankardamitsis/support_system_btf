@@ -33,7 +33,7 @@ export function PortalSidebar({
   const ini = initials(userName, userEmail)
 
   return (
-    <aside className="dash-sidebar flex flex-col h-full relative">
+    <aside id="dash-sidebar" className="dash-sidebar flex flex-col h-full relative">
       <SidebarBrand variant="portal" onNavigate={onClose} />
 
       {onClose ? (

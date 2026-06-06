@@ -6,6 +6,7 @@ type TopBarProps = {
   userName?: string
   userEmail?: string
   userRole?: string
+  menuOpen?: boolean
   onMenuClick: () => void
 }
 

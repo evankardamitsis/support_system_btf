@@ -218,7 +218,7 @@ export function FinancialOfferForm({ savedIbans, upfrontPercent }: FinancialOffe
 
           <div className="financial-offer-lines space-y-2">
             {lineItems.map((row, index) => (
-              <div key={index} className="financial-offer-line grid grid-cols-1 sm:grid-cols-[1fr_8rem_auto] gap-2">
+              <div key={index} className="financial-offer-line grid grid-cols-1 lg:grid-cols-[1fr_8rem_auto] gap-2">
                 <input
                   className="btf-input w-full"
                   placeholder="e.g. UI/UX Design"

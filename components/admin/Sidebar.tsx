@@ -26,7 +26,7 @@ export function AdminSidebar({ userName, userEmail, userRole, onClose }: AdminSi
   const nav = getAdminProductAreaConfig(pathname).nav
 
   return (
-    <aside className="dash-sidebar flex flex-col h-full select-none relative">
+    <aside id="dash-sidebar" className="dash-sidebar flex flex-col h-full select-none relative">
       <SidebarBrand variant="admin" userRole={userRole} onNavigate={onClose} />
 
       {onClose ? (

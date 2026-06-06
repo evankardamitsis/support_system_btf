@@ -43,7 +43,8 @@ export function PortalDashboardShell({
       <PortalTopBar
         userName={userName}
         userEmail={userEmail}
-        onMenuClick={() => setSidebarOpen(true)}
+        menuOpen={sidebarOpen}
+        onMenuClick={() => setSidebarOpen(open => !open)}
       />
 
       <div className="flex flex-1 overflow-hidden">

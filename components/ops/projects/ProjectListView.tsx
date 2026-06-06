@@ -127,6 +127,9 @@ function TaskRow({
 }) {
   const [addingSubtask, setAddingSubtask] = useState(false)
   const [subtaskTitle, setSubtaskTitle] = useState('')
+  const [subtasksOpen, setSubtasksOpen] = useState(false)
+  const subtaskCount = task.subtasks.length
+  const doneSubtasks = task.subtasks.filter(s => s.status === 'done').length
 
   function handleStatusChange(status: TaskStatus) {
     runWithToast(() => updateTask(task.id, { status }), {
@@ -240,19 +243,48 @@ function TaskRow({
           </form>
         ) : null}
       </div>
-      {task.subtasks.length > 0 ? (
-        <div className="ops-list-subtasks">
-          {task.subtasks.map(sub => (
-            <TaskRow
-              key={sub.id}
-              task={sub}
-              phases={phases}
-              staff={staff}
-              depth={depth + 1}
-              pending={pending}
-              onRefresh={onRefresh}
+      {subtaskCount > 0 ? (
+        <div
+          className={`ops-list-subtasks-wrap${subtasksOpen ? '' : ' ops-list-subtasks-wrap--collapsed'}`}
+        >
+          <button
+            type="button"
+            className="ops-subtasks-toggle ops-subtasks-toggle--list"
+            onClick={() => setSubtasksOpen(v => !v)}
+            aria-expanded={subtasksOpen}
+            aria-label={subtasksOpen ? 'Collapse subtasks' : `Show ${subtaskCount} subtasks`}
+          >
+            <ChevronDown
+              size={14}
+              className={`ops-subtasks-toggle-chevron${subtasksOpen ? '' : ' ops-subtasks-toggle-chevron--collapsed'}`}
+              aria-hidden
             />
-          ))}
+            <span className="ops-subtasks-toggle-label">
+              {subtasksOpen
+                ? 'Subtasks'
+                : `${subtaskCount} subtask${subtaskCount === 1 ? '' : 's'}`}
+            </span>
+            {!subtasksOpen ? (
+              <span className="ops-subtasks-toggle-meta">
+                {doneSubtasks}/{subtaskCount} done
+              </span>
+            ) : null}
+          </button>
+          {subtasksOpen ? (
+            <div className="ops-list-subtasks">
+              {task.subtasks.map(sub => (
+                <TaskRow
+                  key={sub.id}
+                  task={sub}
+                  phases={phases}
+                  staff={staff}
+                  depth={depth + 1}
+                  pending={pending}
+                  onRefresh={onRefresh}
+                />
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

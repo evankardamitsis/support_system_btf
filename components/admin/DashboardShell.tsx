@@ -22,7 +22,8 @@ export function DashboardShell({ children, userName, userEmail, userRole }: Dash
         userName={userName}
         userEmail={userEmail}
         userRole={userRole}
-        onMenuClick={() => setSidebarOpen(true)}
+        menuOpen={sidebarOpen}
+        onMenuClick={() => setSidebarOpen(open => !open)}
       />
 
       <div className="flex flex-1 overflow-hidden">

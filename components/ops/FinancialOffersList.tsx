@@ -11,7 +11,11 @@ import {
 import { CreateProjectFromOfferPanel } from '@/components/ops/projects/CreateProjectFromOfferPanel'
 import { FinancialOfferEmailPanel } from '@/components/ops/FinancialOfferEmailPanel'
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
-import { formatOfferCurrency } from '@/lib/ops/financial-offer/calculate'
+import {
+  formatOfferCurrency,
+  getOfferProjectTotal,
+  getOfferProjectUpfront,
+} from '@/lib/ops/financial-offer/calculate'
 import { formatDateTimeHuman } from '@/lib/tickets/display'
 import type { FinancialOfferRecord } from '@/lib/ops/financial-offer/types'
 import { runWithToast } from '@/lib/notify'
@@ -64,6 +68,13 @@ export function FinancialOffersList({
     })
   }
 
+  const emailOffer = emailPanelOfferId
+    ? offers.find(offer => offer.id === emailPanelOfferId) ?? null
+    : null
+  const projectOffer = projectPanelOfferId
+    ? offers.find(offer => offer.id === projectPanelOfferId) ?? null
+    : null
+
   return (
     <>
       <div className="financial-offers-table">
@@ -77,29 +88,65 @@ export function FinancialOffersList({
           <span />
         </div>
         <div className="financial-offers-table-body">
-          {offers.map(offer => (
+          {offers.map(offer => {
+            const projectTotal = getOfferProjectTotal(offer)
+            const projectUpfront = getOfferProjectUpfront(offer)
+
+            return (
             <div key={offer.id} className="financial-offers-entry">
               <div className="financial-offers-grid financial-offers-row">
                 <div className="financial-offers-cell financial-offers-cell-primary min-w-0" data-label="Client">
-                  <p className="financial-offers-client">{offer.clientName}</p>
+                  <div className="financial-offers-compact-top">
+                    <Link
+                      href={`/admin/ops/financial-offers/${offer.id}`}
+                      className="financial-offers-client financial-offers-client-link"
+                      title={offer.clientEmail ?? undefined}
+                    >
+                      {offer.clientName}
+                    </Link>
+                    <div className="financial-offers-compact-aside">
+                      <div className="financial-offers-compact-badges">
+                        {offer.status === 'accepted' ? (
+                          <span className="financial-offers-active-badge">Accepted</span>
+                        ) : (
+                          <span className="financial-offers-open-badge">Open</span>
+                        )}
+                        {offer.emailedAt ? (
+                          <span className="financial-offers-sent-badge">Sent</span>
+                        ) : null}
+                      </div>
+                      <span className="financial-offers-compact-total tabular-nums">
+                        {formatOfferCurrency(projectTotal)}
+                      </span>
+                    </div>
+                  </div>
                   {offer.clientEmail ? (
-                    <p className="ops-card-meta truncate">{offer.clientEmail}</p>
-                  ) : (
-                    <p className="ops-card-meta">No email saved</p>
-                  )}
+                    <p className="ops-card-meta financial-offers-cell-email-meta truncate">
+                      {offer.clientEmail}
+                    </p>
+                  ) : null}
+                  <p className="ops-card-meta financial-offers-cell-meta tabular-nums">
+                    {formatOfferCurrency(projectTotal)} total ·{' '}
+                    {formatOfferCurrency(projectUpfront)} upfront
+                  </p>
                 </div>
                 <div className="financial-offers-cell financial-offers-cell-total tabular-nums" data-label="Total">
-                  {formatOfferCurrency(offer.totalAmount)}
+                  {formatOfferCurrency(projectTotal)}
                 </div>
                 <div className="financial-offers-cell financial-offers-cell-upfront tabular-nums" data-label="Upfront">
-                  {formatOfferCurrency(offer.upfrontAmount)}
+                  {formatOfferCurrency(projectUpfront)}
                 </div>
                 <div className="financial-offers-cell financial-offers-cell-status" data-label="Status">
-                  {offer.status === 'accepted' ? (
-                    <span className="financial-offers-active-badge">Accepted</span>
-                  ) : (
-                    <span className="dash-meta">Open</span>
-                  )}
+                  <div className="financial-offers-status-group">
+                    {offer.status === 'accepted' ? (
+                      <span className="financial-offers-active-badge">Accepted</span>
+                    ) : (
+                      <span className="financial-offers-open-badge">Open</span>
+                    )}
+                    {offer.emailedAt ? (
+                      <span className="financial-offers-sent-badge">Sent</span>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="financial-offers-cell financial-offers-cell-created" data-label="Created">
                   <time dateTime={offer.createdAt} className="dash-meta">
@@ -190,23 +237,26 @@ export function FinancialOffersList({
                 </div>
               </div>
 
-              {emailPanelOfferId === offer.id ? (
-                <FinancialOfferEmailPanel
-                  offer={offer}
-                  onClose={() => setEmailPanelOfferId(null)}
-                />
-              ) : null}
-              {projectPanelOfferId === offer.id ? (
-                <CreateProjectFromOfferPanel
-                  offerId={offer.id}
-                  clientName={offer.clientName}
-                  onClose={() => setProjectPanelOfferId(null)}
-                />
-              ) : null}
             </div>
-          ))}
+          )})}
         </div>
       </div>
+
+      {emailOffer ? (
+        <FinancialOfferEmailPanel
+          offer={emailOffer}
+          open
+          onClose={() => setEmailPanelOfferId(null)}
+        />
+      ) : null}
+      {projectOffer ? (
+        <CreateProjectFromOfferPanel
+          offerId={projectOffer.id}
+          clientName={projectOffer.clientName}
+          open
+          onClose={() => setProjectPanelOfferId(null)}
+        />
+      ) : null}
 
       <ConfirmDeleteModal
         open={deleteOffer !== null}

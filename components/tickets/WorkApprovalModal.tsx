@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
+import { useModalDialog } from '@/lib/ui/use-modal-dialog'
 import { useRouter } from 'next/navigation'
 import { approveTicketWork, disputeTicketWork } from '@/app/actions/tickets'
 import { runWithToast } from '@/lib/notify'
@@ -13,18 +14,11 @@ export function WorkApprovalModal({
   ticketTitle: string
 }) {
   const router = useRouter()
-  const dialogRef = useRef<HTMLDialogElement>(null)
   const [open, setOpen] = useState(true)
+  const dialogRef = useModalDialog(open, () => setOpen(false))
   const [mode, setMode] = useState<'review' | 'dispute'>('review')
   const [concerns, setConcerns] = useState('')
   const [pending, startTransition] = useTransition()
-
-  useEffect(() => {
-    const el = dialogRef.current
-    if (!el) return
-    if (open) el.showModal()
-    else el.close()
-  }, [open])
 
   useEffect(() => {
     if (!open) {
@@ -80,11 +74,7 @@ export function WorkApprovalModal({
         </div>
       ) : null}
 
-      <dialog
-        ref={dialogRef}
-        className="ticket-modal ticket-modal--estimate"
-        onClose={() => setOpen(false)}
-      >
+      <dialog ref={dialogRef} className="ticket-modal ticket-modal--estimate">
         <div className="estimate-modal-inner">
           {mode === 'review' ? (
             <>

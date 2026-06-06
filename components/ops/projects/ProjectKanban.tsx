@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { GripVertical } from 'lucide-react'
+import { ChevronDown, GripVertical } from 'lucide-react'
 import { updateTask } from '@/app/actions/projects'
 import { TaskPrioritySelect, TaskStatusSelect } from '@/components/ops/projects/StatusSelect'
 import {
@@ -42,7 +42,9 @@ function KanbanCard({
   onDragStart: (taskId: string) => void
   onDragEnd: () => void
 }) {
+  const [subtasksOpen, setSubtasksOpen] = useState(false)
   const doneSubtasks = task.subtasks.filter(s => s.status === 'done').length
+  const subtaskCount = task.subtasks.length
 
   return (
     <div
@@ -80,22 +82,54 @@ function KanbanCard({
           onChange={assigneeId => onAssigneeChange(task.id, assigneeId)}
         />
       ) : null}
-      {task.subtasks.length > 0 ? (
-        <div className="ops-kanban-subtasks-wrap">
-          <div className="ops-kanban-subtasks-progress">
-            <div
-              className="ops-kanban-subtasks-progress-fill"
-              style={{ width: `${(doneSubtasks / task.subtasks.length) * 100}%` }}
+      {subtaskCount > 0 ? (
+        <div
+          className={`ops-kanban-subtasks-wrap${subtasksOpen ? '' : ' ops-kanban-subtasks-wrap--collapsed'}`}
+        >
+          <button
+            type="button"
+            className="ops-subtasks-toggle"
+            onClick={e => {
+              e.stopPropagation()
+              setSubtasksOpen(v => !v)
+            }}
+            aria-expanded={subtasksOpen}
+            aria-label={subtasksOpen ? 'Collapse subtasks' : `Show ${subtaskCount} subtasks`}
+          >
+            <ChevronDown
+              size={14}
+              className={`ops-subtasks-toggle-chevron${subtasksOpen ? '' : ' ops-subtasks-toggle-chevron--collapsed'}`}
+              aria-hidden
             />
-          </div>
-          <ul className="ops-kanban-subtasks">
-            {task.subtasks.map(sub => (
-              <li key={sub.id} className={`ops-kanban-subtask ops-kanban-subtask--${sub.status}`}>
-                <span className={`ops-kanban-subtask-dot ops-kanban-subtask-dot--${sub.status}`} />
-                {sub.title}
-              </li>
-            ))}
-          </ul>
+            <span className="ops-subtasks-toggle-label">
+              {subtasksOpen
+                ? 'Subtasks'
+                : `${subtaskCount} subtask${subtaskCount === 1 ? '' : 's'}`}
+            </span>
+            {!subtasksOpen ? (
+              <span className="ops-subtasks-toggle-meta">
+                {doneSubtasks}/{subtaskCount} done
+              </span>
+            ) : null}
+          </button>
+          {subtasksOpen ? (
+            <>
+              <div className="ops-kanban-subtasks-progress">
+                <div
+                  className="ops-kanban-subtasks-progress-fill"
+                  style={{ width: `${(doneSubtasks / subtaskCount) * 100}%` }}
+                />
+              </div>
+              <ul className="ops-kanban-subtasks">
+                {task.subtasks.map(sub => (
+                  <li key={sub.id} className={`ops-kanban-subtask ops-kanban-subtask--${sub.status}`}>
+                    <span className={`ops-kanban-subtask-dot ops-kanban-subtask-dot--${sub.status}`} />
+                    {sub.title}
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
         </div>
       ) : null}
       <div className="ops-kanban-card-controls">

@@ -17,10 +17,10 @@ export default async function FinancialOffersPage() {
       : {}
 
   return (
-    <div className="space-y-6 w-full">
+    <div className="financial-offers-page space-y-6 w-full">
       <PageHeader
         title="Financial offers"
-        description="Saved offer history — download PDFs or resend to clients."
+        description="Saved offers — PDFs and email."
         action={
           <Link href="/admin/ops/financial-offers/new" className="dash-btn-primary btn-primary">
             New offer

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
 import { ChevronDown, Plus } from 'lucide-react'
 import { deleteProject, updateProjectCost, updateProjectStatus } from '@/app/actions/projects'
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
@@ -35,10 +35,17 @@ export function ProjectDetail({
   staff: StaffOption[]
 }) {
   const router = useRouter()
-  const [view, setView] = useState<'kanban' | 'list'>('kanban')
+  const [view, setView] = useState<'kanban' | 'list'>('list')
   const [assigneeFilter, setAssigneeFilter] = useState<AssigneeFilter>('all')
-  const [headerExpanded, setHeaderExpanded] = useState(true)
-  const [showAddPanel, setShowAddPanel] = useState(false)
+  const [headerExpanded, setHeaderExpanded] = useState(false)
+  const [showAddModal, setShowAddModal] = useState(false)
+
+  useEffect(() => {
+    if (window.matchMedia('(min-width: 1025px)').matches) {
+      setHeaderExpanded(true)
+      setView('kanban')
+    }
+  }, [])
   const [pending, startTransition] = useTransition()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [costInput, setCostInput] = useState(
@@ -295,13 +302,14 @@ export function ProjectDetail({
             <div className="ops-project-toolbar-actions">
               <button
                 type="button"
-                className={`dash-btn-primary btn-primary ops-project-add-btn${showAddPanel ? ' ops-project-add-btn--open' : ''}`}
-                onClick={() => setShowAddPanel(v => !v)}
+                className="dash-btn-primary btn-primary ops-project-add-btn"
+                onClick={() => setShowAddModal(true)}
                 disabled={pending}
-                aria-expanded={showAddPanel}
+                aria-haspopup="dialog"
+                aria-label="Add task"
               >
-                <Plus size={15} />
-                Add task
+                <Plus size={15} aria-hidden />
+                <span className="ops-project-add-btn-label">Add task</span>
               </button>
               <button
                 type="button"
@@ -316,13 +324,13 @@ export function ProjectDetail({
         </div>
       </header>
 
-      {showAddPanel ? (
-        <ProjectAddPanel
-          project={project}
-          staff={staff}
-          onRefresh={() => router.refresh()}
-        />
-      ) : null}
+      <ProjectAddPanel
+        open={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        project={project}
+        staff={staff}
+        onRefresh={() => router.refresh()}
+      />
 
       {staff.length > 0 ? (
         <div className="ops-project-filters">

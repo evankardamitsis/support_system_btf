@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useModalDialog } from '@/lib/ui/use-modal-dialog'
 
 const confirmButtonClass = {
   danger: 'dash-btn-danger',
@@ -31,17 +31,10 @@ export function ConfirmDeleteModal({
   error?: string | null
   onConfirm: () => void
 }) {
-  const dialogRef = useRef<HTMLDialogElement>(null)
-
-  useEffect(() => {
-    const el = dialogRef.current
-    if (!el) return
-    if (open) el.showModal()
-    else el.close()
-  }, [open])
+  const dialogRef = useModalDialog(open, onClose)
 
   return (
-    <dialog ref={dialogRef} className="ticket-modal" onClose={onClose}>
+    <dialog ref={dialogRef} className="ticket-modal">
       {open ? (
         <div className="ticket-modal-inner">
           <h2 className="ticket-modal-title">{title}</h2>

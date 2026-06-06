@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
+import { useModalDialog } from '@/lib/ui/use-modal-dialog'
 import { useRouter } from 'next/navigation'
 import { approveExtraHours } from '@/app/actions/extra-hours'
 import { runWithToast } from '@/lib/notify'
@@ -25,21 +26,15 @@ export function ExtraHoursApprovalModal({
   pending: PendingExtraHours[]
 }) {
   const router = useRouter()
-  const dialogRef = useRef<HTMLDialogElement>(null)
   const [open, setOpen] = useState(true)
   const [isApproving, startTransition] = useTransition()
   const [remaining, setRemaining] = useState(pending)
+  const dialogOpen = open && remaining.length > 0
+  const dialogRef = useModalDialog(dialogOpen, () => setOpen(false))
 
   useEffect(() => {
     setRemaining(pending)
   }, [pending])
-
-  useEffect(() => {
-    const el = dialogRef.current
-    if (!el) return
-    if (open && remaining.length > 0) el.showModal()
-    else el.close()
-  }, [open, remaining.length])
 
   function approve(id: string, hoursLabel: string) {
     startTransition(async () => {
@@ -81,11 +76,7 @@ export function ExtraHoursApprovalModal({
         </div>
       ) : null}
 
-      <dialog
-        ref={dialogRef}
-        className="ticket-modal ticket-modal--estimate"
-        onClose={() => setOpen(false)}
-      >
+      <dialog ref={dialogRef} className="ticket-modal ticket-modal--estimate">
         <div className="estimate-modal-inner">
           <header className="estimate-modal-head">
             <span className="estimate-modal-eyebrow">Action required</span>

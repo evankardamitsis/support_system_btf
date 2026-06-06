@@ -1,7 +1,8 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { Menu, ChevronDown, LogOut } from 'lucide-react'
+import { ChevronDown, LogOut } from 'lucide-react'
+import { MenuToggleIcon } from '@/components/dashboard/MenuToggleIcon'
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
@@ -23,12 +24,14 @@ export function DashboardTopBar({
   userName,
   userEmail,
   userRole,
+  menuOpen = false,
   onMenuClick,
 }: {
   variant: 'admin' | 'portal'
   userName?: string
   userEmail?: string
   userRole?: string
+  menuOpen?: boolean
   onMenuClick: () => void
 }) {
   const router = useRouter()
@@ -59,16 +62,18 @@ export function DashboardTopBar({
   return (
     <header className="dash-topbar flex items-center px-4 lg:px-5 shrink-0 gap-4">
       <button
+        type="button"
         onClick={onMenuClick}
-        className="lg:hidden p-1.5 transition-opacity hover:opacity-70"
-        style={{ color: 'var(--text-3)' }}
-        aria-label="Open menu"
+        className={`dash-menu-toggle-btn shrink-0${menuOpen ? ' is-open' : ''}`}
+        aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+        aria-expanded={menuOpen}
+        aria-controls="dash-sidebar"
       >
-        <Menu size={20} />
+        <MenuToggleIcon open={menuOpen} />
       </button>
 
-      <div className="hidden lg:flex items-center shrink-0 gap-2 dash-topbar-brand">
-        <Link href={homeHref} className="dash-topbar-brand-link" aria-label="Home">
+      <div className="flex items-center shrink-0 gap-2 dash-topbar-brand min-w-0">
+        <Link href={homeHref} className="dash-topbar-brand-link shrink-0" aria-label="Home">
           <Image
             src="/btf-wordmark.svg"
             alt="BTF"
