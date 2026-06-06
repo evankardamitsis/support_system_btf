@@ -32,6 +32,7 @@ export type CompanyProfileData = {
 }
 
 export type FinancialOfferInput = {
+  clientId?: string | null
   clientName: string
   clientEmail?: string | null
   lineItems: FinancialOfferLineItem[]
@@ -52,6 +53,7 @@ export type FinancialOfferStatus = 'open' | 'accepted'
 
 export type FinancialOfferRecord = {
   id: string
+  clientId: string | null
   clientName: string
   clientEmail: string | null
   lineItems: FinancialOfferLineItem[]

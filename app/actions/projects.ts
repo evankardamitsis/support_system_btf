@@ -120,7 +120,9 @@ export async function createProjectFromOffer(offerId: string, templateKey: Proje
 
   const { data: offer, error: offerError } = await supabase
     .from('financial_offers')
-    .select('id, client_name, status, total_amount, line_items, hosting_maintenance, upfront_percent')
+    .select(
+      'id, client_id, client_name, status, total_amount, line_items, hosting_maintenance, upfront_percent'
+    )
     .eq('id', offerId)
     .is('deleted_at', null)
     .single()
@@ -141,6 +143,7 @@ export async function createProjectFromOffer(offerId: string, templateKey: Proje
     .insert({
       name: offer.client_name,
       is_internal: false,
+      client_id: offer.client_id,
       financial_offer_id: offer.id,
       template_key: templateKey,
       cost_amount: projectCost,
@@ -175,6 +178,75 @@ export async function createProjectFromOffer(offerId: string, templateKey: Proje
 
   revalidateProjectPaths(data.id)
   return data.id as string
+}
+
+export async function updateProject(
+  projectId: string,
+  input: {
+    name: string
+    isInternal: boolean
+    clientId?: string | null
+    leadId?: string | null
+    description?: string | null
+    startDate?: string | null
+    targetDate?: string | null
+  }
+) {
+  const { supabase } = await requireAdminPage()
+
+  const name = input.name.trim()
+  if (!name) throw new Error('Project name is required')
+  if (input.isInternal && input.clientId) {
+    throw new Error('Internal projects cannot be linked to a client')
+  }
+
+  const { data: existing } = await supabase
+    .from('ops_projects')
+    .select('id, financial_offer_id')
+    .eq('id', projectId)
+    .is('deleted_at', null)
+    .single()
+
+  if (!existing) throw new Error('Project not found')
+
+  const { error } = await supabase
+    .from('ops_projects')
+    .update({
+      name,
+      is_internal: input.isInternal,
+      client_id: input.isInternal ? null : input.clientId || null,
+      lead_id: input.leadId || null,
+      description: input.description?.trim() || null,
+      start_date: input.startDate || null,
+      target_date: input.targetDate || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', projectId)
+
+  if (error) throw new Error(error.message)
+  revalidateProjectPaths(projectId)
+}
+
+export async function archiveProject(projectId: string) {
+  const { supabase } = await requireAdminPage()
+
+  const { data: project } = await supabase
+    .from('ops_projects')
+    .select('id, status')
+    .eq('id', projectId)
+    .is('deleted_at', null)
+    .single()
+
+  if (!project) throw new Error('Project not found')
+  if (project.status === 'archived') throw new Error('Project is already archived')
+
+  const { error } = await supabase
+    .from('ops_projects')
+    .update({ status: 'archived', updated_at: new Date().toISOString() })
+    .eq('id', projectId)
+
+  if (error) throw new Error(error.message)
+  revalidateProjectPaths(projectId)
 }
 
 export async function updateProjectCost(projectId: string, costAmount: number | null) {
@@ -222,6 +294,7 @@ export async function completeProject(projectId: string) {
     .from('ops_project_tasks')
     .update({ status: 'done', updated_at: now })
     .eq('project_id', projectId)
+    .is('deleted_at', null)
     .neq('status', 'done')
 
   if (tasksError) throw new Error(tasksError.message)
@@ -257,6 +330,65 @@ export async function deleteProject(projectId: string) {
   revalidateProjectPaths()
 }
 
+export async function updatePhase(phaseId: string, name: string) {
+  const { supabase } = await requireAdminPage()
+  const trimmed = name.trim()
+  if (!trimmed) throw new Error('Phase name is required')
+
+  const { data: phase } = await supabase
+    .from('ops_project_phases')
+    .select('project_id')
+    .eq('id', phaseId)
+    .single()
+
+  const { error } = await supabase
+    .from('ops_project_phases')
+    .update({ name: trimmed })
+    .eq('id', phaseId)
+
+  if (error) throw new Error(error.message)
+
+  if (phase) {
+    await supabase
+      .from('ops_projects')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', phase.project_id)
+    revalidateProjectPaths(phase.project_id)
+  }
+}
+
+export async function deletePhase(phaseId: string) {
+  const { supabase } = await requireAdminPage()
+
+  const { data: phase } = await supabase
+    .from('ops_project_phases')
+    .select('project_id')
+    .eq('id', phaseId)
+    .single()
+
+  if (!phase) throw new Error('Phase not found')
+
+  const { count } = await supabase
+    .from('ops_project_tasks')
+    .select('id', { count: 'exact', head: true })
+    .eq('phase_id', phaseId)
+    .is('deleted_at', null)
+
+  if (count && count > 0) {
+    throw new Error('Remove or move all tasks before deleting this phase')
+  }
+
+  const { error } = await supabase.from('ops_project_phases').delete().eq('id', phaseId)
+  if (error) throw new Error(error.message)
+
+  await supabase
+    .from('ops_projects')
+    .update({ updated_at: new Date().toISOString() })
+    .eq('id', phase.project_id)
+
+  revalidateProjectPaths(phase.project_id)
+}
+
 export async function updatePhaseStatus(phaseId: string, status: PhaseStatus) {
   const { supabase } = await requireAdminPage()
   const { data: phase } = await supabase
@@ -289,6 +421,7 @@ export async function createTask(input: {
       .from('ops_project_tasks')
       .select('id, parent_id, project_id, phase_id')
       .eq('id', input.parentId)
+      .is('deleted_at', null)
       .single()
     if (!parent || parent.parent_id) throw new Error('Subtasks can only be added to top-level tasks')
     if (parent.project_id !== input.projectId) throw new Error('Invalid parent task')
@@ -332,6 +465,7 @@ export async function updateTask(
     .from('ops_project_tasks')
     .select('project_id')
     .eq('id', taskId)
+    .is('deleted_at', null)
     .single()
   if (!task) throw new Error('Task not found')
   if (patch.assigneeId) await assertStaffAssignee(supabase, patch.assigneeId)
@@ -353,6 +487,43 @@ export async function updateTask(
   await supabase
     .from('ops_projects')
     .update({ updated_at: new Date().toISOString() })
+    .eq('id', task.project_id)
+
+  revalidateProjectPaths(task.project_id)
+}
+
+export async function deleteTask(taskId: string) {
+  const { supabase } = await requireAdminPage()
+
+  const { data: task } = await supabase
+    .from('ops_project_tasks')
+    .select('id, project_id, parent_id')
+    .eq('id', taskId)
+    .is('deleted_at', null)
+    .single()
+
+  if (!task) throw new Error('Task not found')
+
+  const now = new Date().toISOString()
+
+  const { error: subtasksError } = await supabase
+    .from('ops_project_tasks')
+    .update({ deleted_at: now, updated_at: now })
+    .eq('parent_id', taskId)
+    .is('deleted_at', null)
+
+  if (subtasksError) throw new Error(subtasksError.message)
+
+  const { error } = await supabase
+    .from('ops_project_tasks')
+    .update({ deleted_at: now, updated_at: now })
+    .eq('id', taskId)
+
+  if (error) throw new Error(error.message)
+
+  await supabase
+    .from('ops_projects')
+    .update({ updated_at: now })
     .eq('id', task.project_id)
 
   revalidateProjectPaths(task.project_id)

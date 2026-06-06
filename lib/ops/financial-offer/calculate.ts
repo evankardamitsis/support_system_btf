@@ -122,7 +122,11 @@ export function parseFinancialOfferInput(raw: unknown): FinancialOfferInput {
 
   const excludeVat = body.excludeVat === true
 
+  const clientId =
+    typeof body.clientId === 'string' && body.clientId.trim() ? body.clientId.trim() : null
+
   return {
+    clientId,
     clientName,
     clientEmail: clientEmail || null,
     lineItems,

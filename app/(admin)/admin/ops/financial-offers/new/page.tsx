@@ -8,7 +8,10 @@ import { createClient } from '@/lib/supabase/server'
 export default async function NewFinancialOfferPage() {
   await requireStaff()
   const supabase = await createClient()
-  const { profile, ibans } = await getCompanyProfileForOffers(supabase)
+  const [{ profile, ibans }, { data: clients }] = await Promise.all([
+    getCompanyProfileForOffers(supabase),
+    supabase.from('clients').select('id, name, email').order('name'),
+  ])
 
   return (
     <div className="space-y-6 w-full max-w-4xl">
@@ -21,7 +24,11 @@ export default async function NewFinancialOfferPage() {
         description={`Build a client offer — totals and ${profile.upfrontPercent}% upfront are calculated automatically.`}
       />
 
-      <FinancialOfferForm savedIbans={ibans} upfrontPercent={profile.upfrontPercent} />
+      <FinancialOfferForm
+        savedIbans={ibans}
+        upfrontPercent={profile.upfrontPercent}
+        clients={clients ?? []}
+      />
     </div>
   )
 }

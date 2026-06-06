@@ -8,7 +8,12 @@ import { DeleteClientButton } from '@/components/clients/DeleteClientButton'
 import { requireAdmin } from '@/lib/auth/require-admin'
 import { MetricStrip } from '@/components/dashboard/MetricStrip'
 import { TicketsTable } from '@/components/tickets/TicketsTable'
+import { ClientHostingLifecycleSection } from '@/components/clients/ClientHostingLifecycleSection'
+import { ClientOpsSection } from '@/components/clients/ClientOpsSection'
 import { ClientRetainerSection } from '@/components/retainers/ClientRetainerSection'
+import { getClientOpsSummary } from '@/lib/ops/client-ops/service'
+import { isExpiringSoon } from '@/lib/ops/hosting-maintenance/display'
+import { HOSTING_CONTRACT_STATUS_LABELS } from '@/lib/ops/hosting-maintenance/types'
 import { getRetainerForClient } from '@/lib/retainers/active'
 import { retainerTracksHours } from '@/lib/retainers/billing-model'
 import { formatPackageName } from '@/lib/retainers/packages'
@@ -27,7 +32,7 @@ export default async function AdminClientDetailPage({
   const { data: client } = await supabase.from('clients').select('*').eq('id', id).single()
   if (!client) notFound()
 
-  const [{ data: tickets }, { count: ticketCount }, activeRetainer] = await Promise.all([
+  const [{ data: tickets }, { count: ticketCount }, activeRetainer, clientOps] = await Promise.all([
     supabase
       .from('tickets')
       .select('id, title, status, priority, type, updated_at')
@@ -36,9 +41,67 @@ export default async function AdminClientDetailPage({
       .limit(20),
     supabase.from('tickets').select('*', { count: 'exact', head: true }).eq('client_id', id),
     getRetainerForClient(supabase, id, { includePackage: true }),
+    getClientOpsSummary(supabase, id, client.name),
   ])
 
   const openTickets = tickets?.filter(t => t.status === 'open' || t.status === 'in_progress').length ?? 0
+  const hasActiveHosting = clientOps.hosting.some(contract => contract.status === 'active')
+  const primaryHosting =
+    clientOps.hosting.find(contract => contract.status === 'active') ?? clientOps.hosting[0] ?? null
+  const retainerStatus = (client.retainer_status ?? 'active') as RetainerLifecycleStatus
+  const hasRetainer = Boolean(activeRetainer)
+
+  const billingMetric = hasActiveHosting
+    ? { label: 'Hosting', value: 'Active', accent: '#fcd34d' }
+    : hasRetainer
+      ? {
+          label: 'Retainer',
+          value: RETAINER_STATUS_LABELS[retainerStatus],
+          accent:
+            retainerStatus === 'frozen'
+              ? '#fb923c'
+              : retainerStatus === 'canceled'
+                ? '#f87171'
+                : '#4ade80',
+        }
+      : primaryHosting
+        ? {
+            label: 'Hosting',
+            value: HOSTING_CONTRACT_STATUS_LABELS[primaryHosting.status],
+            accent:
+              primaryHosting.status === 'active'
+                ? '#fcd34d'
+                : primaryHosting.status === 'expired'
+                  ? '#fb923c'
+                  : '#f87171',
+          }
+        : null
+
+  const packageValue = activeRetainer?.package_name
+    ? formatPackageName(activeRetainer.package_name)
+    : client.plan_name?.trim() || null
+
+  const packageMetric = packageValue ? { label: 'Package', value: packageValue } : null
+
+  const activeHostingContracts = clientOps.hosting.filter(contract => contract.status === 'active')
+  const nextHostingRenewal =
+    activeHostingContracts.length > 0
+      ? [...activeHostingContracts].sort((a, b) => a.periodEnd.localeCompare(b.periodEnd))[0]
+      : null
+
+  const renewalMetric = nextHostingRenewal
+    ? {
+        label: 'Renewal',
+        value: formatDate(nextHostingRenewal.periodEnd),
+        hint: 'Hosting period end',
+        accent: isExpiringSoon(nextHostingRenewal.periodEnd, nextHostingRenewal.status)
+          ? '#fb923c'
+          : undefined,
+        emphasis: isExpiringSoon(nextHostingRenewal.periodEnd, nextHostingRenewal.status),
+      }
+    : client.renewal_date
+      ? { label: 'Renewal', value: formatDate(client.renewal_date) }
+      : null
 
   const hoursBilling = retainerTracksHours(activeRetainer)
   const ticketRows =
@@ -77,28 +140,11 @@ export default async function AdminClientDetailPage({
       <MetricStrip
         foldLabel="Client"
         items={[
-          {
-            label: 'Package',
-            value: activeRetainer?.package_name
-              ? formatPackageName(activeRetainer.package_name)
-              : client.plan_name ?? '—',
-          },
+          ...(packageMetric ? [packageMetric] : []),
           { label: 'SLA', value: `${client.sla_response_hours ?? 8}h`, hint: 'Response target' },
           { label: 'Contact', value: client.contact_name ?? '—' },
-          {
-            label: 'Renewal',
-            value: formatDate(client.renewal_date),
-          },
-          {
-            label: 'Retainer',
-            value: RETAINER_STATUS_LABELS[(client.retainer_status ?? 'active') as RetainerLifecycleStatus],
-            accent:
-              client.retainer_status === 'frozen'
-                ? '#fb923c'
-                : client.retainer_status === 'canceled'
-                  ? '#f87171'
-                  : '#4ade80',
-          },
+          ...(renewalMetric ? [renewalMetric] : []),
+          ...(billingMetric ? [billingMetric] : []),
           {
             label: 'Active tickets',
             value: String(openTickets),
@@ -113,7 +159,13 @@ export default async function AdminClientDetailPage({
         canManage={isAdmin}
       />
 
-      <ClientRetainerSection clientId={id} canManageLifecycle={isAdmin} />
+      {hasRetainer ? (
+        <ClientRetainerSection clientId={id} canManageLifecycle={isAdmin} />
+      ) : clientOps.hosting.length > 0 ? (
+        <ClientHostingLifecycleSection contracts={clientOps.hosting} />
+      ) : null}
+
+      <ClientOpsSection ops={clientOps} />
 
       <section className="space-y-3 anim-fade-up anim-fade-up-5">
         <div className="flex flex-wrap items-center justify-between gap-3">

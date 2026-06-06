@@ -58,7 +58,11 @@ async function loadProjectCounts(supabase: Db, projectIds: string[]) {
 
   const [{ data: phases }, { data: tasks }] = await Promise.all([
     supabase.from('ops_project_phases').select('project_id').in('project_id', projectIds),
-    supabase.from('ops_project_tasks').select('project_id, status').in('project_id', projectIds),
+    supabase
+      .from('ops_project_tasks')
+      .select('project_id, status')
+      .in('project_id', projectIds)
+      .is('deleted_at', null),
   ])
 
   for (const p of phases ?? []) {
@@ -174,6 +178,35 @@ export async function listOpsProjects(supabase: Db): Promise<OpsProjectRecord[]>
   )
 }
 
+export async function listOpsProjectsForClient(
+  supabase: Db,
+  clientId: string
+): Promise<OpsProjectRecord[]> {
+  const { data, error } = await supabase
+    .from('ops_projects')
+    .select('*, clients(name)')
+    .eq('client_id', clientId)
+    .is('deleted_at', null)
+    .order('updated_at', { ascending: false })
+
+  if (error || !data) return []
+
+  const ids = data.map(p => p.id)
+  const counts = await loadProjectCounts(supabase, ids)
+  const staffNames = await loadStaffNames(
+    supabase,
+    data.map(p => p.lead_id).filter((id): id is string => !!id)
+  )
+
+  return data.map(row =>
+    mapProjectRow(
+      row,
+      counts.get(row.id) ?? { phases: 0, tasks: 0, done: 0 },
+      row.lead_id ? staffNames.get(row.lead_id) ?? null : null
+    )
+  )
+}
+
 export async function getOpsProjectDetail(
   supabase: Db,
   projectId: string
@@ -197,6 +230,7 @@ export async function getOpsProjectDetail(
       .from('ops_project_tasks')
       .select('*, phase:ops_project_phases(name)')
       .eq('project_id', projectId)
+      .is('deleted_at', null)
       .order('sort_order', { ascending: true }),
   ])
 

@@ -1,8 +1,16 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { ChevronDown } from 'lucide-react'
-import { createTask, updatePhaseStatus, updateTask } from '@/app/actions/projects'
+import { useRef, useState, useTransition } from 'react'
+import { ChevronDown, Pencil, Trash2 } from 'lucide-react'
+import {
+  createTask,
+  deletePhase,
+  deleteTask,
+  updatePhase,
+  updatePhaseStatus,
+  updateTask,
+} from '@/app/actions/projects'
+import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import {
   PhaseStatusSelect,
   TaskPrioritySelect,
@@ -35,6 +43,8 @@ function PhaseSection({
   collapsed,
   onToggle,
   onStatusChange,
+  onRename,
+  onDelete,
   pending,
   children,
 }: {
@@ -47,32 +57,106 @@ function PhaseSection({
   collapsed: boolean
   onToggle: (phaseId: string) => void
   onStatusChange?: (status: PhaseStatus) => void
+  onRename?: (name: string) => void
+  onDelete?: () => void
   pending: boolean
   children: React.ReactNode
 }) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(title)
+  const inputRef = useRef<HTMLInputElement>(null)
   const phasePct = taskCount > 0 ? (doneCount / taskCount) * 100 : 0
   const toneClass = `ops-list-phase--tone-${toneIndex % PHASE_TONE_COUNT}`
+  const canManage = Boolean(onRename && onDelete)
+
+  function startEditing() {
+    if (!onRename || pending) return
+    setDraft(title)
+    setEditing(true)
+    requestAnimationFrame(() => inputRef.current?.focus())
+  }
+
+  function commitRename() {
+    if (!onRename) return
+    const trimmed = draft.trim()
+    if (!trimmed) {
+      setDraft(title)
+      setEditing(false)
+      return
+    }
+    if (trimmed !== title) onRename(trimmed)
+    setEditing(false)
+  }
 
   return (
     <section
       className={`ops-list-phase ${toneClass}${collapsed ? ' ops-list-phase--collapsed' : ''}`}
     >
       <div className="ops-list-phase-head">
-        <button
-          type="button"
-          className="ops-list-phase-toggle"
-          onClick={() => onToggle(phaseId)}
-          aria-expanded={!collapsed}
-          aria-controls={`ops-phase-body-${phaseId}`}
-        >
-          <ChevronDown
-            size={16}
-            className={`ops-list-phase-chevron${collapsed ? ' ops-list-phase-chevron--collapsed' : ''}`}
-            aria-hidden
-          />
-          <span className="ops-list-phase-title">{title}</span>
-          <span className="ops-list-phase-count">{taskCount}</span>
-        </button>
+        <div className="ops-list-phase-toggle-wrap">
+          <button
+            type="button"
+            className="ops-list-phase-toggle"
+            onClick={() => onToggle(phaseId)}
+            aria-expanded={!collapsed}
+            aria-controls={`ops-phase-body-${phaseId}`}
+          >
+            <ChevronDown
+              size={16}
+              className={`ops-list-phase-chevron${collapsed ? ' ops-list-phase-chevron--collapsed' : ''}`}
+              aria-hidden
+            />
+            {editing ? (
+              <input
+                ref={inputRef}
+                className="btf-input ops-list-phase-title-input"
+                value={draft}
+                disabled={pending}
+                onChange={e => setDraft(e.target.value)}
+                onBlur={commitRename}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    commitRename()
+                  }
+                  if (e.key === 'Escape') {
+                    setDraft(title)
+                    setEditing(false)
+                  }
+                }}
+                onClick={e => e.stopPropagation()}
+                aria-label="Phase name"
+              />
+            ) : (
+              <span className="ops-list-phase-title">{title}</span>
+            )}
+            <span className="ops-list-phase-count">{taskCount}</span>
+          </button>
+          {canManage && !editing ? (
+            <div className="ops-list-phase-manage">
+              <button
+                type="button"
+                className="ops-list-phase-manage-btn"
+                onClick={startEditing}
+                disabled={pending}
+                aria-label={`Rename phase ${title}`}
+              >
+                <Pencil size={14} aria-hidden />
+              </button>
+              {taskCount === 0 ? (
+                <button
+                  type="button"
+                  className="ops-list-phase-manage-btn ops-list-phase-manage-btn--danger"
+                  onClick={onDelete}
+                  disabled={pending}
+                  aria-label={`Delete phase ${title}`}
+                >
+                  <Trash2 size={14} aria-hidden />
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
         {status && onStatusChange ? (
           <PhaseStatusSelect
             value={status}
@@ -116,6 +200,7 @@ function TaskRow({
   depth,
   pending,
   onOpenTask,
+  onDeleteRequest,
   onRefresh,
 }: {
   task: OpsProjectTask
@@ -124,6 +209,7 @@ function TaskRow({
   depth: number
   pending: boolean
   onOpenTask: (taskId: string) => void
+  onDeleteRequest: (task: OpsProjectTask) => void
   onRefresh: () => void
 }) {
   const [addingSubtask, setAddingSubtask] = useState(false)
@@ -232,6 +318,15 @@ function TaskRow({
                 + Subtask
               </button>
             ) : null}
+            <button
+              type="button"
+              className="ops-list-task-delete"
+              onClick={() => onDeleteRequest(task)}
+              disabled={pending}
+              aria-label={`Delete ${task.title}`}
+            >
+              <Trash2 size={14} aria-hidden />
+            </button>
           </div>
         </div>
         {addingSubtask ? (
@@ -288,6 +383,7 @@ function TaskRow({
                   depth={depth + 1}
                   pending={pending}
                   onOpenTask={onOpenTask}
+                  onDeleteRequest={onDeleteRequest}
                   onRefresh={onRefresh}
                 />
               ))}
@@ -326,6 +422,8 @@ export function ProjectListView({
 }) {
   const [pending, startTransition] = useTransition()
   const [collapsedPhases, setCollapsedPhases] = useState<Set<string>>(() => new Set())
+  const [phaseToDelete, setPhaseToDelete] = useState<{ id: string; name: string } | null>(null)
+  const [taskToDelete, setTaskToDelete] = useState<OpsProjectTask | null>(null)
 
   function togglePhase(phaseId: string) {
     setCollapsedPhases(prev => {
@@ -345,6 +443,42 @@ export function ProjectListView({
         loading: 'Updating phase…',
         success: 'Phase updated',
       })
+      onRefresh()
+    })
+  }
+
+  function handlePhaseRename(phaseId: string, name: string) {
+    startTransition(async () => {
+      await runWithToast(() => updatePhase(phaseId, name), {
+        loading: 'Renaming phase…',
+        success: 'Phase renamed',
+      })
+      onRefresh()
+    })
+  }
+
+  function handlePhaseDelete() {
+    if (!phaseToDelete) return
+    startTransition(async () => {
+      const ok = await runWithToast(() => deletePhase(phaseToDelete.id), {
+        loading: 'Deleting phase…',
+        success: 'Phase deleted',
+      })
+      if (ok === null) return
+      setPhaseToDelete(null)
+      onRefresh()
+    })
+  }
+
+  function handleTaskDelete() {
+    if (!taskToDelete) return
+    startTransition(async () => {
+      const ok = await runWithToast(() => deleteTask(taskToDelete.id), {
+        loading: 'Deleting task…',
+        success: 'Task deleted',
+      })
+      if (ok === null) return
+      setTaskToDelete(null)
       onRefresh()
     })
   }
@@ -371,6 +505,8 @@ export function ProjectListView({
             collapsed={collapsedPhases.has(phase.id)}
             onToggle={togglePhase}
             onStatusChange={status => handlePhaseStatus(phase.id, status)}
+            onRename={name => handlePhaseRename(phase.id, name)}
+            onDelete={() => setPhaseToDelete({ id: phase.id, name: phase.name })}
             pending={pending}
           >
             {phaseTasks.length === 0 ? (
@@ -387,6 +523,7 @@ export function ProjectListView({
                   depth={0}
                   pending={pending}
                   onOpenTask={onOpenTask}
+                  onDeleteRequest={setTaskToDelete}
                   onRefresh={onRefresh}
                 />
               ))
@@ -415,11 +552,49 @@ export function ProjectListView({
               depth={0}
               pending={pending}
               onOpenTask={onOpenTask}
+              onDeleteRequest={setTaskToDelete}
               onRefresh={onRefresh}
             />
           ))}
         </PhaseSection>
       ) : null}
+
+      <ConfirmDeleteModal
+        open={Boolean(taskToDelete)}
+        onClose={() => setTaskToDelete(null)}
+        title="Delete task?"
+        description={
+          taskToDelete ? (
+            <>
+              This removes <strong>{taskToDelete.title}</strong>
+              {taskToDelete.subtasks.length > 0
+                ? ` and its ${taskToDelete.subtasks.length} subtask${taskToDelete.subtasks.length === 1 ? '' : 's'}`
+                : ''}
+              .
+            </>
+          ) : null
+        }
+        confirmLabel="Delete task"
+        pending={pending}
+        onConfirm={handleTaskDelete}
+      />
+
+      <ConfirmDeleteModal
+        open={Boolean(phaseToDelete)}
+        onClose={() => setPhaseToDelete(null)}
+        title="Delete phase?"
+        description={
+          phaseToDelete ? (
+            <>
+              This permanently removes the <strong>{phaseToDelete.name}</strong> phase. Tasks must be
+              moved or deleted first.
+            </>
+          ) : null
+        }
+        confirmLabel="Delete phase"
+        pending={pending}
+        onConfirm={handlePhaseDelete}
+      />
     </div>
   )
 }

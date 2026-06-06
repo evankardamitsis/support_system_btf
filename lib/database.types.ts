@@ -681,6 +681,7 @@ export interface Database {
           sort_order: number
           created_at: string
           updated_at: string
+          deleted_at: string | null
         }
         Insert: {
           id?: string
@@ -696,6 +697,7 @@ export interface Database {
           sort_order?: number
           created_at?: string
           updated_at?: string
+          deleted_at?: string | null
         }
         Update: {
           id?: string
@@ -711,6 +713,7 @@ export interface Database {
           sort_order?: number
           created_at?: string
           updated_at?: string
+          deleted_at?: string | null
         }
         Relationships: [
           {
@@ -811,6 +814,7 @@ export interface Database {
       financial_offers: {
         Row: {
           id: string
+          client_id: string | null
           client_name: string
           client_email: string | null
           line_items: Json
@@ -831,6 +835,7 @@ export interface Database {
         }
         Insert: {
           id?: string
+          client_id?: string | null
           client_name: string
           client_email?: string | null
           line_items?: Json
@@ -851,6 +856,7 @@ export interface Database {
         }
         Update: {
           id?: string
+          client_id?: string | null
           client_name?: string
           client_email?: string | null
           line_items?: Json

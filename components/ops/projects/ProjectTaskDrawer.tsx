@@ -3,7 +3,8 @@
 import { useEffect, useState, useTransition } from 'react'
 import { ChevronDown, Plus, X } from 'lucide-react'
 import { listProjectFiles } from '@/app/actions/project-attachments'
-import { createTask, updateTask } from '@/app/actions/projects'
+import { createTask, deleteTask, updateTask } from '@/app/actions/projects'
+import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import { ProjectFilePanel } from '@/components/ops/projects/ProjectFilePanel'
 import { ProjectTaskComments } from '@/components/ops/projects/ProjectTaskComments'
 import {
@@ -157,6 +158,7 @@ export function ProjectTaskDrawer({
   const [mounted, setMounted] = useState(open)
   const [closing, setClosing] = useState(false)
   const [cachedTask, setCachedTask] = useState<OpsProjectTask | null>(task)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   if (open && task) {
     if (!mounted) setMounted(true)
@@ -287,6 +289,19 @@ export function ProjectTaskDrawer({
       setSubtaskTitle('')
       setAddingSubtask(false)
       setSubtasksOpen(true)
+      onRefresh()
+    })
+  }
+
+  function handleDelete() {
+    startTransition(async () => {
+      const ok = await runWithToast(() => deleteTask(activeTask.id), {
+        loading: 'Deleting task…',
+        success: 'Task deleted',
+      })
+      if (ok === null) return
+      setConfirmDelete(false)
+      onClose()
       onRefresh()
     })
   }
@@ -579,8 +594,37 @@ export function ProjectTaskDrawer({
           </div>
 
           <ProjectTaskComments taskId={activeTask.id} staff={staff} embedded concise hideEmpty />
+
+          <footer className="ops-task-drawer-footer">
+            <button
+              type="button"
+              className="ops-task-drawer-delete"
+              disabled={pending}
+              onClick={() => setConfirmDelete(true)}
+            >
+              Delete task
+            </button>
+          </footer>
         </div>
       </aside>
+
+      <ConfirmDeleteModal
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        title="Delete task?"
+        description={
+          <>
+            This removes <strong>{activeTask.title}</strong>
+            {subtaskCount > 0
+              ? ` and its ${subtaskCount} subtask${subtaskCount === 1 ? '' : 's'}`
+              : ''}
+            . Comments and files stay in storage but won&apos;t appear in the project.
+          </>
+        }
+        confirmLabel="Delete task"
+        pending={pending}
+        onConfirm={handleDelete}
+      />
     </div>
   )
 }

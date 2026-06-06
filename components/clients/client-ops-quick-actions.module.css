@@ -1,0 +1,68 @@
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--dash-chrome, #0e0e0e) 40%, transparent);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease,
+    transform 120ms ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.project {
+  color: #86efac;
+  border-color: color-mix(in srgb, #22c55e 35%, var(--border));
+  background: color-mix(in srgb, #22c55e 12%, var(--dash-chrome, #0e0e0e));
+}
+
+.project:hover {
+  color: #bbf7d0;
+  border-color: color-mix(in srgb, #22c55e 50%, var(--border));
+  background: color-mix(in srgb, #22c55e 18%, var(--dash-chrome, #0e0e0e));
+}
+
+.offer {
+  color: #93c5fd;
+  border-color: color-mix(in srgb, #3b82f6 35%, var(--border));
+  background: color-mix(in srgb, #3b82f6 12%, var(--dash-chrome, #0e0e0e));
+}
+
+.offer:hover {
+  color: #bfdbfe;
+  border-color: color-mix(in srgb, #3b82f6 50%, var(--border));
+  background: color-mix(in srgb, #3b82f6 18%, var(--dash-chrome, #0e0e0e));
+}
+
+.hosting {
+  color: #fcd34d;
+  border-color: color-mix(in srgb, #f59e0b 35%, var(--border));
+  background: color-mix(in srgb, #f59e0b 12%, var(--dash-chrome, #0e0e0e));
+}
+
+.hosting:hover {
+  color: #fde68a;
+  border-color: color-mix(in srgb, #f59e0b 50%, var(--border));
+  background: color-mix(in srgb, #f59e0b 18%, var(--dash-chrome, #0e0e0e));
+}

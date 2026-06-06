@@ -5,13 +5,16 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { ChevronDown, Ellipsis, Plus } from 'lucide-react'
 import {
+  archiveProject,
   completeProject,
   deleteProject,
   updateProjectCost,
   updateProjectStatus,
 } from '@/app/actions/projects'
+import type { ClientOption } from '@/components/clients/ClientSelectWithCreate'
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import { ProjectAddPanel } from '@/components/ops/projects/ProjectAddPanel'
+import { ProjectEditModal } from '@/components/ops/projects/ProjectEditModal'
 import { ProjectKanban } from '@/components/ops/projects/ProjectKanban'
 import { ProjectListView } from '@/components/ops/projects/ProjectListView'
 import { ProjectOverview } from '@/components/ops/projects/ProjectOverview'
@@ -38,9 +41,11 @@ const STATUS_LABELS: Record<ProjectStatus, string> = {
 export function ProjectDetail({
   project,
   staff,
+  clients,
 }: {
   project: OpsProjectDetail
   staff: StaffOption[]
+  clients: ClientOption[]
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -53,9 +58,12 @@ export function ProjectDetail({
   const [pending, startTransition] = useTransition()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmComplete, setConfirmComplete] = useState(false)
+  const [confirmArchive, setConfirmArchive] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [actionsOpen, setActionsOpen] = useState(false)
   const actionsRef = useRef<HTMLDivElement>(null)
   const canComplete = project.status === 'active' || project.status === 'on_hold'
+  const canArchive = project.status !== 'archived'
   const [costInput, setCostInput] = useState(
     project.costAmount != null ? String(project.costAmount) : ''
   )
@@ -197,6 +205,18 @@ export function ProjectDetail({
       })
       if (ok === null) return
       setConfirmComplete(false)
+      router.refresh()
+    })
+  }
+
+  function handleArchive() {
+    startTransition(async () => {
+      const ok = await runWithToast(() => archiveProject(project.id), {
+        loading: 'Archiving…',
+        success: 'Project archived',
+      })
+      if (ok === null) return
+      setConfirmArchive(false)
       router.refresh()
     })
   }
@@ -406,6 +426,18 @@ export function ProjectDetail({
                 </button>
                 {actionsOpen ? (
                   <div className="ops-project-actions-dropdown" role="menu">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="ops-project-actions-item"
+                      disabled={pending}
+                      onClick={() => {
+                        setActionsOpen(false)
+                        setShowEditModal(true)
+                      }}
+                    >
+                      Edit project
+                    </button>
                     {canComplete ? (
                       <button
                         type="button"
@@ -418,6 +450,20 @@ export function ProjectDetail({
                         }}
                       >
                         Complete project
+                      </button>
+                    ) : null}
+                    {canArchive ? (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="ops-project-actions-item"
+                        disabled={pending}
+                        onClick={() => {
+                          setActionsOpen(false)
+                          setConfirmArchive(true)
+                        }}
+                      >
+                        Archive project
                       </button>
                     ) : null}
                     <button
@@ -564,6 +610,32 @@ export function ProjectDetail({
         pendingLabel="Completing…"
         pending={pending}
         onConfirm={handleComplete}
+      />
+
+      <ProjectEditModal
+        open={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        project={project}
+        clients={clients}
+        staff={staff}
+        onSaved={() => router.refresh()}
+      />
+
+      <ConfirmDeleteModal
+        open={confirmArchive}
+        onClose={() => setConfirmArchive(false)}
+        title="Archive project?"
+        description={
+          <>
+            This marks <strong>{project.name}</strong> as archived. Tasks and phases stay as they
+            are; you can still open the project from the list.
+          </>
+        }
+        confirmLabel="Archive project"
+        confirmVariant="secondary"
+        pendingLabel="Archiving…"
+        pending={pending}
+        onConfirm={handleArchive}
       />
 
       <ConfirmDeleteModal

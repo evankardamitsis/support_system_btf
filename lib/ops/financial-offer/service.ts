@@ -16,6 +16,7 @@ type FinancialOfferRow = Database['public']['Tables']['financial_offers']['Row']
 export function mapFinancialOfferRow(row: FinancialOfferRow): FinancialOfferRecord {
   return {
     id: row.id,
+    clientId: row.client_id,
     clientName: row.client_name,
     clientEmail: row.client_email,
     lineItems: row.line_items as FinancialOfferRecord['lineItems'],
@@ -67,6 +68,7 @@ export async function saveFinancialOfferRecord(
   const { data, error } = await supabase
     .from('financial_offers')
     .insert({
+      client_id: offer.clientId || null,
       client_name: offer.clientName,
       client_email: offer.clientEmail?.trim() || null,
       line_items: offer.lineItems,

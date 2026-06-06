@@ -5,6 +5,10 @@ import Link from 'next/link'
 import { Plus, Trash2 } from 'lucide-react'
 import { submitFinancialOffer } from '@/app/actions/financial-offers'
 import {
+  ClientSelectWithCreate,
+  type ClientOption,
+} from '@/components/clients/ClientSelectWithCreate'
+import {
   computeFinancialOffer,
   formatHostingMaintenance,
   formatOfferCurrency,
@@ -34,12 +38,16 @@ async function downloadOfferPdf(offerId: string, filename: string) {
   URL.revokeObjectURL(url)
 }
 
+type OfferClientOption = ClientOption & { email: string | null }
+
 type FinancialOfferFormProps = {
   savedIbans: SavedCompanyIban[]
   upfrontPercent: number
+  clients: OfferClientOption[]
 }
 
-export function FinancialOfferForm({ savedIbans, upfrontPercent }: FinancialOfferFormProps) {
+export function FinancialOfferForm({ savedIbans, upfrontPercent, clients }: FinancialOfferFormProps) {
+  const [clientId, setClientId] = useState('')
   const [clientName, setClientName] = useState('')
   const [clientEmail, setClientEmail] = useState('')
   const [lineItems, setLineItems] = useState<FinancialOfferLineItem[]>([
@@ -106,6 +114,7 @@ export function FinancialOfferForm({ savedIbans, upfrontPercent }: FinancialOffe
     }
 
     const payload = {
+      clientId: clientId || null,
       clientName: name,
       clientEmail: clientEmail.trim() || null,
       lineItems: lineItems
@@ -172,10 +181,28 @@ export function FinancialOfferForm({ savedIbans, upfrontPercent }: FinancialOffe
   return (
     <div className="financial-offer-form space-y-6">
       <section className="dash-panel px-5 py-5 space-y-4">
+        <ClientSelectWithCreate
+          clients={clients}
+          value={clientId}
+          onChange={id => {
+            setClientId(id)
+            const client = clients.find(row => row.id === id)
+            if (client) {
+              setClientName(client.name)
+              setClientEmail(client.email ?? '')
+            }
+          }}
+          disabled={pending}
+          selectId="offer-client"
+          label="Link to client"
+          placeholder="Select a client (recommended)"
+          required={false}
+        />
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div>
             <label className="dash-label" htmlFor="offer-client-name">
-              Client name <span className="dash-label-required">*</span>
+              Client name on offer <span className="dash-label-required">*</span>
             </label>
             <input
               id="offer-client-name"
