@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { Bell } from 'lucide-react'
+import { Bell, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -20,6 +20,7 @@ type NotificationItemProps = {
   notification: NotificationPopoverItem
   index: number
   onClick: (id: string) => void
+  onDismiss?: (id: string) => void
   reducedMotion: boolean
 }
 
@@ -27,12 +28,13 @@ function NotificationItem({
   notification,
   index,
   onClick,
+  onDismiss,
   reducedMotion,
 }: NotificationItemProps) {
   return (
-    <motion.button
-      type="button"
-      role="menuitem"
+    <motion.div
+      role="group"
+      aria-label={notification.title}
       initial={reducedMotion ? false : { opacity: 0, x: 12, filter: 'blur(6px)' }}
       animate={reducedMotion ? undefined : { opacity: 1, x: 0, filter: 'blur(0px)' }}
       transition={{ duration: 0.22, delay: reducedMotion ? 0 : index * 0.05 }}
@@ -40,24 +42,40 @@ function NotificationItem({
         'ops-notify-popover-item',
         !notification.read && 'ops-notify-popover-item--unread'
       )}
-      onClick={() => onClick(notification.id)}
     >
-      <div className="ops-notify-popover-item-head">
-        <div className="ops-notify-popover-item-title-row">
-          {!notification.read ? (
-            <span className="ops-notify-popover-dot" aria-hidden />
-          ) : null}
-          {notification.badge ? (
-            <span className="ops-notify-popover-kind">{notification.badge}</span>
-          ) : null}
-          <span className="ops-notify-popover-title">{notification.title}</span>
+      <button
+        type="button"
+        role="menuitem"
+        className="ops-notify-popover-item-copy"
+        onClick={() => onClick(notification.id)}
+      >
+        <div className="ops-notify-popover-item-head">
+          <div className="ops-notify-popover-item-title-row">
+            {!notification.read ? (
+              <span className="ops-notify-popover-dot" aria-hidden />
+            ) : null}
+            {notification.badge ? (
+              <span className="ops-notify-popover-kind">{notification.badge}</span>
+            ) : null}
+            <span className="ops-notify-popover-title">{notification.title}</span>
+          </div>
+          <span className="ops-notify-popover-time">{notification.timeLabel}</span>
         </div>
-        <span className="ops-notify-popover-time">{notification.timeLabel}</span>
-      </div>
-      {notification.description ? (
-        <p className="ops-notify-popover-item-body">{notification.description}</p>
+        {notification.description ? (
+          <p className="ops-notify-popover-item-body">{notification.description}</p>
+        ) : null}
+      </button>
+      {onDismiss ? (
+        <button
+          type="button"
+          className="ops-notify-popover-dismiss-btn"
+          aria-label={`Remove ${notification.title}`}
+          onClick={() => onDismiss(notification.id)}
+        >
+          <X size={14} aria-hidden />
+        </button>
       ) : null}
-    </motion.button>
+    </motion.div>
   )
 }
 
@@ -66,7 +84,9 @@ export type NotificationPopoverProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   onItemClick: (id: string) => void
+  onDismissItem?: (id: string) => void
   onMarkAllRead?: () => void
+  onClearAll?: () => void
   unreadCount?: number
   loading?: boolean
   error?: string | null
@@ -81,7 +101,9 @@ export function NotificationPopover({
   open,
   onOpenChange,
   onItemClick,
+  onDismissItem,
   onMarkAllRead,
+  onClearAll,
   unreadCount: unreadCountProp,
   loading = false,
   error = null,
@@ -100,6 +122,7 @@ export function NotificationPopover({
   const unreadCount =
     unreadCountProp ?? notifications.filter(notification => !notification.read).length
   const showMarkAll = unreadCount > 0 && onMarkAllRead
+  const showClearAll = notifications.length > 0 && onClearAll
 
   useEffect(() => {
     setPortalReady(true)
@@ -167,16 +190,31 @@ export function NotificationPopover({
           >
           <div className="ops-notify-popover-head">
             <h3 className="ops-notify-popover-head-title">Notifications</h3>
-            {showMarkAll ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="ops-notify-popover-mark-all"
-                onClick={onMarkAllRead}
-              >
-                Mark all read
-              </Button>
+            {showMarkAll || showClearAll ? (
+              <div className="ops-notify-popover-head-actions">
+                {showMarkAll ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="ops-notify-popover-mark-all"
+                    onClick={onMarkAllRead}
+                  >
+                    Mark all read
+                  </Button>
+                ) : null}
+                {showClearAll ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="ops-notify-popover-clear-all"
+                    onClick={onClearAll}
+                  >
+                    Clear all
+                  </Button>
+                ) : null}
+              </div>
             ) : null}
           </div>
 
@@ -195,6 +233,7 @@ export function NotificationPopover({
                     notification={notification}
                     index={index}
                     onClick={onItemClick}
+                    onDismiss={onDismissItem}
                     reducedMotion={reducedMotion}
                   />
                 ))}

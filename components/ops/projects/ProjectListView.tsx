@@ -23,7 +23,7 @@ import {
 } from '@/components/tickets/EditableAssigneeSelect'
 import { formatProjectDate } from '@/lib/ops/projects/display'
 import { PHASE_TONE_COUNT } from '@/lib/ops/projects/phase-tone'
-import { nextTaskStatus } from '@/lib/ops/projects/task-status'
+import { resolveTaskStatusClick } from '@/lib/ops/projects/task-status'
 import type {
   OpsProjectDetail,
   OpsProjectPhase,
@@ -329,19 +329,29 @@ export function ProjectListView({
     }).then(() => onRefresh())
   }
 
-  function handleStatusClick(groupId: string, itemId: string, childId?: string) {
+  function handleStatusClick(
+    groupId: string,
+    itemId: string,
+    options?: { childId?: string; markComplete?: boolean }
+  ) {
     const phaseTasks = displayByPhase.get(groupId === '__unassigned__' ? null : groupId) ?? []
     const parent = phaseTasks.find(task => task.id === itemId)
     if (!parent) return
 
-    if (childId) {
-      const child = parent.subtasks.find(sub => sub.id === childId)
+    if (options?.childId) {
+      const child = parent.subtasks.find(sub => sub.id === options.childId)
       if (!child) return
-      updateTaskStatus(child.id, nextTaskStatus(child.status))
+      updateTaskStatus(
+        child.id,
+        resolveTaskStatusClick(child.status, { markComplete: options?.markComplete })
+      )
       return
     }
 
-    updateTaskStatus(parent.id, nextTaskStatus(parent.status))
+    updateTaskStatus(
+      parent.id,
+      resolveTaskStatusClick(parent.status, { markComplete: options?.markComplete })
+    )
   }
 
   function handlePhaseStatus(phaseId: string, status: PhaseStatus) {

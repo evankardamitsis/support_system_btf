@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   NotificationPopover,
@@ -8,12 +8,14 @@ import {
 } from '@/components/ui/notification-popover'
 import { createClient } from '@/lib/supabase/client'
 import {
-  countUnreadOpsNotifications,
-  listOpsNotifications,
+  deleteAllOpsNotifications,
+  deleteOpsNotification,
   markAllOpsNotificationsRead,
   markOpsNotificationRead,
 } from '@/lib/ops/notifications/service'
+import { useOpsNotifications } from '@/lib/ops/notifications/use-ops-notifications'
 import type { OpsNotificationRecord } from '@/lib/ops/notifications/types'
+import { primeNotificationAudio } from '@/lib/ui/play-notification-chime'
 import { formatDateTimeHuman } from '@/lib/tickets/display'
 
 const TYPE_LABELS: Record<OpsNotificationRecord['type'], string> = {
@@ -23,6 +25,7 @@ const TYPE_LABELS: Record<OpsNotificationRecord['type'], string> = {
   offer_accepted: 'Offer',
   hosting_renewal: 'Hosting',
   project_completed: 'Project',
+  mention: 'Mention',
 }
 
 function toPopoverItem(item: OpsNotificationRecord): NotificationPopoverItem {
@@ -39,50 +42,16 @@ function toPopoverItem(item: OpsNotificationRecord): NotificationPopoverItem {
 export function OpsNotificationBell() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [userId, setUserId] = useState<string | null>(null)
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [items, setItems] = useState<OpsNotificationRecord[]>([])
-
-  const refresh = useCallback(async () => {
-    const supabase = createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      setUserId(null)
-      setUnreadCount(0)
-      setItems([])
-      setError(null)
-      setLoading(false)
-      return
-    }
-
-    setUserId(user.id)
-    try {
-      const [count, notifications] = await Promise.all([
-        countUnreadOpsNotifications(supabase, user.id),
-        listOpsNotifications(supabase, user.id, 15),
-      ])
-      setUnreadCount(count)
-      setItems(notifications)
-      setError(null)
-    } catch (err) {
-      setUnreadCount(0)
-      setItems([])
-      setError(err instanceof Error ? err.message : 'Could not load notifications')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void refresh()
-    const interval = window.setInterval(() => void refresh(), 60_000)
-    return () => window.clearInterval(interval)
-  }, [refresh])
-
+  const {
+    userId,
+    items,
+    unreadCount,
+    loading,
+    error,
+    refresh,
+    removeNotification,
+    removeAllNotifications,
+  } = useOpsNotifications()
   const notifications = useMemo(() => items.map(toPopoverItem), [items])
 
   async function handleOpenItem(id: string) {
@@ -93,12 +62,8 @@ export function OpsNotificationBell() {
     if (!item.readAt) {
       try {
         await markOpsNotificationRead(supabase, userId, item.id)
-        setUnreadCount(count => Math.max(0, count - 1))
-        setItems(rows =>
-          rows.map(row => (row.id === item.id ? { ...row, readAt: new Date().toISOString() } : row))
-        )
       } catch {
-        // Navigation still works if marking read fails.
+        // Realtime update handles UI; navigation still works if marking read fails.
       }
     }
 
@@ -111,11 +76,30 @@ export function OpsNotificationBell() {
     const supabase = createClient()
     try {
       await markAllOpsNotificationsRead(supabase, userId)
-      const now = new Date().toISOString()
-      setUnreadCount(0)
-      setItems(rows => rows.map(row => ({ ...row, readAt: row.readAt ?? now })))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not mark notifications as read')
+    } catch {
+      await refresh()
+    }
+  }
+
+  async function handleDismissItem(id: string) {
+    if (!userId) return
+    removeNotification(id)
+    const supabase = createClient()
+    try {
+      await deleteOpsNotification(supabase, userId, id)
+    } catch {
+      await refresh()
+    }
+  }
+
+  async function handleClearAll() {
+    if (!userId || items.length === 0) return
+    removeAllNotifications()
+    const supabase = createClient()
+    try {
+      await deleteAllOpsNotifications(supabase, userId)
+    } catch {
+      await refresh()
     }
   }
 
@@ -124,11 +108,14 @@ export function OpsNotificationBell() {
       notifications={notifications}
       open={open}
       onOpenChange={nextOpen => {
+        void primeNotificationAudio()
         setOpen(nextOpen)
         if (nextOpen) void refresh()
       }}
       onItemClick={handleOpenItem}
+      onDismissItem={handleDismissItem}
       onMarkAllRead={handleMarkAllRead}
+      onClearAll={handleClearAll}
       unreadCount={unreadCount}
       loading={loading}
       error={error}

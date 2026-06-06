@@ -559,6 +559,7 @@ export interface Database {
             | 'offer_accepted'
             | 'hosting_renewal'
             | 'project_completed'
+            | 'mention'
           title: string
           body: string | null
           href: string
@@ -576,6 +577,7 @@ export interface Database {
             | 'offer_accepted'
             | 'hosting_renewal'
             | 'project_completed'
+            | 'mention'
           title: string
           body?: string | null
           href: string
@@ -593,6 +595,7 @@ export interface Database {
             | 'offer_accepted'
             | 'hosting_renewal'
             | 'project_completed'
+            | 'mention'
           title?: string
           body?: string | null
           href?: string

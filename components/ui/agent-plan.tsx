@@ -71,7 +71,11 @@ export type AgentPlanProps = {
   onToggleGroup: (groupId: string) => void
   expandedItems: Record<string, boolean>
   onToggleItem: (groupId: string, itemId: string) => void
-  onStatusClick: (groupId: string, itemId: string, childId?: string) => void
+  onStatusClick: (
+    groupId: string,
+    itemId: string,
+    options?: { childId?: string; markComplete?: boolean }
+  ) => void
   onItemOpen: (itemId: string) => void
   disabled?: boolean
 }
@@ -262,9 +266,21 @@ export function AgentPlan({
                                       type="button"
                                       className="ops-agent-plan-status-btn"
                                       disabled={disabled}
+                                      title={
+                                        isDone
+                                          ? 'Click to reset status'
+                                          : 'Click to advance · Shift+click to complete'
+                                      }
+                                      aria-label={
+                                        isDone
+                                          ? `Reset status for ${item.title}`
+                                          : `Advance status for ${item.title}. Shift+click to mark complete.`
+                                      }
                                       onClick={e => {
                                         e.stopPropagation()
-                                        onStatusClick(group.id, item.id)
+                                        onStatusClick(group.id, item.id, {
+                                          markComplete: e.shiftKey,
+                                        })
                                       }}
                                       whileTap={prefersReducedMotion ? undefined : { scale: 0.9 }}
                                     >
@@ -373,9 +389,22 @@ export function AgentPlan({
                                                 type="button"
                                                 className="ops-agent-plan-status-btn"
                                                 disabled={disabled}
+                                                title={
+                                                  childDone
+                                                    ? 'Click to reset status'
+                                                    : 'Click to advance · Shift+click to complete'
+                                                }
+                                                aria-label={
+                                                  childDone
+                                                    ? `Reset status for ${child.title}`
+                                                    : `Advance status for ${child.title}. Shift+click to mark complete.`
+                                                }
                                                 onClick={e => {
                                                   e.stopPropagation()
-                                                  onStatusClick(group.id, item.id, child.id)
+                                                  onStatusClick(group.id, item.id, {
+                                                    childId: child.id,
+                                                    markComplete: e.shiftKey,
+                                                  })
                                                 }}
                                                 whileTap={prefersReducedMotion ? undefined : { scale: 0.9 }}
                                               >

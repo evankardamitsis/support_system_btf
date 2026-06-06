@@ -5,3 +5,11 @@ export function nextTaskStatus(current: TaskStatus): TaskStatus {
   if (index < 0) return TASK_STATUSES[0]
   return TASK_STATUSES[(index + 1) % TASK_STATUSES.length]
 }
+
+export function resolveTaskStatusClick(
+  current: TaskStatus,
+  options: { markComplete?: boolean } = {}
+): TaskStatus {
+  if (options.markComplete && current !== 'done') return 'done'
+  return nextTaskStatus(current)
+}

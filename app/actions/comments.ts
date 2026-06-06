@@ -6,6 +6,9 @@ import { createClient } from '@/lib/supabase/server'
 import { authorDisplayName } from '@/lib/comments/authors'
 import { parseMentionedUserIds } from '@/lib/comments/mentions'
 import { notifyStaffInternalMention } from '@/lib/email/ticket-notifications'
+import { notifyMentionedStaff } from '@/lib/ops/notifications/service'
+import { tryCreateAdminClient } from '@/lib/supabase/admin'
+import { formatTicketId } from '@/lib/tickets/display'
 import { isTicketClosed, TICKET_LOCKED_MESSAGE } from '@/lib/tickets/closed'
 
 export type StaffMentionOption = { id: string; name: string }
@@ -56,12 +59,16 @@ export async function addComment(ticketId: string, body: string, isInternal: boo
     throw new Error(TICKET_LOCKED_MESSAGE)
   }
 
-  const { error } = await supabase.from('ticket_comments').insert({
-    ticket_id: ticketId,
-    author_id: user.id,
-    body,
-    is_internal: isInternal,
-  })
+  const { data: inserted, error } = await supabase
+    .from('ticket_comments')
+    .insert({
+      ticket_id: ticketId,
+      author_id: user.id,
+      body,
+      is_internal: isInternal,
+    })
+    .select('id')
+    .single()
 
   if (error) throw new Error(error.message)
 
@@ -71,13 +78,28 @@ export async function addComment(ticketId: string, body: string, isInternal: boo
       getStaffForMentions(),
     ])
 
+    const authorName = authorDisplayName(author)
     const mentionedIds = parseMentionedUserIds(body, staff).filter(id => id !== user.id)
     if (mentionedIds.length > 0) {
+      const ticketRef = formatTicketId(ticketId)
+      const adminResult = tryCreateAdminClient()
+      if (!('error' in adminResult)) {
+        await notifyMentionedStaff(adminResult.client, {
+          mentionedUserIds: mentionedIds,
+          authorUserId: user.id,
+          authorName,
+          excerpt: body,
+          href: `/admin/tickets/${ticketId}`,
+          contextLabel: `${ticketRef} · ${ticket.title}`,
+          dedupeKey: `mention:ticket:${ticketId}:${inserted.id}`,
+        })
+      }
+
       const notify = await notifyStaffInternalMention({
         ticketId,
         ticketTitle: ticket.title,
         mentionedUserIds: mentionedIds,
-        authorName: authorDisplayName(author),
+        authorName,
         excerpt: body,
       })
       if (!notify.sent) {

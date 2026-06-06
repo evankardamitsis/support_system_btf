@@ -2,7 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireAdminPage } from '@/lib/auth/require-admin-page'
-import { enrichCommentsWithAuthors } from '@/lib/comments/authors'
+import { getStaffForMentions } from '@/app/actions/comments'
+import { authorDisplayName, enrichCommentsWithAuthors } from '@/lib/comments/authors'
+import { parseMentionedUserIds } from '@/lib/comments/mentions'
+import { notifyMentionedStaff } from '@/lib/ops/notifications/service'
+import { tryCreateAdminClient } from '@/lib/supabase/admin'
 import type { OpsProjectFile, OpsProjectTaskComment } from '@/lib/ops/projects/types'
 
 const BUCKET = 'ops-project-files'
@@ -111,17 +115,47 @@ export async function addTaskComment(taskId: string, body: string) {
 
   const { data: task } = await supabase
     .from('ops_project_tasks')
-    .select('project_id')
+    .select('project_id, title, ops_projects(name)')
     .eq('id', taskId)
     .single()
   if (!task) throw new Error('Task not found')
 
-  const { error } = await supabase.from('ops_project_task_comments').insert({
-    task_id: taskId,
-    author_id: user.id,
-    body: trimmed,
-  })
+  const { data: inserted, error } = await supabase
+    .from('ops_project_task_comments')
+    .insert({
+      task_id: taskId,
+      author_id: user.id,
+      body: trimmed,
+    })
+    .select('id')
+    .single()
   if (error) throw new Error(error.message)
+
+  const [{ data: author }, staff] = await Promise.all([
+    supabase.from('users').select('full_name, role').eq('id', user.id).single(),
+    getStaffForMentions(),
+  ])
+
+  const authorName = authorDisplayName(author)
+  const mentionedIds = parseMentionedUserIds(trimmed, staff).filter(id => id !== user.id)
+  if (mentionedIds.length > 0) {
+    const projectName = Array.isArray(task.ops_projects)
+      ? (task.ops_projects[0]?.name ?? 'Project')
+      : (task.ops_projects?.name ?? 'Project')
+
+    const adminResult = tryCreateAdminClient()
+    if (!('error' in adminResult)) {
+      await notifyMentionedStaff(adminResult.client, {
+        mentionedUserIds: mentionedIds,
+        authorUserId: user.id,
+        authorName,
+        excerpt: trimmed,
+        href: `/admin/ops/projects/${task.project_id}?task=${taskId}`,
+        contextLabel: `${projectName} · ${task.title}`,
+        dedupeKey: `mention:task:${taskId}:${inserted.id}`,
+      })
+    }
+  }
 
   revalidateProjectPaths(task.project_id)
 }

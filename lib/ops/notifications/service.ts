@@ -5,7 +5,7 @@ import type { OpsNotificationRecord, OpsNotificationType } from '@/lib/ops/notif
 type Db = SupabaseClient<Database>
 type NotificationRow = Database['public']['Tables']['ops_notifications']['Row']
 
-function mapNotificationRow(row: NotificationRow): OpsNotificationRecord {
+export function mapOpsNotificationRow(row: NotificationRow): OpsNotificationRecord {
   return {
     id: row.id,
     userId: row.user_id,
@@ -86,7 +86,7 @@ export async function listOpsNotifications(
     .limit(limit)
 
   if (error) throw new Error(error.message)
-  return (data ?? []).map(mapNotificationRow)
+  return (data ?? []).map(mapOpsNotificationRow)
 }
 
 export async function countUnreadOpsNotifications(supabase: Db, userId: string): Promise<number> {
@@ -125,6 +125,26 @@ export async function markAllOpsNotificationsRead(supabase: Db, userId: string):
   if (error) throw new Error(error.message)
 }
 
+export async function deleteOpsNotification(
+  supabase: Db,
+  userId: string,
+  notificationId: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('ops_notifications')
+    .delete()
+    .eq('id', notificationId)
+    .eq('user_id', userId)
+
+  if (error) throw new Error(error.message)
+}
+
+export async function deleteAllOpsNotifications(supabase: Db, userId: string): Promise<void> {
+  const { error } = await supabase.from('ops_notifications').delete().eq('user_id', userId)
+
+  if (error) throw new Error(error.message)
+}
+
 export async function notifyTaskAssigned(
   supabase: Db,
   input: {
@@ -156,6 +176,36 @@ export async function notifyOfferAccepted(
     body: 'Ready for project setup',
     href: `/admin/ops/financial-offers/${input.offerId}`,
     dedupeKey: `offer-accepted:${input.offerId}`,
+  })
+}
+
+function truncateExcerpt(excerpt: string, max = 140) {
+  const trimmed = excerpt.trim()
+  if (trimmed.length <= max) return trimmed
+  return `${trimmed.slice(0, max - 1).trim()}…`
+}
+
+export async function notifyMentionedStaff(
+  supabase: Db,
+  input: {
+    mentionedUserIds: string[]
+    authorUserId: string
+    authorName: string
+    excerpt: string
+    href: string
+    contextLabel: string
+    dedupeKey: string
+  }
+) {
+  const recipients = [...new Set(input.mentionedUserIds.filter(id => id && id !== input.authorUserId))]
+  if (!recipients.length) return
+
+  await insertOpsNotificationForUsers(supabase, recipients, {
+    type: 'mention',
+    title: `${input.authorName} mentioned you`,
+    body: `${input.contextLabel} · ${truncateExcerpt(input.excerpt)}`,
+    href: input.href,
+    dedupeKey: input.dedupeKey,
   })
 }
 
