@@ -121,9 +121,14 @@ function buildMenu() {
           click: () => navigateTo('/admin/tickets'),
         },
         {
+          label: 'Ops',
+          accelerator: 'CmdOrCtrl+2',
+          click: () => navigateTo('/admin/ops'),
+        },
+        {
           label: 'COMMS',
-          accelerator: 'CmdOrCtrl+Shift+C',
-          click: () => navigateTo('/admin/tickets?openComms=1'),
+          accelerator: 'CmdOrCtrl+3',
+          click: () => toggleComms(),
         },
       ],
     },
@@ -136,6 +141,11 @@ function navigateTo(pathname) {
   if (!mainWindow) return
   const origin = new URL(APP_URL).origin
   void mainWindow.loadURL(`${origin}${pathname}`)
+}
+
+function toggleComms() {
+  if (!mainWindow) return
+  mainWindow.webContents.send('btf-desktop:toggle-comms')
 }
 
 function handleDeepLink(url) {

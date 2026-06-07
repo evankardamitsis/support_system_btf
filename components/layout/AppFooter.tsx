@@ -48,10 +48,10 @@ export function AppFooter({
                 <span className="app-footer-sep" aria-hidden>
                   ·
                 </span>
-                <a href="/api/desktop/macos" className="app-footer-desktop-link">
+                <Link href="/admin/desktop" className="app-footer-desktop-link">
                   <Download size={11} aria-hidden />
                   macOS app
-                </a>
+                </Link>
               </>
             ) : null}
           </nav>

@@ -125,6 +125,8 @@ async function uploadToGithubRelease({
     const detail = await uploadRes.text()
     throw new Error(`${uploadRes.status} ${detail}`)
   }
+
+  return JSON.parse(await uploadRes.text())
 }
 
 const r2Ready = Boolean(
@@ -154,20 +156,26 @@ Add to .env.local:
   const assetName = process.env.GITHUB_DESKTOP_ASSET_NAME?.trim() || DEFAULT_ASSET_NAME
   const sizeMb = (fs.statSync(inputPath).size / 1024 / 1024).toFixed(1)
 
+  let assetId
   try {
-    await uploadToGithubRelease({
+    const asset = await uploadToGithubRelease({
       repo: githubRepo,
       token: githubToken,
       tag,
       assetName,
       filePath: inputPath,
     })
+    assetId = asset?.id
   } catch (error) {
     console.error('GitHub upload failed:', error instanceof Error ? error.message : error)
     process.exit(1)
   }
 
   console.log(`Uploaded ${assetName} to GitHub release ${tag} (${sizeMb} MB)`)
+  if (assetId) {
+    console.log(`Optional speed boost — add to .env.local and Vercel:`)
+    console.log(`GITHUB_DESKTOP_ASSET_ID=${assetId}`)
+  }
   console.log('Add the same GITHUB_* vars to Vercel (Production), redeploy, then test /admin/desktop')
   process.exit(0)
 }

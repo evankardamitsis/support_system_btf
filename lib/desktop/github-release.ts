@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache'
 import { getMacosDesktopVersion } from '@/lib/desktop/release'
 
 type GithubReleaseAsset = {
@@ -28,25 +29,37 @@ export function getGithubAssetName() {
   return process.env.GITHUB_DESKTOP_ASSET_NAME?.trim() || 'BTF-Support-mac.dmg'
 }
 
-function githubHeaders(token: string) {
+function getGithubAssetIdFromEnv() {
+  const raw = process.env.GITHUB_DESKTOP_ASSET_ID?.trim()
+  if (!raw) return null
+  const id = Number(raw)
+  return Number.isFinite(id) && id > 0 ? id : null
+}
+
+function githubHeaders(token: string, accept = 'application/vnd.github+json') {
   return {
     Authorization: `Bearer ${token}`,
-    Accept: 'application/vnd.github+json',
+    Accept: accept,
     'X-GitHub-Api-Version': '2022-11-28',
   }
 }
 
-async function getReleaseAsset(): Promise<GithubReleaseAsset | null> {
+async function fetchReleaseAsset(): Promise<GithubReleaseAsset | null> {
+  const envAssetId = getGithubAssetIdFromEnv()
+  const assetName = getGithubAssetName()
+  if (envAssetId) {
+    return { id: envAssetId, name: assetName }
+  }
+
   const token = getGithubToken()
   const repo = getGithubRepo()
   if (!token || !repo) return null
 
   const tag = getGithubReleaseTag()
-  const assetName = getGithubAssetName()
 
   const releaseRes = await fetch(
     `https://api.github.com/repos/${repo}/releases/tags/${encodeURIComponent(tag)}`,
-    { headers: githubHeaders(token), next: { revalidate: 60 } }
+    { headers: githubHeaders(token) }
   )
 
   if (!releaseRes.ok) return null
@@ -56,6 +69,24 @@ async function getReleaseAsset(): Promise<GithubReleaseAsset | null> {
   }
 
   return release.assets?.find((asset) => asset.name === assetName) ?? null
+}
+
+async function getReleaseAsset(): Promise<GithubReleaseAsset | null> {
+  const repo = getGithubRepo()
+  const tag = getGithubReleaseTag()
+  const assetName = getGithubAssetName()
+
+  if (!repo) return null
+
+  if (getGithubAssetIdFromEnv()) {
+    return fetchReleaseAsset()
+  }
+
+  const cached = unstable_cache(fetchReleaseAsset, ['github-desktop-asset', repo, tag, assetName], {
+    revalidate: 300,
+  })
+
+  return cached()
 }
 
 export async function isGithubDesktopReleasePublished() {
@@ -73,10 +104,7 @@ export async function createGithubDesktopDownloadUrl() {
     `https://api.github.com/repos/${repo}/releases/assets/${asset.id}`,
     {
       redirect: 'manual',
-      headers: {
-        ...githubHeaders(token),
-        Accept: 'application/octet-stream',
-      },
+      headers: githubHeaders(token, 'application/octet-stream'),
     }
   )
 

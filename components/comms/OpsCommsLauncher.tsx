@@ -25,6 +25,12 @@ export function OpsCommsLauncher() {
   }, [])
 
   useEffect(() => {
+    const onToggle = () => setPanelOpen((open) => !open)
+    window.addEventListener('btf-desktop:toggle-comms', onToggle)
+    return () => window.removeEventListener('btf-desktop:toggle-comms', onToggle)
+  }, [setPanelOpen])
+
+  useEffect(() => {
     comms.setPanelOpen(panelOpen)
   }, [panelOpen, comms.setPanelOpen])
 

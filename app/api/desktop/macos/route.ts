@@ -10,7 +10,6 @@ import {
   createGithubDesktopDownloadUrl,
   isGithubReleaseConfigured,
 } from '@/lib/desktop/github-release'
-import { createR2PresignedDownloadUrl, isR2Configured } from '@/lib/desktop/r2'
 
 export async function GET() {
   const supabase = await createClient()
@@ -49,6 +48,7 @@ export async function GET() {
     )
   }
 
+  const { createR2PresignedDownloadUrl, isR2Configured } = await import('@/lib/desktop/r2')
   if (isR2Configured()) {
     const signedUrl = await createR2PresignedDownloadUrl(60 * 60)
     if (signedUrl) {

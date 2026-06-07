@@ -27,7 +27,7 @@ export function DesktopDownloadPanel({
       <ul className="desktop-download-panel-list">
         <li>Opens the admin dashboard in a dedicated app window</li>
         <li>Native macOS notifications for huddles and mentions</li>
-        <li>Keyboard shortcuts: ⌘1 Tickets, ⌘⇧C COMMS</li>
+        <li>Keyboard shortcuts: ⌘1 Tickets, ⌘2 Ops, ⌘3 COMMS</li>
         <li>Requires Apple Silicon Mac (M1/M2/M3/M4)</li>
       </ul>
 
