@@ -10,7 +10,7 @@
     "lint": "eslint",
     "desktop:dev": "env -u ELECTRON_RUN_AS_NODE NODE_ENV=development electron .",
     "desktop:pack": "electron-builder --mac --dir -c desktop/electron-builder.json",
-    "desktop:dist": "electron-builder --mac -c desktop/electron-builder.json",
+    "desktop:dist": "env -u ELECTRON_RUN_AS_NODE CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --mac -c desktop/electron-builder.json",
     "desktop:upload": "node --env-file=.env.local scripts/upload-macos-desktop.mjs"
   },
   "dependencies": {

@@ -13,14 +13,13 @@
   "extraMetadata": {
     "main": "desktop/main.cjs"
   },
+  "afterPack": "./desktop/after-pack.cjs",
   "mac": {
     "category": "public.app-category.business",
     "icon": "desktop/assets/icon.png",
     "target": ["dmg", "zip"],
-    "hardenedRuntime": true,
+    "hardenedRuntime": false,
     "gatekeeperAssess": false,
-    "entitlements": "desktop/entitlements.mac.plist",
-    "entitlementsInherit": "desktop/entitlements.mac.inherit.plist",
     "extendInfo": {
       "NSMicrophoneUsageDescription": "BTF Support uses your microphone for team voice huddles.",
       "NSCameraUsageDescription": "BTF Support uses your camera for team video huddles."

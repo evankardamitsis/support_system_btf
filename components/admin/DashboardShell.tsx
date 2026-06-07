@@ -19,9 +19,16 @@ interface DashboardShellProps {
   userName?: string
   userEmail?: string
   userRole?: string
+  desktopDownloadAvailable?: boolean
 }
 
-export function DashboardShell({ children, userName, userEmail, userRole }: DashboardShellProps) {
+export function DashboardShell({
+  children,
+  userName,
+  userEmail,
+  userRole,
+  desktopDownloadAvailable = false,
+}: DashboardShellProps) {
   const { sidebarOpen, toggleSidebar, closeSidebar } = useSidebarOpen()
 
   return (
@@ -63,7 +70,7 @@ export function DashboardShell({ children, userName, userEmail, userRole }: Dash
         </main>
       </div>
 
-      <AppFooter />
+      <AppFooter showDesktopDownload={desktopDownloadAvailable} />
       <OpsCommsLauncher />
     </div>
     </CommsProvider>

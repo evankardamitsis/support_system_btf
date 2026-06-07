@@ -43,10 +43,23 @@ export function DesktopDownloadPanel({
         </p>
       )}
 
-      <p className="desktop-download-panel-note">
-        On first open, macOS may show an unidentified developer warning. Right-click the app →
-        Open, or allow it in System Settings → Privacy & Security.
-      </p>
+      <div className="desktop-download-panel-install">
+        <p className="desktop-download-panel-install-title">Install steps</p>
+        <ol className="desktop-download-panel-install-list">
+          <li>Open the DMG and drag <strong>BTF Support</strong> to Applications.</li>
+          <li>
+            If macOS says the app is <strong>damaged</strong> or from an unidentified developer,
+            open Terminal and run:
+            <code className="desktop-download-panel-install-cmd">
+              xattr -cr &quot;/Applications/BTF Support.app&quot;
+            </code>
+          </li>
+          <li>
+            Or right-click the app in Applications → <strong>Open</strong> → <strong>Open</strong>{' '}
+            once.
+          </li>
+        </ol>
+      </div>
     </div>
   )
 }

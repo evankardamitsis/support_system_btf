@@ -2,10 +2,17 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { Download } from 'lucide-react'
 import { BtfContactModal } from '@/components/layout/BtfContactModal'
 import { BTF_WEBSITE_URL, copyrightYear, LEGAL_LINKS } from '@/lib/site/footer'
 
-export function AppFooter({ className }: { className?: string }) {
+export function AppFooter({
+  className,
+  showDesktopDownload = false,
+}: {
+  className?: string
+  showDesktopDownload?: boolean
+}) {
   const year = copyrightYear()
   const [contactOpen, setContactOpen] = useState(false)
 
@@ -36,6 +43,17 @@ export function AppFooter({ className }: { className?: string }) {
             >
               Contact
             </button>
+            {showDesktopDownload ? (
+              <>
+                <span className="app-footer-sep" aria-hidden>
+                  ·
+                </span>
+                <a href="/api/desktop/macos" className="app-footer-desktop-link">
+                  <Download size={11} aria-hidden />
+                  macOS app
+                </a>
+              </>
+            ) : null}
           </nav>
           <span className="app-footer-sep" aria-hidden>
             ·
