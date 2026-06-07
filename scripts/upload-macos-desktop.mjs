@@ -110,46 +110,56 @@ async function uploadGithubAsset({ repo, token, release, assetName, filePath }) 
   return JSON.parse(await uploadRes.text())
 }
 
-function collectDesktopArtifacts(version) {
+function collectDesktopArtifacts() {
   if (!fs.existsSync(DIST_DIR)) {
     console.error(`Build output not found: ${DIST_DIR}`)
     console.error('Run: npm run desktop:dist')
     process.exit(1)
   }
 
-  const candidates = [
-    'latest-mac.yml',
-    `BTF-Support-${version}-arm64-mac.zip`,
-    `BTF-Support-${version}-arm64-mac.zip.blockmap`,
-    `BTF-Support-${version}-arm64.dmg`,
-    `BTF-Support-${version}-arm64.dmg.blockmap`,
-  ]
-
-  const uploads = []
-  for (const name of candidates) {
-    const filePath = path.join(DIST_DIR, name)
-    if (fs.existsSync(filePath)) {
-      uploads.push({ assetName: name, filePath })
-    }
-  }
-
-  const dmg = uploads.find((item) => item.assetName.endsWith('.dmg') && !item.assetName.endsWith('.blockmap'))
-  if (dmg) {
-    uploads.push({
-      assetName: MANUAL_DMG_NAME,
-      filePath: dmg.filePath,
-    })
-  }
-
-  if (!uploads.some((item) => item.assetName === 'latest-mac.yml')) {
-    console.error('Missing latest-mac.yml — auto-update will not work.')
-    console.error('Run: npm run desktop:dist')
+  const ymlPath = path.join(DIST_DIR, 'latest-mac.yml')
+  if (!fs.existsSync(ymlPath)) {
+    console.error('Missing latest-mac.yml — run: npm run desktop:dist')
     process.exit(1)
   }
 
-  if (!uploads.some((item) => item.assetName.endsWith('-mac.zip'))) {
-    console.error('Missing mac zip artifact — auto-update will not work.')
-    console.error('Run: npm run desktop:dist')
+  const yml = fs.readFileSync(ymlPath, 'utf8')
+  const artifactNames = new Set(['latest-mac.yml'])
+
+  for (const match of yml.matchAll(/^  - url: (.+)$/gm)) {
+    artifactNames.add(match[1].trim())
+  }
+
+  const pathMatch = yml.match(/^path: (.+)$/m)
+  if (pathMatch) artifactNames.add(pathMatch[1].trim())
+
+  const uploads = []
+  for (const name of artifactNames) {
+    const filePath = name === 'latest-mac.yml' ? ymlPath : path.join(DIST_DIR, name)
+    if (!fs.existsSync(filePath)) {
+      console.error(`Missing build artifact: ${name}`)
+      process.exit(1)
+    }
+
+    uploads.push({ assetName: name, filePath })
+
+    if (name !== 'latest-mac.yml') {
+      const blockmapPath = `${filePath}.blockmap`
+      if (fs.existsSync(blockmapPath)) {
+        uploads.push({ assetName: `${name}.blockmap`, filePath: blockmapPath })
+      }
+    }
+  }
+
+  const dmg = uploads.find(
+    (item) => item.assetName.endsWith('.dmg') && !item.assetName.endsWith('.blockmap')
+  )
+  if (dmg) {
+    uploads.push({ assetName: MANUAL_DMG_NAME, filePath: dmg.filePath })
+  }
+
+  if (!uploads.some((item) => item.assetName.endsWith('.zip'))) {
+    console.error('latest-mac.yml has no zip artifact — auto-update will not work.')
     process.exit(1)
   }
 
@@ -173,7 +183,11 @@ if (githubRepo) {
   }
 
   const tag = process.env.GITHUB_DESKTOP_RELEASE_TAG?.trim() || DEFAULT_TAG
-  const uploads = collectDesktopArtifacts(pkg.version)
+  if (tag !== DEFAULT_TAG) {
+    console.warn(`Note: uploading v${pkg.version} artifacts to release tag ${tag}`)
+    console.warn(`Set GITHUB_DESKTOP_RELEASE_TAG=${DEFAULT_TAG} unless intentional.`)
+  }
+  const uploads = collectDesktopArtifacts()
 
   try {
     let release = await getOrCreateRelease({ repo: githubRepo, token: githubToken, tag })
@@ -216,7 +230,7 @@ if (githubRepo) {
 }
 
 if (r2Ready) {
-  const uploads = collectDesktopArtifacts(pkg.version)
+  const uploads = collectDesktopArtifacts()
   const dmg = uploads.find((item) => item.assetName === MANUAL_DMG_NAME) || uploads.find((item) => item.assetName.endsWith('.dmg'))
 
   if (!dmg) {
