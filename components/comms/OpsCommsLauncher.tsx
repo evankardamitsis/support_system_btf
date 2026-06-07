@@ -39,13 +39,20 @@ export function OpsCommsLauncher() {
     const params = new URLSearchParams(window.location.search)
     const channelId = params.get('commsChannel')
     const openHuddle = params.get('huddle') === '1'
-    if (!channelId) return
+    const openComms = params.get('openComms') === '1'
 
-    setActiveChannelId(channelId)
-    setPanelOpen(true)
-    if (openHuddle) setHuddleAutoOpen(true)
-    params.delete('commsChannel')
-    params.delete('huddle')
+    if (channelId) {
+      setActiveChannelId(channelId)
+      setPanelOpen(true)
+      if (openHuddle) setHuddleAutoOpen(true)
+      params.delete('commsChannel')
+      params.delete('huddle')
+    } else if (openComms) {
+      setPanelOpen(true)
+      params.delete('openComms')
+    } else {
+      return
+    }
     const query = params.toString()
     const nextUrl = `${window.location.pathname}${query ? `?${query}` : ''}`
     window.history.replaceState({}, '', nextUrl)

@@ -2,13 +2,20 @@
   "name": "support_system_btf",
   "version": "0.1.0",
   "private": true,
+  "main": "desktop/main.cjs",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "desktop:dev": "env -u ELECTRON_RUN_AS_NODE NODE_ENV=development electron .",
+    "desktop:pack": "electron-builder --mac --dir -c desktop/electron-builder.json",
+    "desktop:dist": "electron-builder --mac -c desktop/electron-builder.json",
+    "desktop:upload": "node --env-file=.env.local scripts/upload-macos-desktop.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1063.0",
+    "@aws-sdk/s3-request-presigner": "^3.1063.0",
     "@base-ui/react": "^1.5.0",
     "@emoji-mart/data": "^1.2.1",
     "@emoji-mart/react": "^1.1.1",
@@ -45,6 +52,8 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "electron": "^36.9.5",
+    "electron-builder": "24.13.3",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
     "supabase": "^2.104.0",

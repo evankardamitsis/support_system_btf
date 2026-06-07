@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { ChevronDown, LogOut, Search, X } from 'lucide-react'
+import { ChevronDown, Download, LogOut, Search, X } from 'lucide-react'
 import { MenuToggleIcon } from '@/components/dashboard/MenuToggleIcon'
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -177,6 +177,17 @@ export function DashboardTopBar({
                     <p className="dash-topbar-menu-name">{userName}</p>
                     <p className="dash-topbar-menu-email">{userEmail}</p>
                   </div>
+                  {variant === 'admin' ? (
+                    <Link
+                      href="/admin/desktop"
+                      role="menuitem"
+                      className="dash-topbar-menu-item"
+                      onClick={() => setOpen(false)}
+                    >
+                      <Download size={14} />
+                      macOS app
+                    </Link>
+                  ) : null}
                   <button
                     type="button"
                     role="menuitem"

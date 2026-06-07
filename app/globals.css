@@ -6885,6 +6885,22 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   white-space: nowrap;
 }
 
+[data-theme="dashboard"] .dash-topbar-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--text);
+  transition: background 150ms ease, color 150ms ease;
+}
+
+[data-theme="dashboard"] .dash-topbar-menu-item:hover {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  color: var(--accent);
+}
+
 [data-theme="dashboard"] .dash-topbar-menu-logout {
   display: flex;
   align-items: center;
@@ -7205,6 +7221,101 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 
 [data-theme="dashboard"] .dash-btn-primary:active {
   transform: scale(0.98) translateY(1px);
+}
+
+[data-theme="dashboard"] .desktop-download-panel {
+  padding: 1.25rem 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+[data-theme="dashboard"] .desktop-download-panel-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+[data-theme="dashboard"] .desktop-download-panel-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+[data-theme="dashboard"] .desktop-download-panel-title {
+  font-size: 1rem;
+  font-weight: 500;
+  font-family: var(--font-dm-mono);
+  color: var(--accent);
+}
+
+[data-theme="dashboard"] .desktop-download-panel-sub {
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+[data-theme="dashboard"] .desktop-download-panel-list {
+  margin: 0 0 1.25rem;
+  padding-left: 1.125rem;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  line-height: 1.6;
+}
+
+[data-theme="dashboard"] .desktop-download-panel-list li + li {
+  margin-top: 0.35rem;
+}
+
+[data-theme="dashboard"] .desktop-download-panel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.125rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  font-family: var(--font-dm-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bg);
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+  transition: opacity 150ms ease, transform 100ms ease;
+}
+
+[data-theme="dashboard"] .desktop-download-panel-btn:hover {
+  opacity: 0.92;
+}
+
+[data-theme="dashboard"] .desktop-download-panel-btn:active {
+  transform: scale(0.98) translateY(1px);
+}
+
+[data-theme="dashboard"] .desktop-download-panel-unavailable {
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+[data-theme="dashboard"] .desktop-download-panel-unavailable code {
+  font-family: var(--font-dm-mono);
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+
+[data-theme="dashboard"] .desktop-download-panel-note {
+  margin-top: 1rem;
+  font-size: 0.75rem;
+  color: var(--text-2);
+  line-height: 1.5;
 }
 
 [data-theme="dashboard"] .portal-tour-again-btn {

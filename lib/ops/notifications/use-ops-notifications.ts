@@ -11,6 +11,7 @@ import {
 } from '@/lib/ops/notifications/service'
 import type { OpsNotificationRecord } from '@/lib/ops/notifications/types'
 import { isHuddleOpsNotification } from '@/lib/comms/huddle-chat-log'
+import { notifyDesktop } from '@/lib/desktop/bridge'
 import { playHuddleChime, playNotificationChime } from '@/lib/ui/play-notification-chime'
 
 type NotificationRow = Database['public']['Tables']['ops_notifications']['Row']
@@ -30,6 +31,15 @@ function upsertNotification(
 ): OpsNotificationRecord[] {
   const without = items.filter(item => item.id !== row.id)
   return sortNotifications([row, ...without]).slice(0, LIST_LIMIT)
+}
+
+function pushDesktopNotification(row: OpsNotificationRecord) {
+  if (document.visibilityState === 'visible') return
+  notifyDesktop({
+    title: row.title,
+    body: row.body,
+    href: row.href,
+  })
 }
 
 function isNotificationRow(value: unknown): value is NotificationRow {
@@ -84,6 +94,7 @@ export function useOpsNotifications() {
       } else {
         playNotificationChime()
       }
+      pushDesktopNotification(row)
     }
   }, [])
 
@@ -125,6 +136,9 @@ export function useOpsNotifications() {
           playHuddleChime()
         } else {
           playNotificationChime()
+        }
+        for (const item of newUnread) {
+          pushDesktopNotification(item)
         }
       }
       hasLoadedOnceRef.current = true
