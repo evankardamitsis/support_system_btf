@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { useSidebarOpen } from '@/lib/ui/use-sidebar-open'
+import { AppFooter } from '@/components/layout/AppFooter'
 import { PortalOnboarding } from './PortalOnboarding'
 import { PortalSidebar } from './Sidebar'
 import { PortalTopBar } from './TopBar'
@@ -71,6 +72,7 @@ export function PortalDashboardShell({
         </main>
       </div>
 
+      <AppFooter />
       <PortalOnboarding
         onboardingCompleted={onboardingCompleted}
         runId={tourRunId}

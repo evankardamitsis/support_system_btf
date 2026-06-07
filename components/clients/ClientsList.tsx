@@ -28,12 +28,12 @@ export function ClientsList({ clients }: { clients: ClientListItem[] }) {
   }
 
   return (
-    <div className="entity-panel anim-stagger-2">
+    <div className="entity-panel clients-list anim-stagger-2">
       {clients.map(c => (
         <Link
           key={c.id}
           href={`/admin/clients/${c.id}`}
-          className="entity-card anim-fade-up"
+          className="entity-card clients-list-card anim-fade-up"
         >
           <div className="entity-card-main">
             <div className="entity-avatar" aria-hidden>

@@ -27,7 +27,7 @@ export function AdminSidebar({ userName, userEmail, userRole, onClose }: AdminSi
 
   return (
     <aside id="dash-sidebar" className="dash-sidebar flex flex-col h-full select-none relative">
-      <SidebarBrand variant="admin" userRole={userRole} onNavigate={onClose} />
+      <SidebarBrand variant="admin" onNavigate={onClose} />
 
       {onClose ? (
         <button

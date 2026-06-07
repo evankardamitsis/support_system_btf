@@ -8,18 +8,21 @@ export function TicketsClientFilter({
   status,
   priority,
   assigned,
+  showResolved,
 }: {
   value: string
   clients: ClientOption[]
   status?: string
   priority?: string
   assigned?: string
+  showResolved?: boolean
 }) {
   return (
     <form method="GET" className="tickets-filter-form">
       {status ? <input type="hidden" name="status" value={status} /> : null}
       {priority ? <input type="hidden" name="priority" value={priority} /> : null}
       {assigned ? <input type="hidden" name="assigned" value={assigned} /> : null}
+      {showResolved ? <input type="hidden" name="showResolved" value="1" /> : null}
       <label htmlFor="client-filter" className="tickets-filter-label">
         Client
       </label>

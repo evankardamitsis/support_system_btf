@@ -5,20 +5,21 @@ import { TicketsTable } from '@/components/tickets/TicketsTable'
 import { TicketsTableToolbar } from '@/components/tickets/TicketsTableToolbar'
 import { Plus } from 'lucide-react'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
+import { isResolvedQueueStatus } from '@/lib/tickets/query'
 
 const filterTabs = [
   { label: 'All', value: '' },
   { label: 'Open', value: 'open' },
   { label: 'In progress', value: 'in_progress' },
-  { label: 'Resolved', value: 'resolved' },
 ]
 
 export default async function PortalTicketsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>
+  searchParams: Promise<{ status?: string; showResolved?: string }>
 }) {
   const filters = await searchParams
+  const showResolved = filters.showResolved === '1'
   const { supabase, clientId } = await requirePortalClient()
 
   const { data: all } = await supabase
@@ -29,14 +30,20 @@ export default async function PortalTicketsPage({
     .eq('client_id', clientId)
     .order('updated_at', { ascending: false })
 
+  const scoped = all ?? []
+  const queueBase = showResolved
+    ? scoped
+    : scoped.filter(t => !isResolvedQueueStatus(t.status))
+
   const counts = {
-    '': all?.length ?? 0,
-    open: all?.filter(t => t.status === 'open').length ?? 0,
-    in_progress: all?.filter(t => t.status === 'in_progress').length ?? 0,
-    resolved: all?.filter(t => t.status === 'resolved').length ?? 0,
+    '': queueBase.length,
+    open: queueBase.filter(t => t.status === 'open').length,
+    in_progress: queueBase.filter(t => t.status === 'in_progress').length,
   }
 
-  let tickets = all ?? []
+  const resolvedCount = scoped.filter(t => isResolvedQueueStatus(t.status)).length
+
+  let tickets = showResolved ? scoped : scoped.filter(t => !isResolvedQueueStatus(t.status))
   if (filters.status) {
     tickets = tickets.filter(t => t.status === filters.status)
   }
@@ -81,7 +88,10 @@ export default async function PortalTicketsPage({
             count: counts[tab.value as keyof typeof counts],
           }))}
           activeStatus={activeStatus}
+          showResolved={showResolved}
+          resolvedCount={resolvedCount}
           totalShown={rows.length}
+          showResolvedToggle
         />
 
         <TicketsTable

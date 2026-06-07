@@ -3,6 +3,7 @@ import { ticketsListHref } from '@/lib/tickets/query'
 import { TicketsClientFilter, type ClientOption } from './TicketsClientFilter'
 import { TicketsPriorityFilter } from './TicketsPriorityFilter'
 import { TicketsAssigneeFilter } from './TicketsAssigneeFilter'
+import { TicketsShowResolvedToggle } from './TicketsShowResolvedToggle'
 import type { AssigneeOption } from './EditableAssigneeSelect'
 
 export type TicketTab = {
@@ -18,6 +19,8 @@ export function TicketsTableToolbar({
   priority,
   client,
   assigned,
+  showResolved = false,
+  resolvedCount = 0,
   clients = [],
   staff = [],
   mineCount,
@@ -26,6 +29,7 @@ export function TicketsTableToolbar({
   showPriorityFilter = false,
   showClientFilter = false,
   showAssigneeFilter = false,
+  showResolvedToggle = false,
 }: {
   basePath: string
   tabs: TicketTab[]
@@ -33,6 +37,8 @@ export function TicketsTableToolbar({
   priority?: string
   client?: string
   assigned?: string
+  showResolved?: boolean
+  resolvedCount?: number
   clients?: ClientOption[]
   staff?: AssigneeOption[]
   mineCount?: number
@@ -41,14 +47,17 @@ export function TicketsTableToolbar({
   showPriorityFilter?: boolean
   showClientFilter?: boolean
   showAssigneeFilter?: boolean
+  showResolvedToggle?: boolean
 }) {
   const listFilters = {
     status: activeStatus || undefined,
     priority: priority || undefined,
     client: client || undefined,
     assigned: assigned || undefined,
+    showResolved: showResolved ? '1' : undefined,
   }
   const mineActive = assigned === 'me'
+
   return (
     <div className="tickets-toolbar">
       <div className="tickets-toolbar-tabs dash-tabs border-b-0">
@@ -84,35 +93,55 @@ export function TicketsTableToolbar({
       </div>
 
       <div className="tickets-toolbar-actions">
-        <p className="tickets-result-count">
-          <span className="tickets-result-count-num">{totalShown}</span> {totalLabel}
-        </p>
-        {showClientFilter && clients.length > 0 ? (
-          <TicketsClientFilter
-            value={client ?? ''}
-            clients={clients}
-            status={activeStatus || undefined}
-            priority={priority || undefined}
-            assigned={assigned || undefined}
-          />
-        ) : null}
-        {showPriorityFilter ? (
-          <TicketsPriorityFilter
-            value={priority ?? ''}
-            status={activeStatus || undefined}
-            client={client || undefined}
-            assigned={assigned || undefined}
-          />
-        ) : null}
-        {showAssigneeFilter && staff.length > 0 ? (
-          <TicketsAssigneeFilter
-            value={assigned ?? ''}
-            status={activeStatus || undefined}
-            priority={priority || undefined}
-            client={client || undefined}
-            staff={staff}
-          />
-        ) : null}
+        <div className="tickets-toolbar-actions-meta">
+          <p className="tickets-result-count">
+            <span className="tickets-result-count-num">{totalShown}</span> {totalLabel}
+          </p>
+          {showResolvedToggle ? (
+            <TicketsShowResolvedToggle
+              basePath={basePath}
+              filters={{
+                status: activeStatus || undefined,
+                priority: priority || undefined,
+                client: client || undefined,
+                assigned: assigned || undefined,
+              }}
+              showResolved={showResolved}
+              resolvedCount={resolvedCount}
+            />
+          ) : null}
+        </div>
+        <div className="tickets-toolbar-filters">
+          {showClientFilter && clients.length > 0 ? (
+            <TicketsClientFilter
+              value={client ?? ''}
+              clients={clients}
+              status={activeStatus || undefined}
+              priority={priority || undefined}
+              assigned={assigned || undefined}
+              showResolved={showResolved}
+            />
+          ) : null}
+          {showPriorityFilter ? (
+            <TicketsPriorityFilter
+              value={priority ?? ''}
+              status={activeStatus || undefined}
+              client={client || undefined}
+              assigned={assigned || undefined}
+              showResolved={showResolved}
+            />
+          ) : null}
+          {showAssigneeFilter && staff.length > 0 ? (
+            <TicketsAssigneeFilter
+              value={assigned ?? ''}
+              status={activeStatus || undefined}
+              priority={priority || undefined}
+              client={client || undefined}
+              staff={staff}
+              showResolved={showResolved}
+            />
+          ) : null}
+        </div>
       </div>
     </div>
   )

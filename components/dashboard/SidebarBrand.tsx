@@ -3,16 +3,13 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ProductAreaSwitcher } from '@/components/admin/ProductAreaSwitcher'
 import { getAdminProductAreaConfig } from '@/lib/admin/product-areas'
 
 export function SidebarBrand({
   variant,
-  userRole,
   onNavigate,
 }: {
   variant: 'admin' | 'portal'
-  userRole?: string
   onNavigate?: () => void
 }) {
   const pathname = usePathname()
@@ -34,9 +31,6 @@ export function SidebarBrand({
             priority
           />
         </Link>
-        {variant === 'admin' ? (
-          <ProductAreaSwitcher userRole={userRole} onNavigate={onNavigate} />
-        ) : null}
       </div>
     </div>
   )

@@ -39,11 +39,7 @@ export default function AuthConfirmPage() {
   }, [router])
 
   return (
-    <div
-      data-theme="auth"
-      className="min-h-dvh flex flex-col items-center justify-center gap-4"
-      style={{ background: 'var(--bg)' }}
-    >
+    <div className="auth-shell-content flex flex-1 flex-col items-center justify-center gap-4 w-full">
       <div className="flex items-center gap-2">
         <span
           className="text-xs tracking-[0.2em] uppercase"

@@ -126,19 +126,19 @@ export function DashboardTopBar({
             <MenuToggleIcon open={menuOpen} />
           </button>
 
-          <div className="dash-topbar-brand">
-            <Link href={homeHref} className="dash-topbar-brand-link" aria-label="Home">
-              <Image
-                src="/btf-wordmark.svg"
-                alt="BTF"
-                width={96}
-                height={14}
-                className="dash-topbar-logo"
-                priority
-              />
-            </Link>
-            {variant === 'admin' ? <ProductAreaSwitcher userRole={userRole} /> : null}
-          </div>
+        <div className="dash-topbar-brand">
+          <Link href={homeHref} className="dash-topbar-brand-link" aria-label="Home">
+            <Image
+              src="/btf-wordmark.svg"
+              alt="BTF"
+              width={96}
+              height={14}
+              className="dash-topbar-logo"
+              priority
+            />
+          </Link>
+          {variant === 'admin' ? <ProductAreaSwitcher userRole={userRole} /> : null}
+        </div>
 
           <div className="dash-topbar-search dash-topbar-search--desktop">{search}</div>
 

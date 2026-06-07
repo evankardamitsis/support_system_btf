@@ -9,6 +9,7 @@ import { Plus } from 'lucide-react'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 import { hourBillingByClientFromRetainers } from '@/lib/retainers/billing-model'
 import { getStaffForMentions } from '@/app/actions/comments'
+import { isResolvedQueueStatus } from '@/lib/tickets/query'
 
 function matchesAssigneeFilter(
   assignedTo: string | null,
@@ -26,15 +27,21 @@ const statusTabs = [
   { label: 'Open', value: 'open' },
   { label: 'In progress', value: 'in_progress' },
   { label: 'Waiting', value: 'waiting_on_client' },
-  { label: 'Resolved', value: 'resolved' },
 ]
 
 export default async function AdminTicketsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; priority?: string; client?: string; assigned?: string }>
+  searchParams: Promise<{
+    status?: string
+    priority?: string
+    client?: string
+    assigned?: string
+    showResolved?: string
+  }>
 }) {
   const filters = await searchParams
+  const showResolved = filters.showResolved === '1'
   const supabase = await createClient()
   const {
     data: { user },
@@ -74,19 +81,24 @@ export default async function AdminTicketsPage({
     scoped = scoped.filter(t => t.client_id === activeClient)
   }
 
+  const queueBase = showResolved
+    ? scoped
+    : scoped.filter(t => !isResolvedQueueStatus(t.status))
+
   const counts = {
-    '': scoped.length,
-    open: scoped.filter(t => t.status === 'open').length,
-    in_progress: scoped.filter(t => t.status === 'in_progress').length,
-    waiting_on_client: scoped.filter(t => t.status === 'waiting_on_client').length,
-    resolved: scoped.filter(t => t.status === 'resolved').length,
+    '': queueBase.length,
+    open: queueBase.filter(t => t.status === 'open').length,
+    in_progress: queueBase.filter(t => t.status === 'in_progress').length,
+    waiting_on_client: queueBase.filter(t => t.status === 'waiting_on_client').length,
   }
 
-  const mineCount = scoped.filter(t =>
+  const resolvedCount = scoped.filter(t => isResolvedQueueStatus(t.status)).length
+
+  const mineCount = queueBase.filter(t =>
     matchesAssigneeFilter(t.assigned_to ?? null, 'me', user?.id)
   ).length
 
-  let tickets = scoped
+  let tickets = showResolved ? scoped : scoped.filter(t => !isResolvedQueueStatus(t.status))
   if (filters.status) tickets = tickets.filter(t => t.status === filters.status)
   if (filters.priority) tickets = tickets.filter(t => t.priority === filters.priority)
   if (filters.assigned) {
@@ -97,7 +109,9 @@ export default async function AdminTicketsPage({
 
   const activeStatus = filters.status ?? ''
   const activeAssigned = filters.assigned ?? ''
-  const hasFilters = Boolean(filters.status || filters.priority || activeClient || activeAssigned)
+  const hasFilters = Boolean(
+    filters.status || filters.priority || activeClient || activeAssigned || showResolved
+  )
   const assignedLabel =
     activeAssigned === 'me'
       ? 'assigned to you'
@@ -177,6 +191,8 @@ export default async function AdminTicketsPage({
           priority={filters.priority}
           client={activeClient}
           assigned={activeAssigned}
+          showResolved={showResolved}
+          resolvedCount={resolvedCount}
           clients={clients}
           staff={staff}
           mineCount={mineCount}
@@ -184,6 +200,7 @@ export default async function AdminTicketsPage({
           showPriorityFilter
           showClientFilter
           showAssigneeFilter
+          showResolvedToggle
         />
 
         <TicketsTable

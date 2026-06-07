@@ -9,6 +9,7 @@ const OpsCommsLauncher = dynamic(
   { ssr: false }
 )
 import { useSidebarOpen } from '@/lib/ui/use-sidebar-open'
+import { AppFooter } from '@/components/layout/AppFooter'
 import { AdminSidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 
@@ -60,6 +61,7 @@ export function DashboardShell({ children, userName, userEmail, userRole }: Dash
         </main>
       </div>
 
+      <AppFooter />
       <OpsCommsLauncher />
     </div>
     </ResolveCelebrationProvider>

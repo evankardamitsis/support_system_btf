@@ -126,11 +126,7 @@ export default async function RegisterPage({
         : null
 
   return (
-    <div
-      data-theme="auth"
-      className="min-h-dvh grid-bg grid-bg-fade flex flex-col items-center justify-center px-4"
-      style={{ background: 'var(--bg)' }}
-    >
+    <div className="auth-shell-content grid-bg grid-bg-fade flex flex-1 flex-col items-center justify-center px-4 py-8 w-full">
       <div className="w-full max-w-[440px] flex flex-col gap-10">
         <Link href="/" className="flex justify-center">
           <Image

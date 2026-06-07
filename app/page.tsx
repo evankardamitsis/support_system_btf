@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import { AppFooter } from '@/components/layout/AppFooter'
 
 export default function LandingPage() {
   return (
@@ -179,34 +180,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Footer ────────────────────────────────────────────────────────────── */}
-      <footer
-        className="flex items-center justify-between px-8 md:px-16 py-5 shrink-0"
-        style={{ borderTop: '1px solid var(--border)' }}
-      >
-        <span
-          className="text-[10px] tracking-[0.15em] uppercase"
-          style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-2)' }}
-        >
-          support.belowthefold.gr
-        </span>
-        <a
-          href="https://belowthefold.gr"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="transition-opacity duration-150 hover:opacity-70"
-          style={{ lineHeight: 0 }}
-          aria-label="Below The Fold"
-        >
-          <Image
-            src="/btf-wordmark.svg"
-            alt="belowthefold.gr"
-            width={80}
-            height={11}
-            style={{ height: 10, width: 'auto', opacity: 0.45 }}
-          />
-        </a>
-      </footer>
+      <AppFooter />
     </div>
   )
 }
