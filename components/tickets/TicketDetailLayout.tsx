@@ -19,6 +19,7 @@ import { ResolveHoursModal } from './ResolveHoursModal'
 import { ResolveOfflineModal } from './ResolveOfflineModal'
 import { TicketDetailSidebar, type ExtraHoursItem } from './TicketDetailSidebar'
 import { DeleteTicketButton } from './DeleteTicketButton'
+import { TicketCommsButton } from '@/components/comms/TicketCommsButton'
 import { formatDate } from '@/lib/dates'
 import { formatDateTimeHuman, formatTicketId } from '@/lib/tickets/display'
 import { completeExtraHoursWork } from '@/app/actions/extra-hours'
@@ -192,7 +193,10 @@ export function TicketDetailLayout({
               </span>
               <span className="capitalize">{type}</span>
             </p>
-            <h1 className="ticket-detail-title">{title}</h1>
+            <div className="ticket-detail-title-row">
+              <h1 className="ticket-detail-title">{title}</h1>
+              <TicketCommsButton ticketId={ticketId} />
+            </div>
             <p className="ticket-detail-dates">
               Opened {opened}
               <span className="ticket-detail-sep" aria-hidden>

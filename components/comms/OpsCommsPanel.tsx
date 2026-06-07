@@ -1,17 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { Headphones, MessageSquare, Users, X } from 'lucide-react'
+import { Users, X } from 'lucide-react'
 import type { StreamChat as StreamChatClient } from 'stream-chat'
 import type { StreamVideoClient } from '@stream-io/video-react-sdk'
 import type { StreamCommsCredentials } from '@/lib/comms/stream-server'
 import { OpsCommsChat } from '@/components/comms/OpsCommsChat'
-import { OpsCommsHuddle } from '@/components/comms/OpsCommsHuddle'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
-
-type OpsCommsTab = 'chat' | 'huddle'
 
 type OpsCommsPanelProps = {
   open: boolean
@@ -22,6 +18,8 @@ type OpsCommsPanelProps = {
   chatClient: StreamChatClient | null
   videoClient: StreamVideoClient | null
   credentials: StreamCommsCredentials | null
+  activeChannelId: string
+  onSelectChannel: (channelId: string) => void
 }
 
 export function OpsCommsPanel({
@@ -33,9 +31,21 @@ export function OpsCommsPanel({
   chatClient,
   videoClient,
   credentials,
+  activeChannelId,
+  onSelectChannel,
 }: OpsCommsPanelProps) {
-  const [tab, setTab] = useState<OpsCommsTab>('chat')
   const reducedMotion = useReducedMotion()
+
+  useEffect(() => {
+    if (!open) return
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [open, onClose])
 
   return (
     <AnimatePresence>
@@ -43,6 +53,7 @@ export function OpsCommsPanel({
         <motion.div
           key="ops-comms-panel"
           role="dialog"
+          aria-modal="true"
           aria-label="Team comms"
           className="ops-comms-panel"
           initial={reducedMotion ? false : { opacity: 0, y: 16, scale: 0.98 }}
@@ -74,29 +85,6 @@ export function OpsCommsPanel({
             </Button>
           </div>
 
-          <div className="ops-comms-panel-tabs" role="tablist" aria-label="Comms sections">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === 'chat'}
-              className={cn('ops-comms-panel-tab', tab === 'chat' && 'is-active')}
-              onClick={() => setTab('chat')}
-            >
-              <MessageSquare className="ops-comms-panel-tab-icon" aria-hidden />
-              Chat
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === 'huddle'}
-              className={cn('ops-comms-panel-tab', tab === 'huddle' && 'is-active')}
-              onClick={() => setTab('huddle')}
-            >
-              <Headphones className="ops-comms-panel-tab-icon" aria-hidden />
-              Huddle
-            </button>
-          </div>
-
           <div className="ops-comms-panel-body">
             {loading ? (
               <div className="ops-comms-panel-state">
@@ -114,13 +102,16 @@ export function OpsCommsPanel({
               </div>
             ) : null}
 
-            {!loading && !error && chatClient && videoClient && credentials ? (
+            {!loading && !error && chatClient?.userID && videoClient && credentials ? (
               <div className="ops-comms-panel-content">
-                {tab === 'chat' ? (
-                  <OpsCommsChat chatClient={chatClient} credentials={credentials} />
-                ) : (
-                  <OpsCommsHuddle videoClient={videoClient} credentials={credentials} />
-                )}
+                <OpsCommsChat
+                  chatClient={chatClient}
+                  videoClient={videoClient}
+                  credentials={credentials}
+                  active={open}
+                  activeChannelId={activeChannelId}
+                  onSelectChannel={onSelectChannel}
+                />
               </div>
             ) : null}
           </div>

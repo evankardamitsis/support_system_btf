@@ -5,81 +5,68 @@ import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { OpsCommsFabIcon } from '@/components/comms/OpsCommsFabIcon'
 import { OpsCommsPanel } from '@/components/comms/OpsCommsPanel'
+import { useComms } from '@/lib/comms/comms-context'
 import { useStreamComms } from '@/lib/comms/use-stream-comms'
 import { cn } from '@/lib/utils'
 
 export function OpsCommsLauncher() {
-  const [available, setAvailable] = useState<boolean | null>(null)
   const [portalReady, setPortalReady] = useState(false)
-  const [open, setOpen] = useState(false)
-  const shouldConnect = available === true
-  const comms = useStreamComms(shouldConnect)
+  const { panelOpen, setPanelOpen, activeChannelId, setActiveChannelId } = useComms()
+  const comms = useStreamComms()
 
   useEffect(() => {
     setPortalReady(true)
   }, [])
 
   useEffect(() => {
-    let cancelled = false
+    comms.setPanelOpen(panelOpen)
+  }, [panelOpen, comms.setPanelOpen])
 
-    async function probe() {
-      try {
-        const response = await fetch('/api/comms/token', { cache: 'no-store' })
-        if (!cancelled) {
-          setAvailable(response.status !== 503)
-        }
-      } catch {
-        if (!cancelled) {
-          setAvailable(false)
-        }
-      }
-    }
+  useEffect(() => {
+    if (!panelOpen || !comms.ready || !comms.chatClient?.userID) return
+    void comms.markChannelRead(activeChannelId)
+  }, [panelOpen, activeChannelId, comms.ready, comms.chatClient, comms.markChannelRead])
 
-    void probe()
+  if (comms.availability !== 'available' || !portalReady) return null
 
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  if (available !== true || !portalReady) return null
-
-  const unread = open ? 0 : comms.unreadCount
+  const unread = comms.unreadCount
 
   const portal = (
-    <div data-theme="dashboard" className={cn('ops-comms-portal', open && 'is-open')}>
+    <div data-theme="dashboard" className={cn('ops-comms-portal', panelOpen && 'is-open')}>
       <OpsCommsPanel
-        open={open}
-        onClose={() => setOpen(false)}
+        open={panelOpen}
+        onClose={() => setPanelOpen(false)}
         loading={comms.loading}
         error={comms.error}
         onRetry={() => void comms.reconnect()}
         chatClient={comms.chatClient}
         videoClient={comms.videoClient}
         credentials={comms.credentials}
+        activeChannelId={activeChannelId}
+        onSelectChannel={setActiveChannelId}
       />
 
       <button
         type="button"
         className={cn(
           'ops-comms-fab',
-          open && 'is-open',
-          !open && unread > 0 && 'has-unread'
+          panelOpen && 'is-open',
+          !panelOpen && unread > 0 && 'has-unread'
         )}
-        aria-label={open ? 'Close COMMS' : 'Open COMMS'}
-        aria-expanded={open}
-        onClick={() => setOpen(current => !current)}
+        aria-label={panelOpen ? 'Close COMMS' : 'Open COMMS'}
+        aria-expanded={panelOpen}
+        onClick={() => setPanelOpen(!panelOpen)}
       >
         <span className="ops-comms-fab-glow" aria-hidden />
         <span className="ops-comms-fab-inner">
-          {open ? (
+          {panelOpen ? (
             <X className="ops-comms-fab-icon" aria-hidden />
           ) : (
             <OpsCommsFabIcon className="ops-comms-fab-icon" />
           )}
           <span className="ops-comms-fab-label">COMMS</span>
         </span>
-        {!open && unread > 0 ? (
+        {!panelOpen && unread > 0 ? (
           <span className="ops-comms-fab-badge" aria-label={`${unread} unread messages`}>
             {unread > 9 ? '9+' : unread}
           </span>

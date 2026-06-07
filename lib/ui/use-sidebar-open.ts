@@ -4,16 +4,18 @@ import { useCallback, useEffect, useState } from 'react'
 
 const DESKTOP_MQ = '(min-width: 1024px)'
 
-function getInitialSidebarOpen() {
-  if (typeof window === 'undefined') return false
-  return window.matchMedia(DESKTOP_MQ).matches
-}
-
 export function useSidebarOpen() {
-  const [sidebarOpen, setSidebarOpen] = useState(getInitialSidebarOpen)
+  // Always false on server + first client paint so markup matches during hydration.
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     const mq = window.matchMedia(DESKTOP_MQ)
+
+    function syncFromViewport() {
+      setSidebarOpen(mq.matches)
+    }
+
+    syncFromViewport()
 
     function onChange(e: MediaQueryListEvent) {
       setSidebarOpen(e.matches)

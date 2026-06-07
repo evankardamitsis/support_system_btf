@@ -1,6 +1,7 @@
 'use client'
 
 import { useModalDialog } from '@/lib/ui/use-modal-dialog'
+import { cn } from '@/lib/utils'
 
 const confirmButtonClass = {
   danger: 'dash-btn-danger',
@@ -19,6 +20,7 @@ export function ConfirmDeleteModal({
   pending = false,
   error = null,
   onConfirm,
+  className,
 }: {
   open: boolean
   onClose: () => void
@@ -30,11 +32,12 @@ export function ConfirmDeleteModal({
   pending?: boolean
   error?: string | null
   onConfirm: () => void
+  className?: string
 }) {
   const dialogRef = useModalDialog(open, onClose)
 
   return (
-    <dialog ref={dialogRef} className="ticket-modal">
+    <dialog ref={dialogRef} className={cn('ticket-modal', className)}>
       {open ? (
         <div className="ticket-modal-inner">
           <h2 className="ticket-modal-title">{title}</h2>

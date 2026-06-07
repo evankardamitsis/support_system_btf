@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic'
 import { ResolveCelebrationProvider } from '@/components/admin/ResolveCelebrationProvider'
 import { NotificationAudioInit } from '@/components/dashboard/NotificationAudioInit'
+import { CommsProvider } from '@/lib/comms/comms-context'
 
 const OpsCommsLauncher = dynamic(
   () => import('@/components/comms/OpsCommsLauncher').then(module => module.OpsCommsLauncher),
@@ -25,6 +26,7 @@ export function DashboardShell({ children, userName, userEmail, userRole }: Dash
 
   return (
     <ResolveCelebrationProvider>
+    <CommsProvider>
     <NotificationAudioInit />
     <div data-theme="dashboard" className="dash-shell flex flex-col h-dvh min-h-0 overflow-hidden">
       <TopBar
@@ -64,6 +66,7 @@ export function DashboardShell({ children, userName, userEmail, userRole }: Dash
       <AppFooter />
       <OpsCommsLauncher />
     </div>
+    </CommsProvider>
     </ResolveCelebrationProvider>
   )
 }
