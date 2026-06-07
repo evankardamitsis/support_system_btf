@@ -1,10 +1,12 @@
 'use client'
 
+import '@stream-io/video-react-sdk/dist/css/styles.css'
+
 import { useEffect } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { Users, X } from 'lucide-react'
 import type { StreamChat as StreamChatClient } from 'stream-chat'
-import type { StreamVideoClient } from '@stream-io/video-react-sdk'
+import { StreamVideo, type StreamVideoClient } from '@stream-io/video-react-sdk'
 import type { StreamCommsCredentials } from '@/lib/comms/stream-server'
 import { OpsCommsChat } from '@/components/comms/OpsCommsChat'
 import { Button } from '@/components/ui/button'
@@ -103,16 +105,18 @@ export function OpsCommsPanel({
             ) : null}
 
             {!loading && !error && chatClient?.userID && videoClient && credentials ? (
-              <div className="ops-comms-panel-content">
-                <OpsCommsChat
-                  chatClient={chatClient}
-                  videoClient={videoClient}
-                  credentials={credentials}
-                  active={open}
-                  activeChannelId={activeChannelId}
-                  onSelectChannel={onSelectChannel}
-                />
-              </div>
+              <StreamVideo client={videoClient}>
+                <div className="ops-comms-panel-content">
+                  <OpsCommsChat
+                    chatClient={chatClient}
+                    videoClient={videoClient}
+                    credentials={credentials}
+                    active={open}
+                    activeChannelId={activeChannelId}
+                    onSelectChannel={onSelectChannel}
+                  />
+                </div>
+              </StreamVideo>
             ) : null}
           </div>
         </motion.div>

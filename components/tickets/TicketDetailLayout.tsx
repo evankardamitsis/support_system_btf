@@ -13,7 +13,11 @@ import { StatusPill } from '@/components/ui/StatusPill'
 import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { EditableStatusPill } from './EditableStatusPill'
 import { EditablePriorityPill } from './EditablePriorityPill'
-import { EditableAssigneeSelect, type AssigneeOption } from './EditableAssigneeSelect'
+import {
+  AssigneeLabel,
+  EditableAssigneeSelect,
+  type AssigneeOption,
+} from './EditableAssigneeSelect'
 import { useResolveCelebration } from '@/components/admin/ResolveCelebrationProvider'
 import { ResolveHoursModal } from './ResolveHoursModal'
 import { ResolveOfflineModal } from './ResolveOfflineModal'
@@ -220,6 +224,12 @@ export function TicketDetailLayout({
 
           {closed ? (
             <div className="ticket-detail-controls ticket-detail-controls--readonly">
+              {staffOptions.length > 0 ? (
+                <div className="ticket-detail-control ticket-detail-control--assignee">
+                  <span className="ticket-detail-control-label">Assigned</span>
+                  <AssigneeLabel value={assignedTo} options={staffOptions} />
+                </div>
+              ) : null}
               <StatusPill status={status} />
               <PriorityBadge priority={priority} />
             </div>
@@ -228,6 +238,28 @@ export function TicketDetailLayout({
               className="ticket-detail-controls"
               data-pending={pending ? 'true' : undefined}
             >
+              {staffOptions.length > 0 ? (
+                <div className="ticket-detail-control ticket-detail-control--assignee">
+                  <span className="ticket-detail-control-label">Assigned</span>
+                  <EditableAssigneeSelect
+                    value={assignedTo}
+                    options={staffOptions}
+                    disabled={pending}
+                    ariaLabel="Change assignee"
+                    onChange={next =>
+                      startTransition(async () => {
+                        const ok = await runWithToast(() => updateTicketAssignee(ticketId, next), {
+                          loading: 'Updating assignee…',
+                          success: next
+                            ? `Assigned to ${staffOptions.find(s => s.id === next)?.name ?? 'teammate'}`
+                            : 'Assignee cleared',
+                        })
+                        if (ok !== null) refresh()
+                      })
+                    }
+                  />
+                </div>
+              ) : null}
               <div className="ticket-detail-control">
                 <span className="ticket-detail-control-label">Status</span>
                 <EditableStatusPill
@@ -260,31 +292,6 @@ export function TicketDetailLayout({
               </div>
             </div>
           )}
-          {staffOptions.length > 0 ? (
-            <div
-              className="ticket-detail-assignee"
-              data-pending={pending ? 'true' : undefined}
-            >
-              <span className="ticket-detail-control-label">Assigned</span>
-              <EditableAssigneeSelect
-                value={assignedTo}
-                options={staffOptions}
-                disabled={pending}
-                ariaLabel="Change assignee"
-                onChange={next =>
-                  startTransition(async () => {
-                    const ok = await runWithToast(() => updateTicketAssignee(ticketId, next), {
-                      loading: 'Updating assignee…',
-                      success: next
-                        ? `Assigned to ${staffOptions.find(s => s.id === next)?.name ?? 'teammate'}`
-                        : 'Assignee cleared',
-                    })
-                    if (ok !== null) refresh()
-                  })
-                }
-              />
-            </div>
-          ) : null}
         </div>
       </header>
 

@@ -37,7 +37,7 @@ function channelLabel(channel: Channel, currentUserId: string) {
 }
 
 function channelUnread(channel: Channel) {
-  return channel.countUnread() > 0
+  return channel.countUnread()
 }
 
 export function OpsCommsChannelSidebar({
@@ -154,7 +154,8 @@ export function OpsCommsChannelSidebar({
 
   function renderChannel(channel: Channel) {
     const id = channel.id!
-    const unread = channelUnread(channel)
+    const unreadCount = channelUnread(channel)
+    const unread = unreadCount > 0
     const isDeleting = deletingChannelId === id
     const label = channelLabel(channel, credentials.userId) ?? id
 
@@ -173,7 +174,11 @@ export function OpsCommsChannelSidebar({
         onClick={() => onSelectChannel(id)}
       >
         <span className="ops-comms-channel-pill-label">{label}</span>
-        {unread ? <span className="ops-comms-channel-pill-dot" aria-label="Unread" /> : null}
+        {unread ? (
+          <span className="ops-comms-channel-pill-unread" aria-label={`${unreadCount} unread`}>
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        ) : null}
       </button>
     )
   }

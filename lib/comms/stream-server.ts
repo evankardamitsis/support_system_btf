@@ -4,6 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { User } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 import { dmChannelId, ticketChannelId } from '@/lib/comms/stream-channels'
+import { huddleCallIdForChannel } from '@/lib/comms/huddle'
 import {
   getStreamApiKey,
   getStreamApiSecret,
@@ -36,6 +37,21 @@ export type StreamCommsCredentials = {
 
 function getChatServer() {
   return StreamChat.getInstance(getStreamApiKey(), getStreamApiSecret())
+}
+
+let messagingChannelTypeConfigured = false
+
+async function ensureMessagingChannelType(chatServer: StreamChat) {
+  if (messagingChannelTypeConfigured) return
+
+  try {
+    await chatServer.updateChannelType('messaging', {
+      commands: ['giphy'],
+    })
+    messagingChannelTypeConfigured = true
+  } catch {
+    // Stream may reject if unchanged or permissions differ; giphy can still work from defaults.
+  }
 }
 
 function getVideoServer() {
@@ -209,7 +225,34 @@ export async function ensureDmChannel(
     dm_with: otherUserId,
   })
 
+  const videoServer = getVideoServer()
+  await ensureScopedHuddleCall(
+    videoServer,
+    huddleCallIdForChannel(channelId),
+    [user.id, otherUserId],
+    user.id
+  )
+
   return channelId
+}
+
+async function ensureScopedHuddleCall(
+  videoServer: StreamClient,
+  callId: string,
+  memberIds: string[],
+  createdById: string
+) {
+  try {
+    const call = videoServer.video.call(STREAM_HUDDLE_CALL_TYPE, callId)
+    await call.getOrCreate({
+      data: {
+        created_by_id: createdById,
+        members: memberIds.map(userId => ({ user_id: userId })),
+      },
+    })
+  } catch {
+    // Best-effort; clients can still join with create: true.
+  }
 }
 
 export async function getStreamCommsCredentials(
@@ -226,6 +269,7 @@ export async function getStreamCommsCredentials(
   const displayName = profile?.full_name?.trim() || user.email || 'Team member'
 
   const chatServer = getChatServer()
+  await ensureMessagingChannelType(chatServer)
   await chatServer.upsertUsers(
     staff.map(member => ({
       id: member.id,
@@ -238,6 +282,7 @@ export async function getStreamCommsCredentials(
 
   const chatToken = chatServer.createToken(user.id)
   const videoServer = getVideoServer()
+  await ensureScopedHuddleCall(videoServer, STREAM_HUDDLE_CALL_ID, staffIds, user.id)
   const videoToken = videoServer.generateUserToken({
     user_id: user.id,
     exp: Math.floor(Date.now() / 1000) + 60 * 60 * 12,

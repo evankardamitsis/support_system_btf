@@ -27,6 +27,21 @@ export function OpsCommsLauncher() {
     void comms.markChannelRead(activeChannelId)
   }, [panelOpen, activeChannelId, comms.ready, comms.chatClient, comms.markChannelRead])
 
+  useEffect(() => {
+    if (!comms.ready) return
+
+    const params = new URLSearchParams(window.location.search)
+    const channelId = params.get('commsChannel')
+    if (!channelId) return
+
+    setActiveChannelId(channelId)
+    setPanelOpen(true)
+    params.delete('commsChannel')
+    const query = params.toString()
+    const nextUrl = `${window.location.pathname}${query ? `?${query}` : ''}`
+    window.history.replaceState({}, '', nextUrl)
+  }, [comms.ready, setActiveChannelId, setPanelOpen])
+
   if (comms.availability !== 'available' || !portalReady) return null
 
   const unread = comms.unreadCount

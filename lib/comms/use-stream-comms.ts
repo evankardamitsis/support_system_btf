@@ -11,6 +11,7 @@ import {
   type StreamVideoClient as StreamVideoClientType,
 } from '@stream-io/video-react-sdk'
 import type { StreamCommsCredentials } from '@/lib/comms/stream-server'
+import { ensureVideoConnected, isVideoConnected } from '@/lib/comms/ensure-video-connected'
 import { playNotificationChime } from '@/lib/ui/play-notification-chime'
 
 function getUnreadCount(chatClient: StreamChatClient) {
@@ -115,6 +116,7 @@ async function connectSharedClients(
       },
       token: credentials.videoToken,
     })
+    await ensureVideoConnected(videoClient, credentials)
 
     sharedChatClient = chatClient
     sharedVideoClient = videoClient
@@ -150,6 +152,7 @@ async function connectSharedClients(
     },
     token: credentials.videoToken,
   })
+  await ensureVideoConnected(videoClient, credentials)
 
   sharedChatClient = chatClient
   sharedVideoClient = videoClient
@@ -170,7 +173,8 @@ async function ensureStreamConnection(force = false): Promise<ConnectionSnapshot
     !force &&
     sharedCredentials &&
     isChatConnected(sharedChatClient, sharedCredentials.userId) &&
-    sharedVideoClient
+    sharedVideoClient &&
+    isVideoConnected(sharedVideoClient, sharedCredentials.userId)
   ) {
     return {
       availability: 'available',

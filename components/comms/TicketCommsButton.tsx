@@ -39,13 +39,12 @@ export function TicketCommsButton({ ticketId }: TicketCommsButtonProps) {
       type="button"
       className="ticket-comms-button"
       disabled={loading}
-      aria-label={loading ? 'Opening COMMS' : 'Open COMMS'}
+      title="Open ticket chat in COMMS"
+      aria-label={loading ? 'Opening ticket chat' : 'Open ticket chat in COMMS'}
       onClick={() => void handleClick()}
     >
-      <span className="ticket-comms-button-inner">
-        <OpsCommsFabIcon className="ticket-comms-button-icon" />
-        <span className="ticket-comms-button-label">{loading ? '…' : 'COMMS'}</span>
-      </span>
+      <OpsCommsFabIcon className="ticket-comms-button-icon" />
+      <span className="ticket-comms-button-label">{loading ? '…' : 'COMMS'}</span>
     </button>
   )
 }

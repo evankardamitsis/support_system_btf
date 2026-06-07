@@ -1,44 +1,85 @@
 'use client'
 
-import '@stream-io/video-react-sdk/dist/css/styles.css'
-
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Headphones, X } from 'lucide-react'
 import {
   CallControls,
   CallingState,
-  ScreenShareButton,
   SpeakerLayout,
   StreamCall,
+  StreamTheme,
   StreamVideo,
-  ToggleAudioPublishingButton,
-  ToggleVideoPublishingButton,
-  useCall,
   useCallStateHooks,
 } from '@stream-io/video-react-sdk'
 import type { Call } from '@stream-io/video-react-sdk'
 import type { StreamVideoClient } from '@stream-io/video-react-sdk'
 import type { StreamCommsCredentials } from '@/lib/comms/stream-server'
+import { probeHuddleLiveCount, type HuddleContext } from '@/lib/comms/huddle'
+import { ensureVideoConnected, formatHuddleError } from '@/lib/comms/ensure-video-connected'
+import { cn } from '@/lib/utils'
 
 type OpsCommsHuddleProps = {
   videoClient: StreamVideoClient
   credentials: StreamCommsCredentials
+  context: HuddleContext
   onClose?: () => void
-  joinOnOpen?: boolean
 }
 
 function participantLabel(name?: string, id?: string) {
   return name?.trim() || id || 'Teammate'
 }
 
-function HuddleBody({ onLeave }: { onLeave: () => void }) {
-  const call = useCall()
+function HuddleModalFrame({
+  context,
+  mode,
+  onClose,
+  children,
+}: {
+  context: HuddleContext
+  mode: 'prejoin' | 'live'
+  onClose?: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <div
+      className={cn(
+        'ops-comms-huddle-modal',
+        mode === 'prejoin' && 'ops-comms-huddle-modal--prejoin',
+        mode === 'live' && 'ops-comms-huddle-modal--live'
+      )}
+      role="dialog"
+      aria-modal="true"
+      aria-label={context.title}
+    >
+      <div className="ops-comms-huddle-shell ops-comms-huddle-shell--modal">
+        <div className="ops-comms-huddle-shell-head">
+          <span className="ops-comms-huddle-shell-title">
+            <Headphones aria-hidden />
+            {context.title}
+          </span>
+          {onClose ? (
+            <button
+              type="button"
+              className="ops-comms-huddle-shell-close"
+              aria-label="Close huddle"
+              onClick={onClose}
+            >
+              <X aria-hidden />
+            </button>
+          ) : null}
+        </div>
+        <div className="ops-comms-huddle-theme">{children}</div>
+      </div>
+    </div>
+  )
+}
+
+function HuddleLiveBody({ onLeave }: { onLeave: () => void }) {
   const { useCallCallingState, useParticipantCount, useParticipants } = useCallStateHooks()
   const callingState = useCallCallingState()
   const participantCount = useParticipantCount()
   const participants = useParticipants()
-
-  if (!call) return null
 
   if (callingState === CallingState.LEFT) {
     return (
@@ -60,7 +101,7 @@ function HuddleBody({ onLeave }: { onLeave: () => void }) {
   }
 
   const names = participants
-    .map(p => participantLabel(p.name, p.userId))
+    .map(participant => participantLabel(participant.name, participant.userId))
     .filter((name, index, list) => list.indexOf(name) === index)
 
   return (
@@ -75,164 +116,198 @@ function HuddleBody({ onLeave }: { onLeave: () => void }) {
         <SpeakerLayout participantsBarPosition="bottom" />
       </div>
       <div className="ops-comms-huddle-controls">
-        <ToggleAudioPublishingButton />
-        <ToggleVideoPublishingButton />
-        <ScreenShareButton />
         <CallControls onLeave={onLeave} />
       </div>
     </div>
   )
 }
 
-export function OpsCommsHuddle({
-  videoClient,
-  credentials,
+function HuddleLiveSession({
+  call,
+  context,
   onClose,
-  joinOnOpen = false,
-}: OpsCommsHuddleProps) {
-  const [call, setCall] = useState<Call | null>(null)
+}: {
+  call: Call
+  context: HuddleContext
+  onClose?: () => void
+}) {
+  const leaveHuddle = useCallback(() => {
+    void call.leave().finally(() => {
+      onClose?.()
+    })
+  }, [call, onClose])
+
+  return (
+    <StreamCall call={call}>
+      <HuddleModalFrame context={context} mode="live" onClose={leaveHuddle}>
+        <StreamTheme className="ops-comms-huddle-theme">
+          <HuddleLiveBody onLeave={leaveHuddle} />
+        </StreamTheme>
+      </HuddleModalFrame>
+    </StreamCall>
+  )
+}
+
+function HuddlePrejoin({
+  context,
+  liveCount,
+  joining,
+  preparing,
+  error,
+  onStart,
+  onClose,
+}: {
+  context: HuddleContext
+  liveCount: number | null
+  joining: boolean
+  preparing: boolean
+  error: string | null
+  onStart: () => void
+  onClose?: () => void
+}) {
+  return (
+    <HuddleModalFrame context={context} mode="prejoin" onClose={onClose}>
+      <div className="ops-comms-huddle-idle ops-comms-huddle-idle--compact">
+        <p className="ops-comms-huddle-copy">
+          {preparing
+            ? 'Preparing huddle…'
+            : joining
+              ? 'Connecting to huddle…'
+              : liveCount
+                ? context.prejoinLive(liveCount)
+                : context.prejoinIdle}
+        </p>
+        {error ? <p className="ops-comms-huddle-error">{error}</p> : null}
+        <button
+          type="button"
+          className="ops-comms-huddle-start"
+          onClick={onStart}
+          disabled={joining || preparing}
+        >
+          {joining ? 'Joining…' : liveCount ? 'Join huddle' : 'Start huddle'}
+        </button>
+      </div>
+    </HuddleModalFrame>
+  )
+}
+
+export function OpsCommsHuddle({ videoClient, credentials, context, onClose }: OpsCommsHuddleProps) {
+  const call = useMemo(
+    () => videoClient.call(context.callType, context.callId),
+    [videoClient, context.callType, context.callId]
+  )
+  const [phase, setPhase] = useState<'prejoin' | 'live'>('prejoin')
   const [joining, setJoining] = useState(false)
+  const [preparing, setPreparing] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [liveCount, setLiveCount] = useState<number | null>(null)
-  const joinAttemptedRef = useRef(false)
 
   useEffect(() => {
     let cancelled = false
 
-    async function loadLiveCount() {
+    void (async () => {
       try {
-        const probe = videoClient.call(
-          credentials.huddleCallType,
-          credentials.huddleCallId
-        )
-        const state = await probe.get()
+        await ensureVideoConnected(videoClient, credentials)
         if (cancelled) return
-        const count = state.call.session?.participants?.length ?? 0
-        setLiveCount(count > 0 ? count : null)
-      } catch {
-        if (!cancelled) setLiveCount(null)
-      }
-    }
 
-    if (!call) {
-      void loadLiveCount()
-    }
+        const count = await probeHuddleLiveCount(videoClient, credentials, call)
+        if (!cancelled) setLiveCount(count)
+      } catch (err) {
+        if (!cancelled) setError(formatHuddleError(err))
+      } finally {
+        if (!cancelled) setPreparing(false)
+      }
+    })()
 
     return () => {
       cancelled = true
     }
-  }, [videoClient, credentials.huddleCallType, credentials.huddleCallId, call])
+  }, [call, credentials, videoClient])
+
+  useEffect(() => {
+    if (phase !== 'prejoin' || preparing) return
+
+    const interval = window.setInterval(() => {
+      void probeHuddleLiveCount(videoClient, credentials, call).then(count => {
+        setLiveCount(count)
+      })
+    }, 12_000)
+
+    return () => {
+      window.clearInterval(interval)
+    }
+  }, [call, credentials, phase, preparing, videoClient])
+
+  useEffect(() => {
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose?.()
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = previous
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [onClose])
 
   useEffect(() => {
     return () => {
-      if (call) {
-        void call.leave()
-      }
+      void call.leave()
     }
   }, [call])
 
-  async function startHuddle() {
+  const startHuddle = useCallback(() => {
     setJoining(true)
     setError(null)
 
-    try {
-      const nextCall = videoClient.call(
-        credentials.huddleCallType,
-        credentials.huddleCallId
-      )
-      await nextCall.join({ create: true })
-      setCall(nextCall)
-      setLiveCount(null)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not start huddle')
-    } finally {
-      setJoining(false)
-    }
-  }
+    void (async () => {
+      try {
+        await ensureVideoConnected(videoClient, credentials)
+        await call.join({ create: true })
+        await call.camera.disable().catch(() => {})
+        setLiveCount(null)
+        setPhase('live')
+      } catch (err) {
+        setError(formatHuddleError(err))
+      } finally {
+        setJoining(false)
+      }
+    })()
+  }, [call, credentials, videoClient])
 
-  useEffect(() => {
-    if (!joinOnOpen || call || joining || joinAttemptedRef.current) return
-    joinAttemptedRef.current = true
-    void startHuddle()
-  }, [joinOnOpen, call, joining])
+  if (typeof document === 'undefined') return null
 
-  async function leaveHuddle() {
-    if (call) {
-      await call.leave()
-      setCall(null)
-    }
-    onClose?.()
-  }
-
-  if (!call) {
-    return (
-      <div className="ops-comms-huddle-shell">
-        {onClose ? (
-          <div className="ops-comms-huddle-shell-head">
-            <span className="ops-comms-huddle-shell-title">
-              <Headphones aria-hidden />
-              Team huddle
-            </span>
-            <button
-              type="button"
-              className="ops-comms-huddle-shell-close"
-              aria-label="Close huddle"
-              onClick={onClose}
-            >
-              <X aria-hidden />
-            </button>
-          </div>
-        ) : null}
-        <div className="ops-comms-huddle-idle ops-comms-huddle-idle--compact">
-          {joinOnOpen ? (
-            <p className="ops-comms-huddle-copy">{joining ? 'Joining huddle…' : 'Connecting…'}</p>
-          ) : (
-            <>
-              <p className="ops-comms-huddle-copy">
-                {liveCount
-                  ? `${liveCount} teammate${liveCount === 1 ? '' : 's'} in the huddle.`
-                  : 'Start a voice huddle with the team.'}
-              </p>
-              {error ? <p className="ops-comms-huddle-error">{error}</p> : null}
-              <button
-                type="button"
-                className="ops-comms-huddle-start"
-                onClick={() => void startHuddle()}
-                disabled={joining}
-              >
-                {joining ? 'Joining…' : liveCount ? 'Join' : 'Start huddle'}
-              </button>
-            </>
-          )}
-          {joinOnOpen && error ? <p className="ops-comms-huddle-error">{error}</p> : null}
+  return createPortal(
+    <div data-theme="dashboard">
+      <div className="ops-comms-huddle-modal-portal">
+        <button
+          type="button"
+          className="ops-comms-huddle-modal-backdrop"
+          aria-label="Close huddle"
+          onClick={onClose}
+        />
+        <div className="ops-comms-huddle-modal-layer">
+          <StreamVideo client={videoClient}>
+            {phase === 'live' ? (
+              <HuddleLiveSession call={call} context={context} onClose={onClose} />
+            ) : (
+              <HuddlePrejoin
+                context={context}
+                liveCount={liveCount}
+                joining={joining}
+                preparing={preparing}
+                error={error}
+                onStart={startHuddle}
+                onClose={onClose}
+              />
+            )}
+          </StreamVideo>
         </div>
       </div>
-    )
-  }
-
-  return (
-    <div className="ops-comms-huddle-shell">
-      {onClose ? (
-        <div className="ops-comms-huddle-shell-head">
-          <span className="ops-comms-huddle-shell-title">
-            <Headphones aria-hidden />
-            Team huddle
-          </span>
-          <button
-            type="button"
-            className="ops-comms-huddle-shell-close"
-            aria-label="Close huddle"
-            onClick={() => void leaveHuddle()}
-          >
-            <X aria-hidden />
-          </button>
-        </div>
-      ) : null}
-      <StreamVideo client={videoClient}>
-        <StreamCall call={call}>
-          <HuddleBody onLeave={() => void leaveHuddle()} />
-        </StreamCall>
-      </StreamVideo>
-    </div>
+    </div>,
+    document.body
   )
 }
