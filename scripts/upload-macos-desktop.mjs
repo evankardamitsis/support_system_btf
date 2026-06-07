@@ -1,19 +1,14 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { createRequire } from 'node:module'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 
-const DEFAULT_ASSET_NAME = 'BTF-Support-mac.dmg'
-const DEFAULT_TAG = 'v0.1.0'
+const require = createRequire(import.meta.url)
+const pkg = require('../package.json')
 
-const inputPath =
-  process.argv[2] ||
-  path.join('dist', 'desktop', 'BTF Support-0.1.0-arm64.dmg')
-
-if (!fs.existsSync(inputPath)) {
-  console.error(`DMG not found: ${inputPath}`)
-  console.error('Run: npm run desktop:dist')
-  process.exit(1)
-}
+const DEFAULT_TAG = `v${pkg.version}`
+const MANUAL_DMG_NAME = 'BTF-Support-mac.dmg'
+const DIST_DIR = path.join('dist', 'desktop')
 
 function githubHeaders(token) {
   return {
@@ -49,31 +44,16 @@ Fix — pick one:
 A) Fine-grained PAT (recommended)
    github.com/settings/tokens → edit token
    Repository access: support_system_btf
-   Permissions: Contents → Read AND write (Read-only is not enough)
-   Regenerate, update GITHUB_DESKTOP_TOKEN in .env.local
+   Permissions: Contents → Read AND write
 
-B) Classic PAT
-   github.com/settings/tokens → Generate new token (classic)
-   Scope: repo (or public_repo for public repos)
-   Use as GITHUB_DESKTOP_TOKEN
+B) Classic PAT with repo scope
 
-C) Manual upload (no write token needed)
-   github.com/evankardamitsis/support_system_btf/releases/new
-   Tag v0.1.0 → attach DMG as BTF-Support-mac.dmg
-   Vercel only needs a Read token for downloads`)
+C) Manual upload via github.com/.../releases/new`)
 }
 
-async function uploadToGithubRelease({
-  repo,
-  token,
-  tag,
-  assetName,
-  filePath,
-}) {
-  let release = null
-
+async function getOrCreateRelease({ repo, token, tag }) {
   try {
-    release = await githubJson(
+    return await githubJson(
       `https://api.github.com/repos/${repo}/releases/tags/${encodeURIComponent(tag)}`,
       token
     )
@@ -84,7 +64,7 @@ async function uploadToGithubRelease({
     }
 
     try {
-      release = await githubJson(`https://api.github.com/repos/${repo}/releases`, token, {
+      return await githubJson(`https://api.github.com/repos/${repo}/releases`, token, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -98,7 +78,9 @@ async function uploadToGithubRelease({
       throw createError
     }
   }
+}
 
+async function uploadGithubAsset({ repo, token, release, assetName, filePath }) {
   const existing = release.assets?.find((asset) => asset.name === assetName)
   if (existing) {
     await githubJson(
@@ -110,7 +92,6 @@ async function uploadToGithubRelease({
 
   const file = fs.readFileSync(filePath)
   const uploadUrl = `https://uploads.github.com/repos/${repo}/releases/${release.id}/assets?name=${encodeURIComponent(assetName)}`
-
   const uploadRes = await fetch(uploadUrl, {
     method: 'POST',
     headers: {
@@ -129,6 +110,52 @@ async function uploadToGithubRelease({
   return JSON.parse(await uploadRes.text())
 }
 
+function collectDesktopArtifacts(version) {
+  if (!fs.existsSync(DIST_DIR)) {
+    console.error(`Build output not found: ${DIST_DIR}`)
+    console.error('Run: npm run desktop:dist')
+    process.exit(1)
+  }
+
+  const candidates = [
+    'latest-mac.yml',
+    `BTF-Support-${version}-arm64-mac.zip`,
+    `BTF-Support-${version}-arm64-mac.zip.blockmap`,
+    `BTF-Support-${version}-arm64.dmg`,
+    `BTF-Support-${version}-arm64.dmg.blockmap`,
+  ]
+
+  const uploads = []
+  for (const name of candidates) {
+    const filePath = path.join(DIST_DIR, name)
+    if (fs.existsSync(filePath)) {
+      uploads.push({ assetName: name, filePath })
+    }
+  }
+
+  const dmg = uploads.find((item) => item.assetName.endsWith('.dmg') && !item.assetName.endsWith('.blockmap'))
+  if (dmg) {
+    uploads.push({
+      assetName: MANUAL_DMG_NAME,
+      filePath: dmg.filePath,
+    })
+  }
+
+  if (!uploads.some((item) => item.assetName === 'latest-mac.yml')) {
+    console.error('Missing latest-mac.yml — auto-update will not work.')
+    console.error('Run: npm run desktop:dist')
+    process.exit(1)
+  }
+
+  if (!uploads.some((item) => item.assetName.endsWith('-mac.zip'))) {
+    console.error('Missing mac zip artifact — auto-update will not work.')
+    console.error('Run: npm run desktop:dist')
+    process.exit(1)
+  }
+
+  return uploads
+}
+
 const r2Ready = Boolean(
   process.env.R2_ACCOUNT_ID?.trim() &&
     process.env.R2_ACCESS_KEY_ID?.trim() &&
@@ -141,52 +168,68 @@ const githubToken = process.env.GITHUB_DESKTOP_TOKEN?.trim()
 
 if (githubRepo) {
   if (!githubToken) {
-    console.error(`GITHUB_DESKTOP_REPO is set but GITHUB_DESKTOP_TOKEN is missing.
-
-Create a fine-grained PAT at github.com/settings/tokens:
-  Repository: support_system_btf
-  Permissions: Contents → Read and write
-
-Add to .env.local:
-  GITHUB_DESKTOP_TOKEN=github_pat_…`)
+    console.error('Set GITHUB_DESKTOP_REPO and GITHUB_DESKTOP_TOKEN in .env.local')
     process.exit(1)
   }
 
   const tag = process.env.GITHUB_DESKTOP_RELEASE_TAG?.trim() || DEFAULT_TAG
-  const assetName = process.env.GITHUB_DESKTOP_ASSET_NAME?.trim() || DEFAULT_ASSET_NAME
-  const sizeMb = (fs.statSync(inputPath).size / 1024 / 1024).toFixed(1)
+  const uploads = collectDesktopArtifacts(pkg.version)
 
-  let assetId
   try {
-    const asset = await uploadToGithubRelease({
-      repo: githubRepo,
-      token: githubToken,
-      tag,
-      assetName,
-      filePath: inputPath,
-    })
-    assetId = asset?.id
+    let release = await getOrCreateRelease({ repo: githubRepo, token: githubToken, tag })
+
+    for (const upload of uploads) {
+      const sizeMb = (fs.statSync(upload.filePath).size / 1024 / 1024).toFixed(1)
+      await uploadGithubAsset({
+        repo: githubRepo,
+        token: githubToken,
+        release,
+        assetName: upload.assetName,
+        filePath: upload.filePath,
+      })
+      console.log(`Uploaded ${upload.assetName} (${sizeMb} MB)`)
+      release = await githubJson(
+        `https://api.github.com/repos/${githubRepo}/releases/tags/${encodeURIComponent(tag)}`,
+        githubToken
+      )
+    }
   } catch (error) {
     console.error('GitHub upload failed:', error instanceof Error ? error.message : error)
     process.exit(1)
   }
 
-  console.log(`Uploaded ${assetName} to GitHub release ${tag} (${sizeMb} MB)`)
-  if (assetId) {
-    console.log(`Optional speed boost — add to .env.local and Vercel:`)
-    console.log(`GITHUB_DESKTOP_ASSET_ID=${assetId}`)
+  const manualDmg = uploads.find((item) => item.assetName === MANUAL_DMG_NAME)
+  if (manualDmg) {
+    const release = await githubJson(
+      `https://api.github.com/repos/${githubRepo}/releases/tags/${encodeURIComponent(tag)}`,
+      githubToken
+    )
+    const asset = release.assets?.find((item) => item.name === MANUAL_DMG_NAME)
+    if (asset?.id) {
+      console.log(`Optional: GITHUB_DESKTOP_ASSET_ID=${asset.id}`)
+    }
   }
-  console.log('Add the same GITHUB_* vars to Vercel (Production), redeploy, then test /admin/desktop')
+
+  console.log(`Published ${tag} for auto-update + manual install`)
+  console.log('Set NEXT_PUBLIC_MACOS_DESKTOP_VERSION on Vercel, redeploy /admin/desktop')
   process.exit(0)
 }
 
 if (r2Ready) {
+  const uploads = collectDesktopArtifacts(pkg.version)
+  const dmg = uploads.find((item) => item.assetName === MANUAL_DMG_NAME) || uploads.find((item) => item.assetName.endsWith('.dmg'))
+
+  if (!dmg) {
+    console.error('No DMG found in dist/desktop')
+    process.exit(1)
+  }
+
   const accountId = process.env.R2_ACCOUNT_ID.trim()
   const accessKeyId = process.env.R2_ACCESS_KEY_ID.trim()
   const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY.trim()
   const bucket = process.env.R2_BUCKET_NAME.trim()
-  const objectKey = process.env.R2_DESKTOP_OBJECT_KEY?.trim() || DEFAULT_ASSET_NAME
-  const file = fs.readFileSync(inputPath)
+  const objectKey = process.env.R2_DESKTOP_OBJECT_KEY?.trim() || MANUAL_DMG_NAME
+  const file = fs.readFileSync(dmg.filePath)
 
   const client = new S3Client({
     region: 'auto',
@@ -209,14 +252,12 @@ if (r2Ready) {
     process.exit(1)
   }
 
-  console.log(`Uploaded ${objectKey} to R2 bucket "${bucket}" (${(file.length / 1024 / 1024).toFixed(1)} MB)`)
-  console.log('Add the R2_* vars to Vercel (Production), redeploy, then test /admin/desktop')
+  console.log(`Uploaded ${objectKey} to R2 (${(file.length / 1024 / 1024).toFixed(1)} MB)`)
   process.exit(0)
 }
 
-console.error(`No upload target configured. Add to .env.local:
+console.error(`Configure GitHub Releases in .env.local:
 
-GitHub Releases (free):
-  GITHUB_DESKTOP_REPO=evankardamitsis/support_system_btf
-  GITHUB_DESKTOP_TOKEN=github_pat_…  (Contents: Read and write)`)
+GITHUB_DESKTOP_REPO=evankardamitsis/support_system_btf
+GITHUB_DESKTOP_TOKEN=github_pat_…`)
 process.exit(1)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { OpsCommsFabIcon } from '@/components/comms/OpsCommsFabIcon'
@@ -10,7 +10,6 @@ import { useStreamComms } from '@/lib/comms/use-stream-comms'
 import { cn } from '@/lib/utils'
 
 export function OpsCommsLauncher() {
-  const [portalReady, setPortalReady] = useState(false)
   const {
     panelOpen,
     setPanelOpen,
@@ -18,29 +17,37 @@ export function OpsCommsLauncher() {
     setActiveChannelId,
     setHuddleAutoOpen,
   } = useComms()
-  const comms = useStreamComms()
+  const {
+    availability,
+    setPanelOpen: setStreamPanelOpen,
+    markChannelRead,
+    ready,
+    chatClient,
+    unreadCount,
+    loading,
+    error,
+    reconnect,
+    videoClient,
+    credentials,
+  } = useStreamComms()
 
   useEffect(() => {
-    setPortalReady(true)
-  }, [])
-
-  useEffect(() => {
-    const onToggle = () => setPanelOpen((open) => !open)
+    const onToggle = () => setPanelOpen(!panelOpen)
     window.addEventListener('btf-desktop:toggle-comms', onToggle)
     return () => window.removeEventListener('btf-desktop:toggle-comms', onToggle)
-  }, [setPanelOpen])
+  }, [panelOpen, setPanelOpen])
 
   useEffect(() => {
-    comms.setPanelOpen(panelOpen)
-  }, [panelOpen, comms.setPanelOpen])
+    setStreamPanelOpen(panelOpen)
+  }, [panelOpen, setStreamPanelOpen])
 
   useEffect(() => {
-    if (!panelOpen || !comms.ready || !comms.chatClient?.userID) return
-    void comms.markChannelRead(activeChannelId)
-  }, [panelOpen, activeChannelId, comms.ready, comms.chatClient, comms.markChannelRead])
+    if (!panelOpen || !ready || !chatClient?.userID) return
+    void markChannelRead(activeChannelId)
+  }, [panelOpen, activeChannelId, ready, chatClient, markChannelRead])
 
   useEffect(() => {
-    if (!comms.ready) return
+    if (!ready) return
 
     const params = new URLSearchParams(window.location.search)
     const channelId = params.get('commsChannel')
@@ -62,23 +69,23 @@ export function OpsCommsLauncher() {
     const query = params.toString()
     const nextUrl = `${window.location.pathname}${query ? `?${query}` : ''}`
     window.history.replaceState({}, '', nextUrl)
-  }, [comms.ready, setActiveChannelId, setHuddleAutoOpen, setPanelOpen])
+  }, [ready, setActiveChannelId, setHuddleAutoOpen, setPanelOpen])
 
-  if (comms.availability !== 'available' || !portalReady) return null
+  if (availability !== 'available') return null
 
-  const unread = comms.unreadCount
+  const unread = unreadCount
 
   const portal = (
     <div data-theme="dashboard" className={cn('ops-comms-portal', panelOpen && 'is-open')}>
       <OpsCommsPanel
         open={panelOpen}
         onClose={() => setPanelOpen(false)}
-        loading={comms.loading}
-        error={comms.error}
-        onRetry={() => void comms.reconnect()}
-        chatClient={comms.chatClient}
-        videoClient={comms.videoClient}
-        credentials={comms.credentials}
+        loading={loading}
+        error={error}
+        onRetry={() => void reconnect()}
+        chatClient={chatClient}
+        videoClient={videoClient}
+        credentials={credentials}
         activeChannelId={activeChannelId}
         onSelectChannel={setActiveChannelId}
       />

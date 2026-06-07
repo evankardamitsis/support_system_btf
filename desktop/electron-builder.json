@@ -8,7 +8,17 @@
   "files": [
     "desktop/main.cjs",
     "desktop/preload.cjs",
+    "desktop/updater.cjs",
     "desktop/assets/**/*"
+  ],
+  "artifactName": "BTF-Support-${version}-${arch}.${ext}",
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "evankardamitsis",
+      "repo": "support_system_btf",
+      "releaseType": "release"
+    }
   ],
   "extraMetadata": {
     "main": "desktop/main.cjs"

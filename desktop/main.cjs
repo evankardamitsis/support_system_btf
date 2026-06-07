@@ -1,5 +1,6 @@
 const { app, BrowserWindow, Menu, Notification, ipcMain, shell, nativeImage } = require('electron')
 const path = require('node:path')
+const { initDesktopUpdater, checkForDesktopUpdates } = require('./updater.cjs')
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
@@ -77,6 +78,12 @@ function buildMenu() {
           label: 'Reload',
           accelerator: 'CmdOrCtrl+R',
           click: () => mainWindow?.webContents.reload(),
+        },
+        {
+          label: 'Check for Updates…',
+          click: () => {
+            void checkForDesktopUpdates({ silent: false })
+          },
         },
         { type: 'separator' },
         { role: 'hide' },
@@ -198,6 +205,7 @@ if (!gotLock) {
   app.whenReady().then(() => {
     buildMenu()
     createWindow()
+    if (!isDev) initDesktopUpdater()
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow()

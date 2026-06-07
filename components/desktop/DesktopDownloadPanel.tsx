@@ -28,6 +28,7 @@ export function DesktopDownloadPanel({
         <li>Opens the admin dashboard in a dedicated app window</li>
         <li>Native macOS notifications for huddles and mentions</li>
         <li>Keyboard shortcuts: ⌘1 Tickets, ⌘2 Ops, ⌘3 COMMS</li>
+        <li>Shell updates install automatically — use Check for Updates in the app menu</li>
         <li>Requires Apple Silicon Mac (M1/M2/M3/M4)</li>
       </ul>
 
