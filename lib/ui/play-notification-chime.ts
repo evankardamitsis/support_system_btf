@@ -1,11 +1,16 @@
 const CHIME_VOLUME = 0.44
 const CHIME_VERSION = 11
+const HUDDLE_CHIME_VERSION = 1
 
 let chimeSrc: string | null = null
 let cachedVersion = 0
 let sharedAudio: HTMLAudioElement | null = null
 let primed = false
 let pendingChime = false
+let huddleChimeSrc: string | null = null
+let huddleCachedVersion = 0
+let huddleSharedAudio: HTMLAudioElement | null = null
+let pendingHuddleChime = false
 let initialized = false
 
 type ChimeTone = {
@@ -36,6 +41,16 @@ const CHIME_TONES: ChimeTone[] = MOP_INTRO_MIDI.map((midi, index) => ({
   duration: NOTE_DURATION,
   gain: 0.5,
   overtone: NOTE_OVERTONE,
+}))
+
+const HUDDLE_CHIME_MIDI = [67, 71, 74] as const
+
+const HUDDLE_CHIME_TONES: ChimeTone[] = HUDDLE_CHIME_MIDI.map((midi, index) => ({
+  freq: midiToFreq(midi),
+  start: index * 0.14,
+  duration: 0.16,
+  gain: 0.46,
+  overtone: 0.05,
 }))
 
 function smoothStep(t: number) {
@@ -121,9 +136,9 @@ function applyReverbTail(
   return output
 }
 
-function buildChimeSrc() {
+function buildChimeSrcFromTones(tones: ChimeTone[]) {
   const sampleRate = 22050
-  const lastTone = CHIME_TONES[CHIME_TONES.length - 1]!
+  const lastTone = tones[tones.length - 1]!
   const dryDuration = lastTone.start + lastTone.duration + 0.02
   const drySamples = Math.floor(sampleRate * dryDuration)
   const dry = new Float32Array(drySamples)
@@ -131,7 +146,7 @@ function buildChimeSrc() {
   for (let i = 0; i < drySamples; i++) {
     const time = i / sampleRate
     let sample = 0
-    for (const tone of CHIME_TONES) {
+    for (const tone of tones) {
       sample += toneAt(time, tone)
     }
     dry[i] = sample
@@ -187,12 +202,24 @@ function buildChimeSrc() {
   return `data:audio/wav;base64,${btoa(binary)}`
 }
 
+function buildChimeSrc() {
+  return buildChimeSrcFromTones(CHIME_TONES)
+}
+
 function getChimeSrc() {
   if (!chimeSrc || cachedVersion !== CHIME_VERSION) {
     chimeSrc = buildChimeSrc()
     cachedVersion = CHIME_VERSION
   }
   return chimeSrc
+}
+
+function getHuddleChimeSrc() {
+  if (!huddleChimeSrc || huddleCachedVersion !== HUDDLE_CHIME_VERSION) {
+    huddleChimeSrc = buildChimeSrcFromTones(HUDDLE_CHIME_TONES)
+    huddleCachedVersion = HUDDLE_CHIME_VERSION
+  }
+  return huddleChimeSrc
 }
 
 function getSharedAudio(): HTMLAudioElement | null {
@@ -235,10 +262,57 @@ async function playChimeNow(): Promise<void> {
   pendingChime = false
 }
 
+function getHuddleSharedAudio(): HTMLAudioElement | null {
+  if (typeof window === 'undefined') return null
+
+  const src = getHuddleChimeSrc()
+  if (!huddleSharedAudio) {
+    huddleSharedAudio = new Audio(src)
+    huddleSharedAudio.preload = 'auto'
+    huddleSharedAudio.volume = CHIME_VOLUME
+    return huddleSharedAudio
+  }
+
+  if (huddleSharedAudio.src !== src) {
+    huddleSharedAudio.src = src
+    huddleSharedAudio.load()
+  }
+
+  return huddleSharedAudio
+}
+
+async function playHuddleChimeNow(): Promise<void> {
+  if (typeof window === 'undefined') {
+    throw new Error('Audio is not available')
+  }
+  if (document.visibilityState !== 'visible') {
+    throw new Error('Tab is not visible')
+  }
+
+  const audio = getHuddleSharedAudio()
+  if (!audio) throw new Error('Audio is not supported')
+
+  audio.volume = CHIME_VOLUME
+  if (!audio.paused) {
+    audio.pause()
+  }
+  audio.currentTime = 0
+  await audio.play()
+  primed = true
+  pendingHuddleChime = false
+}
+
 function flushPendingChime() {
   if (!pendingChime) return
   void playChimeNow().catch(() => {
     pendingChime = true
+  })
+}
+
+function flushPendingHuddleChime() {
+  if (!pendingHuddleChime) return
+  void playHuddleChimeNow().catch(() => {
+    pendingHuddleChime = true
   })
 }
 
@@ -261,6 +335,7 @@ function unlockFromGesture() {
         audio.currentTime = 0
         primed = true
         flushPendingChime()
+        flushPendingHuddleChime()
       })
       .catch(() => {
         // Still waiting for a stronger user gesture.
@@ -269,6 +344,7 @@ function unlockFromGesture() {
   }
 
   flushPendingChime()
+  flushPendingHuddleChime()
 }
 
 /** Call once when the dashboard mounts — keeps audio ready for realtime notifications. */
@@ -277,6 +353,7 @@ export function initNotificationAudio() {
   initialized = true
 
   getChimeSrc()
+  getHuddleChimeSrc()
 
   for (const event of ['pointerdown', 'keydown', 'touchstart', 'mousedown'] as const) {
     window.addEventListener(event, unlockFromGesture, { capture: true, passive: true })
@@ -285,6 +362,7 @@ export function initNotificationAudio() {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       flushPendingChime()
+      flushPendingHuddleChime()
     }
   })
 }
@@ -292,6 +370,12 @@ export function initNotificationAudio() {
 export function playNotificationChime() {
   void playChimeNow().catch(() => {
     pendingChime = true
+  })
+}
+
+export function playHuddleChime() {
+  void playHuddleChimeNow().catch(() => {
+    pendingHuddleChime = true
   })
 }
 

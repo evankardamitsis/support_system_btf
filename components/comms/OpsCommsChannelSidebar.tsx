@@ -1,21 +1,26 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronDown, MessageCircle, Ticket, Users } from 'lucide-react'
+import { ChevronDown, Headphones, MessageCircle, Ticket, Users } from 'lucide-react'
+import type { StreamVideoClient } from '@stream-io/video-react-sdk'
 import type { Channel } from 'stream-chat'
 import type { StreamChat as StreamChatClient } from 'stream-chat'
 import type { StreamCommsCredentials } from '@/lib/comms/stream-server'
 import { commsChannelKind } from '@/lib/comms/stream-channels'
+import { useLiveHuddleChannels } from '@/lib/comms/use-live-huddle-channels'
 import { useStaffPresence } from '@/lib/comms/use-staff-presence'
 import { notifyError } from '@/lib/notify'
 import { cn } from '@/lib/utils'
 
 type OpsCommsChannelSidebarProps = {
   chatClient: StreamChatClient
+  videoClient: StreamVideoClient
   credentials: StreamCommsCredentials
   activeChannelId: string
+  commsActive?: boolean
   deletingChannelId?: string | null
   onSelectChannel: (channelId: string) => void
+  onJoinHuddle: (channelId: string) => void
 }
 
 function channelData(channel: Channel) {
@@ -42,10 +47,13 @@ function channelUnread(channel: Channel) {
 
 export function OpsCommsChannelSidebar({
   chatClient,
+  videoClient,
   credentials,
   activeChannelId,
+  commsActive = true,
   deletingChannelId = null,
   onSelectChannel,
+  onJoinHuddle,
 }: OpsCommsChannelSidebarProps) {
   const [channels, setChannels] = useState<Channel[]>([])
   const [dmOpen, setDmOpen] = useState(false)
@@ -53,6 +61,13 @@ export function OpsCommsChannelSidebar({
   const dmSectionRef = useRef<HTMLDivElement>(null)
   const staffIds = useMemo(() => credentials.staff.map(member => member.id), [credentials.staff])
   const staffPresence = useStaffPresence(chatClient, staffIds, credentials.userId)
+  const { liveHuddles, liveChannelIds } = useLiveHuddleChannels({
+    videoClient,
+    credentials,
+    channels,
+    currentUserId: credentials.userId,
+    active: commsActive,
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -158,6 +173,7 @@ export function OpsCommsChannelSidebar({
     const unread = unreadCount > 0
     const isDeleting = deletingChannelId === id
     const label = channelLabel(channel, credentials.userId) ?? id
+    const isLive = liveChannelIds.has(id)
 
     return (
       <button
@@ -167,6 +183,7 @@ export function OpsCommsChannelSidebar({
           'ops-comms-channel-pill',
           activeChannelId === id && 'is-active',
           unread && 'has-unread',
+          isLive && 'has-live-huddle',
           isDeleting && 'is-deleting'
         )}
         disabled={isDeleting}
@@ -174,6 +191,11 @@ export function OpsCommsChannelSidebar({
         onClick={() => onSelectChannel(id)}
       >
         <span className="ops-comms-channel-pill-label">{label}</span>
+        {isLive ? (
+          <span className="ops-comms-channel-pill-live" aria-label="Live huddle">
+            LIVE
+          </span>
+        ) : null}
         {unread ? (
           <span className="ops-comms-channel-pill-unread" aria-label={`${unreadCount} unread`}>
             {unreadCount > 9 ? '9+' : unreadCount}
@@ -199,6 +221,28 @@ export function OpsCommsChannelSidebar({
 
   return (
     <aside className="ops-comms-channel-sidebar" aria-label="Chat channels">
+      {liveHuddles.length > 0 ? (
+        <div className="ops-comms-huddle-banner" role="status" aria-live="polite">
+          {liveHuddles.map(huddle => (
+            <button
+              key={huddle.channelId}
+              type="button"
+              className="ops-comms-huddle-banner-item"
+              onClick={() => onJoinHuddle(huddle.channelId)}
+            >
+              <span className="ops-comms-huddle-banner-icon" aria-hidden>
+                <Headphones />
+              </span>
+              <span className="ops-comms-huddle-banner-copy">
+                <span className="ops-comms-huddle-banner-title">Live huddle · {huddle.label}</span>
+                <span className="ops-comms-huddle-banner-meta">
+                  {huddle.participantCount} in call · Join
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : null}
       <div className="ops-comms-channel-scroll">
         {renderSection('Team', <Users className="ops-comms-channel-section-icon" aria-hidden />, grouped.team)}
         {grouped.team.length > 0 && grouped.tickets.length > 0 ? (

@@ -10,7 +10,8 @@ import {
   mapOpsNotificationRow,
 } from '@/lib/ops/notifications/service'
 import type { OpsNotificationRecord } from '@/lib/ops/notifications/types'
-import { playNotificationChime } from '@/lib/ui/play-notification-chime'
+import { isHuddleOpsNotification } from '@/lib/comms/huddle-chat-log'
+import { playHuddleChime, playNotificationChime } from '@/lib/ui/play-notification-chime'
 
 type NotificationRow = Database['public']['Tables']['ops_notifications']['Row']
 
@@ -78,7 +79,11 @@ export function useOpsNotifications() {
 
     if (isNewUnread) {
       setUnreadCount(count => count + 1)
-      playNotificationChime()
+      if (isHuddleOpsNotification(row)) {
+        playHuddleChime()
+      } else {
+        playNotificationChime()
+      }
     }
   }, [])
 
@@ -116,7 +121,11 @@ export function useOpsNotifications() {
       setError(null)
 
       if (hasLoadedOnceRef.current && newUnread.length > 0) {
-        playNotificationChime()
+        if (newUnread.some(item => isHuddleOpsNotification(item))) {
+          playHuddleChime()
+        } else {
+          playNotificationChime()
+        }
       }
       hasLoadedOnceRef.current = true
     } catch (err) {

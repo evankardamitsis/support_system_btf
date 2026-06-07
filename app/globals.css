@@ -12826,6 +12826,73 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   box-shadow: inset -1px 0 0 color-mix(in oklch, var(--accent) 6%, transparent);
 }
 
+[data-theme="dashboard"] .ops-comms-huddle-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  margin-bottom: 0.15rem;
+}
+
+[data-theme="dashboard"] .ops-comms-huddle-banner-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.5rem 0.55rem;
+  border: 1px solid color-mix(in oklch, #34d399 28%, var(--border));
+  border-radius: 0.55rem;
+  background: color-mix(in oklch, #34d399 10%, var(--surface-2));
+  color: var(--text-1);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+[data-theme="dashboard"] .ops-comms-huddle-banner-item:hover {
+  border-color: color-mix(in oklch, #34d399 45%, var(--border));
+  background: color-mix(in oklch, #34d399 16%, var(--surface-2));
+}
+
+[data-theme="dashboard"] .ops-comms-huddle-banner-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  background: color-mix(in oklch, #34d399 22%, transparent);
+  color: #6ee7b7;
+}
+
+[data-theme="dashboard"] .ops-comms-huddle-banner-icon svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+[data-theme="dashboard"] .ops-comms-huddle-banner-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+[data-theme="dashboard"] .ops-comms-huddle-banner-title {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-1);
+  line-height: 1.25;
+}
+
+[data-theme="dashboard"] .ops-comms-huddle-banner-meta {
+  font-size: 0.625rem;
+  color: var(--text-3);
+  line-height: 1.25;
+}
+
 [data-theme="dashboard"] .ops-comms-channel-scroll {
   display: flex;
   flex-direction: column;
@@ -12963,6 +13030,35 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 [data-theme="dashboard"] .ops-comms-channel-pill.has-unread .ops-comms-channel-pill-label {
   font-weight: 600;
   color: var(--text-1);
+}
+
+[data-theme="dashboard"] .ops-comms-channel-pill.has-live-huddle {
+  border-color: color-mix(in oklch, #34d399 35%, var(--border));
+  background: color-mix(in oklch, #34d399 8%, var(--surface-2));
+}
+
+[data-theme="dashboard"] .ops-comms-channel-pill-live {
+  flex-shrink: 0;
+  padding: 0.08rem 0.3rem;
+  border-radius: 999px;
+  background: color-mix(in oklch, #34d399 24%, transparent);
+  color: #6ee7b7;
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  animation: ops-comms-huddle-live-pulse 2s ease-in-out infinite;
+}
+
+@keyframes ops-comms-huddle-live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.62;
+  }
 }
 
 [data-theme="dashboard"] .ops-comms-channel-pill.is-deleting {

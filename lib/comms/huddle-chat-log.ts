@@ -26,9 +26,23 @@ export function formatHuddleDuration(ms: number) {
   return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`
 }
 
+export function isHuddleStartedLogText(text: string) {
+  return text.startsWith('Huddle started ·')
+}
+
+export function isHuddleOpsNotification(input: {
+  dedupeKey?: string | null
+  title: string
+}) {
+  return (
+    (input.dedupeKey?.startsWith('comms-huddle:') ?? false) ||
+    input.title.startsWith('Huddle started')
+  )
+}
+
 export function isHuddleChatLogText(text: string) {
   return (
-    text.startsWith('Huddle started ·') ||
+    isHuddleStartedLogText(text) ||
     text.startsWith('Huddle ended ·') ||
     text.startsWith('Unanswered huddle ·') ||
     text.endsWith(' joined the huddle') ||

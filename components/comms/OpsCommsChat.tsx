@@ -39,7 +39,9 @@ import { useCommsSendHandler } from '@/lib/comms/use-comms-send-handler'
 import { commsLookupTicket } from '@/app/actions/comms'
 import { useComms } from '@/lib/comms/comms-context'
 import { useCommsNarrowLayout } from '@/lib/comms/use-comms-narrow-layout'
+import { isHuddleStartedLogText } from '@/lib/comms/huddle-chat-log'
 import { huddleContextForChannel } from '@/lib/comms/huddle'
+import { playHuddleChime } from '@/lib/ui/play-notification-chime'
 import { notifyError } from '@/lib/notify'
 import { cn } from '@/lib/utils'
 
@@ -346,6 +348,30 @@ export function OpsCommsChat({
     if (isNarrowLayout) setMobileSidebarOpen(false)
   }
 
+  function handleJoinLiveHuddle(channelId: string) {
+    handleSelectChannel(channelId)
+    setHuddleOpen(true)
+  }
+
+  useEffect(() => {
+    function onMessage(event: Event) {
+      if (event.type !== 'message.new') return
+
+      const text = event.message?.text?.trim() ?? ''
+      if (!isHuddleStartedLogText(text)) return
+
+      const authorId = event.message?.user?.id ?? event.user?.id
+      if (authorId === credentials.userId) return
+
+      playHuddleChime()
+    }
+
+    chatClient.on('message.new', onMessage)
+    return () => {
+      chatClient.off('message.new', onMessage)
+    }
+  }, [chatClient, credentials.userId])
+
   return (
     <div
       className={cn(
@@ -363,10 +389,13 @@ export function OpsCommsChat({
       ) : null}
       <OpsCommsChannelSidebar
         chatClient={chatClient}
+        videoClient={videoClient}
         credentials={credentials}
         activeChannelId={activeChannelId}
+        commsActive={active}
         deletingChannelId={deletePending ? deleteTarget?.channelId ?? null : null}
         onSelectChannel={handleSelectChannel}
+        onJoinHuddle={handleJoinLiveHuddle}
       />
       <div className="ops-comms-chat">
         <Chat client={chatClient} theme="str-chat__theme-dark">
