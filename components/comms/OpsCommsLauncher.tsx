@@ -11,7 +11,13 @@ import { cn } from '@/lib/utils'
 
 export function OpsCommsLauncher() {
   const [portalReady, setPortalReady] = useState(false)
-  const { panelOpen, setPanelOpen, activeChannelId, setActiveChannelId } = useComms()
+  const {
+    panelOpen,
+    setPanelOpen,
+    activeChannelId,
+    setActiveChannelId,
+    setHuddleAutoOpen,
+  } = useComms()
   const comms = useStreamComms()
 
   useEffect(() => {
@@ -32,15 +38,18 @@ export function OpsCommsLauncher() {
 
     const params = new URLSearchParams(window.location.search)
     const channelId = params.get('commsChannel')
+    const openHuddle = params.get('huddle') === '1'
     if (!channelId) return
 
     setActiveChannelId(channelId)
     setPanelOpen(true)
+    if (openHuddle) setHuddleAutoOpen(true)
     params.delete('commsChannel')
+    params.delete('huddle')
     const query = params.toString()
     const nextUrl = `${window.location.pathname}${query ? `?${query}` : ''}`
     window.history.replaceState({}, '', nextUrl)
-  }, [comms.ready, setActiveChannelId, setPanelOpen])
+  }, [comms.ready, setActiveChannelId, setHuddleAutoOpen, setPanelOpen])
 
   if (comms.availability !== 'available' || !portalReady) return null
 

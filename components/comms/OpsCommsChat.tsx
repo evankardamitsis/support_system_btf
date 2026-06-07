@@ -37,6 +37,7 @@ import { readChannelPresence, staffNameMap } from '@/lib/comms/channel-presence'
 import { workflowReactionLabel } from '@/lib/comms/reaction-workflow'
 import { useCommsSendHandler } from '@/lib/comms/use-comms-send-handler'
 import { commsLookupTicket } from '@/app/actions/comms'
+import { useComms } from '@/lib/comms/comms-context'
 import { useCommsNarrowLayout } from '@/lib/comms/use-comms-narrow-layout'
 import { huddleContextForChannel } from '@/lib/comms/huddle'
 import { notifyError } from '@/lib/notify'
@@ -92,6 +93,7 @@ export function OpsCommsChat({
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null)
   const [deletePending, setDeletePending] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const { huddleAutoOpen, setHuddleAutoOpen } = useComms()
   const [huddleOpen, setHuddleOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [channelPresence, setChannelPresence] = useState<ReturnType<typeof readChannelPresence> | null>(
@@ -125,6 +127,12 @@ export function OpsCommsChat({
   useEffect(() => {
     setHuddleOpen(false)
   }, [activeChannelId])
+
+  useEffect(() => {
+    if (!huddleAutoOpen || !huddleContext.enabled) return
+    setHuddleOpen(true)
+    setHuddleAutoOpen(false)
+  }, [huddleAutoOpen, huddleContext.enabled, setHuddleAutoOpen])
 
   const syncChannelPresence = useMemo(
     () => () => {
@@ -450,6 +458,10 @@ export function OpsCommsChat({
             videoClient={videoClient}
             credentials={credentials}
             context={huddleContext}
+            channel={channel}
+            channelId={activeChannelId}
+            channelLabel={channelShortTitle}
+            ticketId={ticketId}
             onClose={() => setHuddleOpen(false)}
           />
         ) : null}

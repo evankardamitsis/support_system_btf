@@ -5,7 +5,10 @@ import { createClient } from '@/lib/supabase/server'
 import { lookupTicketByRef } from '@/lib/comms/ticket-lookup'
 import { resolveStatusAlias } from '@/lib/comms/slash-commands'
 import { resolveAssigneeFromArg } from '@/lib/comms/mention-utils'
-import { notifyMentionedStaff } from '@/lib/ops/notifications/service'
+import {
+  insertOpsNotificationForUsers,
+  notifyMentionedStaff,
+} from '@/lib/ops/notifications/service'
 import { tryCreateAdminClient } from '@/lib/supabase/admin'
 import { formatTicketId } from '@/lib/tickets/display'
 import { updateTicketAssignee, updateTicketStatus } from '@/app/actions/tickets'
@@ -122,6 +125,37 @@ export async function commsNotifyMentions(input: {
     href,
     contextLabel: input.channelLabel,
     dedupeKey: `comms-mention:${input.channelId}:${input.messageId}`,
+  })
+
+  return { ok: true }
+}
+
+export async function commsNotifyHuddleStarted(input: {
+  recipientUserIds: string[]
+  channelId: string
+  channelLabel: string
+  ticketId?: string | null
+  starterName: string
+  callId: string
+  sessionStartedAt: number
+}) {
+  const { user } = await requireStaff()
+  const recipients = [...new Set(input.recipientUserIds.filter(id => id && id !== user.id))]
+  if (!recipients.length) return { ok: true }
+
+  const adminResult = tryCreateAdminClient()
+  if ('error' in adminResult) return { ok: false }
+
+  const href = input.ticketId
+    ? `/admin/tickets/${input.ticketId}?commsChannel=${encodeURIComponent(input.channelId)}&huddle=1`
+    : `/admin/tickets?commsChannel=${encodeURIComponent(input.channelId)}&huddle=1`
+
+  await insertOpsNotificationForUsers(adminResult.client, recipients, {
+    type: 'mention',
+    title: `Huddle started · ${input.channelLabel}`,
+    body: `${input.starterName} is waiting in a huddle`,
+    href,
+    dedupeKey: `comms-huddle:${input.callId}:${input.sessionStartedAt}`,
   })
 
   return { ok: true }

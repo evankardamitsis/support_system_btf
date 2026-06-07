@@ -15,6 +15,8 @@ type CommsContextValue = {
   activeChannelId: string
   setActiveChannelId: (channelId: string) => void
   openComms: (channelId?: string) => void
+  huddleAutoOpen: boolean
+  setHuddleAutoOpen: (open: boolean) => void
 }
 
 const CommsContext = createContext<CommsContextValue | null>(null)
@@ -22,6 +24,7 @@ const CommsContext = createContext<CommsContextValue | null>(null)
 export function CommsProvider({ children }: { children: ReactNode }) {
   const [panelOpen, setPanelOpen] = useState(false)
   const [activeChannelId, setActiveChannelId] = useState(STREAM_TEAM_CHANNEL_ID)
+  const [huddleAutoOpen, setHuddleAutoOpen] = useState(false)
 
   const openComms = useCallback((channelId?: string) => {
     if (channelId) setActiveChannelId(channelId)
@@ -36,6 +39,8 @@ export function CommsProvider({ children }: { children: ReactNode }) {
         activeChannelId,
         setActiveChannelId,
         openComms,
+        huddleAutoOpen,
+        setHuddleAutoOpen,
       }}
     >
       {children}
