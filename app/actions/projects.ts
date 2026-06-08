@@ -448,6 +448,28 @@ export async function createTask(input: {
     if (parent.project_id !== input.projectId) throw new Error('Invalid parent task')
   }
 
+  let sortOrderQuery = supabase
+    .from('ops_project_tasks')
+    .select('sort_order')
+    .eq('project_id', input.projectId)
+    .is('deleted_at', null)
+
+  if (input.parentId) {
+    sortOrderQuery = sortOrderQuery.eq('parent_id', input.parentId)
+  } else {
+    sortOrderQuery = sortOrderQuery.is('parent_id', null)
+    if (input.phaseId) {
+      sortOrderQuery = sortOrderQuery.eq('phase_id', input.phaseId)
+    } else {
+      sortOrderQuery = sortOrderQuery.is('phase_id', null)
+    }
+  }
+
+  const { data: lastSibling } = await sortOrderQuery
+    .order('sort_order', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
   const { error } = await supabase.from('ops_project_tasks').insert({
     project_id: input.projectId,
     phase_id: input.phaseId ?? null,
@@ -456,6 +478,7 @@ export async function createTask(input: {
     assignee_id: input.assigneeId || null,
     priority: input.priority ?? 'normal',
     due_date: input.dueDate || null,
+    sort_order: (lastSibling?.sort_order ?? -1) + 1,
   })
 
   if (error) throw new Error(error.message)

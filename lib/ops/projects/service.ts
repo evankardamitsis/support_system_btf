@@ -114,6 +114,10 @@ function nestTasks(
     }
   }
 
+  for (const task of byId.values()) {
+    task.subtasks.sort((a, b) => a.sortOrder - b.sortOrder)
+  }
+
   return roots
 }
 
