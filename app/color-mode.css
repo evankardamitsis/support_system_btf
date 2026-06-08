@@ -93,7 +93,8 @@ html[data-color-mode='light'] [data-theme='dashboard'] {
   --border: #deded8;
   --border-2: #b8b8b0;
   --text-2: #3a3a42;
-  --text-3: #5c5c66;
+  --text-3: #4a4a54;
+  --label-ink: #3f3f48;
   --muted-foreground: #3a3a42;
   --card: #ffffff;
   --ops-surface: #ffffff;
@@ -191,10 +192,8 @@ html[data-color-mode='light'] [data-theme='dashboard'] .dash-stat-card:hover {
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .tickets-table-header,
-html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-grid-head,
-html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-detail-table-head,
 html[data-color-mode='light'] [data-theme='dashboard'] .dash-card-section {
-  background: #f6f6f2;
+  background: #f0f0eb;
   border-color: #e6e6e0;
 }
 
@@ -208,7 +207,70 @@ html[data-color-mode='light'] [data-theme='dashboard'] .dash-search-results {
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .dash-table-head {
-  background: #f6f6f2;
+  background: #f0f0eb;
+  color: var(--label-ink);
+  border-bottom-color: #e6e6e0;
+}
+
+/* Labels, meta, and table headers — readable ink on light surfaces */
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-label,
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-section-title {
+  color: var(--label-ink);
+  font-weight: 600;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-label .dash-meta {
+  color: var(--text-3);
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-meta {
+  color: var(--text-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-text-muted {
+  color: var(--text-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-grid-head,
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-detail-table-head,
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-iban-grid-head,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-projects-grid-head,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-hosting-grid-head,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-col-head {
+  color: var(--label-ink);
+  font-weight: 600;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-grid-head,
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-iban-grid-head {
+  background: #f0f0eb;
+  border-bottom-color: #e6e6e0;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-detail-meta > div > .dash-meta:first-child,
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-detail-lines-label,
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-email-panel-title,
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-totals dt,
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-iban-label {
+  color: var(--label-ink);
+  font-weight: 600;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-detail-meta > div > .dash-meta:not(:first-child),
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-detail-compact-line,
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-vat-toggle {
+  color: var(--text-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-iban-value {
+  color: var(--text-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-totals dd[data-emphasis='true'] {
+  color: #5b21b6;
 }
 
 /* Landing / auth grids — hide gray vignette grids in light */
@@ -320,23 +382,6 @@ html[data-color-mode='light'] [data-theme='dashboard'] .dash-product-option--sup
   animation: none;
 }
 
-/* Ops progress — flat track + lavender fill, dark meta (no shine gradient) */
-html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-progress-bar {
-  background: #ebebe6;
-  box-shadow: none;
-}
-
-html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-progress-fill {
-  background: #c4b5fd;
-  background-size: 100% 100%;
-  animation: none;
-  box-shadow: none;
-}
-
-html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-progress-meta {
-  text-shadow: none;
-}
-
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-progress-meta,
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-progress-pct,
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-progress-tasks {
@@ -410,9 +455,6 @@ html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-huddle-modal-l
 html[data-color-mode='light'] [data-theme='dashboard'] .dash-product-dropdown-option--ops:hover,
 html[data-color-mode='light'] [data-theme='dashboard'] .dash-product-dropdown-option--ops.is-active,
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-module-card-title,
-html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-active-badge,
-html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-action:hover:not(:disabled),
-html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-action--active,
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-actions-btn:hover:not(:disabled),
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-actions-btn--open,
 html[data-color-mode='light'] [data-theme='dashboard'] .package-chip--fixed {
@@ -757,8 +799,10 @@ html[data-color-mode='light'] [data-theme='dashboard'] .ops-hosting-table {
 
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-projects-grid-head,
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-hosting-grid-head {
-  background: #f6f6f2;
+  background: #f0f0eb;
   border-color: #e6e6e0;
+  color: var(--label-ink);
+  font-weight: 600;
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-projects-row:hover {
@@ -831,6 +875,10 @@ html[data-color-mode='light'] [data-theme='dashboard'] .ops-attention-filter--ac
   color: var(--ops-progress-label);
 }
 
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-layout .dash-back:hover {
+  color: var(--ops-progress-label);
+}
+
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-layout .dash-link-accent,
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-dashboard .dash-link-accent {
   color: var(--ops-progress-label);
@@ -844,6 +892,11 @@ html[data-color-mode='light'] [data-theme='dashboard'] .ops-dashboard .dash-link
 
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-card-meta {
   color: var(--text-3);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-cell .ops-card-meta,
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-detail .ops-card-meta {
+  color: var(--text-2);
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-projects-name,
@@ -916,8 +969,10 @@ html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-detail-t
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-detail-table-head {
-  background: #f6f6f2;
+  background: #f0f0eb;
   border-bottom-color: #e6e6e0;
+  color: var(--label-ink);
+  font-weight: 600;
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-detail-table-row:not(:last-child) {
@@ -938,7 +993,7 @@ html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-detail-t
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-totals {
-  background: #f6f6f2;
+  background: #f0f0eb;
   border-color: #e6e6e0;
 }
 
@@ -977,6 +1032,76 @@ html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-entry {
 html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-email-panel {
   background: #faf5ff;
   border-top-color: #e9d5ff;
+}
+
+/* Financial offers — badges, actions, links */
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-active-badge {
+  color: #5b21b6;
+  background: #f5f3ff;
+  border-color: #c4b5fd;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-open-badge {
+  color: var(--label-ink);
+  background: #f4f4f0;
+  border-color: #d6d6d0;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-sent-badge {
+  color: #15803d;
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-action {
+  background: #ffffff;
+  border-color: #e6e6e0;
+  color: #45454f;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-action:hover:not(:disabled),
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-action--active {
+  color: #6d28d9;
+  border-color: #c4b5fd;
+  background: #f5f3ff;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-action--accept:hover:not(:disabled) {
+  color: #15803d;
+  border-color: #6ee7b7;
+  background: #ecfdf5;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-action--danger:hover:not(:disabled) {
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-client-link:hover {
+  color: #5b21b6;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-detail .dash-btn-secondary {
+  color: #5b21b6;
+  background: #ffffff;
+  border-color: #c4b5fd;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-detail .dash-btn-secondary:hover {
+  background: #f5f3ff;
+  border-color: #a78bfa;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-detail .dash-btn-danger {
+  color: #b91c1c;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-detail .dash-btn-danger:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-overview-phase-bar {
@@ -1023,34 +1148,97 @@ html[data-color-mode='light'] [data-theme='dashboard'] .ops-task-drawer-title-in
   color: var(--ops-progress-label);
 }
 
-/* ═══ Project detail / tasks — flat surfaces, no gray gradients ═══════════════ */
+/* ═══ Project detail — header, toolbar, progress ═════════════════════════════ */
 
-/* Header card — white gradient, status top stripe */
+/* Header card — elevated white with status stripe */
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-head {
-  background: linear-gradient(180deg, #ffffff 0%, #fafaf7 100%);
+  border-radius: 0.75rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8f8f5 100%);
   border-color: #e6e6e0;
   box-shadow: var(--shadow-elevated);
 }
 
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-head--status-active {
+  border-top-color: #22c55e;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-head--status-on_hold {
+  border-top-color: #f59e0b;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-head--status-completed {
+  border-top-color: #3b82f6;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-head--status-archived {
+  border-top-color: #a8a29e;
+}
+
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-head-toggle {
-  background: var(--ops-surface-2);
+  background: #ffffff;
+  border-color: #e6e6e0;
   color: var(--text-3);
+  box-shadow: 0 1px 2px rgba(15, 15, 15, 0.04);
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-head-toggle:hover {
-  background: var(--surface-2);
+  background: #f5f3ff;
+  border-color: #c4b5fd;
+  color: var(--ops-progress-label);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-eyebrow {
   color: var(--text-2);
 }
 
-/* View switcher — flat tinted rail, crisp active pill */
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-eyebrow-link {
+  color: var(--ops-progress-label);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-eyebrow-link:hover {
+  color: #5b21b6;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-status-pill--archived {
+  color: var(--text-3);
+  background: #f4f4f0;
+  border-color: #d6d6d0;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-head--expanded .ops-project-stats {
+  border-top-color: #e6e6e0;
+  background: linear-gradient(180deg, rgba(245, 243, 255, 0.22) 0%, transparent 100%);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-stat-value--cost {
+  color: #15803d;
+  text-decoration-color: rgba(21, 128, 61, 0.35);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-stat-value--cost:hover:not(:disabled) {
+  color: #166534;
+  text-decoration-color: rgba(22, 101, 52, 0.45);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-head .ops-project-status-select,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-head .ops-project-cost-input {
+  background: #ffffff;
+  border-color: #e6e6e0;
+}
+
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-view-toggle {
   background: #f5f3ff;
   border-color: #ddd6fe;
-  box-shadow: none;
+  box-shadow: inset 0 1px 2px rgba(91, 33, 182, 0.04);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-view-btn {
+  color: var(--text-3);
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-view-btn:hover:not(.ops-project-view-btn--active) {
   color: var(--ops-progress-label);
+  background: rgba(255, 255, 255, 0.55);
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-view-btn--active {
@@ -1061,9 +1249,107 @@ html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-view-btn--ac
     0 1px 3px rgba(91, 33, 182, 0.12);
 }
 
-/* Toolbar filters — flat checkbox, no dash-chrome fill */
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-head .ops-project-add-btn--phase {
+  color: var(--ops-progress-label);
+  background: #ffffff;
+  border-color: #c4b5fd;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-head .ops-project-add-btn--phase:hover {
+  background: #f5f3ff;
+  border-color: #a78bfa;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-actions-btn {
+  background: #ffffff;
+  border-color: #e6e6e0;
+  color: var(--text-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-actions-btn:hover:not(:disabled),
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-actions-btn--open {
+  background: #f5f3ff;
+  border-color: #c4b5fd;
+  color: var(--ops-progress-label);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-toolbar-row {
+  padding: 0.75rem 1rem;
+  background: #ffffff;
+  border: 1px solid #e6e6e0;
+  border-radius: 0.65rem;
+  box-shadow: var(--shadow-elevated);
+}
+
+@keyframes ops-progress-shimmer-light {
+  0% {
+    transform: translateX(-120%);
+  }
+
+  55%,
+  100% {
+    transform: translateX(220%);
+  }
+}
+
+@keyframes ops-progress-flow-light {
+  0%,
+  100% {
+    background-position: 0% 0;
+  }
+
+  50% {
+    background-position: 100% 0;
+  }
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-progress-bar {
+  background: linear-gradient(180deg, #e6e6e1 0%, #ebebe6 100%);
+  box-shadow:
+    inset 0 1px 2px rgba(15, 15, 15, 0.06),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.65);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-progress-fill {
+  overflow: hidden;
+  background: linear-gradient(
+    90deg,
+    #6d28d9 0%,
+    #7c3aed 30%,
+    #a78bfa 52%,
+    #8b5cf6 74%,
+    #7c3aed 100%
+  );
+  background-size: 220% 100%;
+  animation: ops-progress-flow-light 4.2s ease-in-out infinite;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 1px 4px rgba(109, 40, 217, 0.2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-progress-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 28%,
+    rgba(255, 255, 255, 0.45) 47%,
+    rgba(255, 255, 255, 0.14) 53%,
+    transparent 72%
+  );
+  transform: translateX(-120%);
+  animation: ops-progress-shimmer-light 2.5s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-progress-meta {
+  text-shadow: none;
+}
+
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-filter-check-box {
-  background: var(--ops-surface);
+  background: #ffffff;
+  border-color: #e6e6e0;
   box-shadow: none;
 }
 
@@ -1072,11 +1358,9 @@ html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-filter-check
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-fill) 40%, transparent);
 }
 
-/* Actions menu — readable hover, no pastel purple wash */
-html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-actions-btn:hover:not(:disabled),
-html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-actions-btn--open {
-  background: #f5f3ff;
-  border-color: #c4b5fd;
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-filter-select {
+  background: #ffffff;
+  border-color: #e6e6e0;
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-actions-item--complete {
@@ -1147,7 +1431,65 @@ html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-phase--tone-5 .
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-phase-progress-fill {
-  background: #22c55e;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, #16a34a 0%, #22c55e 48%, #4ade80 100%);
+  background-size: 200% 100%;
+  animation: ops-progress-flow-light 3.6s ease-in-out infinite;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-phase-progress-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 32%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 68%
+  );
+  transform: translateX(-120%);
+  animation: ops-progress-shimmer-light 2.8s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-subtasks-progress-fill {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, #16a34a 0%, #22c55e 55%, #4ade80 100%);
+  background-size: 200% 100%;
+  animation: ops-progress-flow-light 3.6s ease-in-out infinite;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-subtasks-progress-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 34%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 66%
+  );
+  transform: translateX(-120%);
+  animation: ops-progress-shimmer-light 2.8s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-progress-fill,
+  html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-phase-progress-fill,
+  html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-subtasks-progress-fill {
+    animation: none;
+    background-size: 100% 100%;
+  }
+
+  html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-progress-fill::after,
+  html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-phase-progress-fill::after,
+  html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-subtasks-progress-fill::after {
+    animation: none;
+    display: none;
+  }
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-phase-progress-label {
