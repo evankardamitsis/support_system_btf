@@ -14,6 +14,7 @@ import {
 import type { ClientOption } from '@/components/clients/ClientSelectWithCreate'
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import { ProjectAddPanel } from '@/components/ops/projects/ProjectAddPanel'
+import { ProjectAddPhasePanel } from '@/components/ops/projects/ProjectAddPhasePanel'
 import { ProjectEditModal } from '@/components/ops/projects/ProjectEditModal'
 import { ProjectKanban } from '@/components/ops/projects/ProjectKanban'
 import { ProjectListView } from '@/components/ops/projects/ProjectListView'
@@ -54,7 +55,8 @@ export function ProjectDetail({
   const [assigneeFilter, setAssigneeFilter] = useState<AssigneeFilter>('all')
   const [hideCompleted, setHideCompleted] = useState(false)
   const [headerExpanded, setHeaderExpanded] = useState(false)
-  const [showAddModal, setShowAddModal] = useState(false)
+  const [showAddTaskModal, setShowAddTaskModal] = useState(false)
+  const [showAddPhaseModal, setShowAddPhaseModal] = useState(false)
   const [pending, startTransition] = useTransition()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmComplete, setConfirmComplete] = useState(false)
@@ -403,13 +405,24 @@ export function ProjectDetail({
               <button
                 type="button"
                 className="dash-btn-primary btn-primary ops-project-add-btn"
-                onClick={() => setShowAddModal(true)}
+                onClick={() => setShowAddTaskModal(true)}
                 disabled={pending}
                 aria-haspopup="dialog"
                 aria-label="Add task"
               >
-                <Plus size={15} aria-hidden />
-                <span className="ops-project-add-btn-label">Add task</span>
+                <Plus size={14} aria-hidden />
+                <span className="ops-project-add-btn-label">TASK</span>
+              </button>
+              <button
+                type="button"
+                className="dash-btn-secondary ops-project-add-btn ops-project-add-btn--phase"
+                onClick={() => setShowAddPhaseModal(true)}
+                disabled={pending}
+                aria-haspopup="dialog"
+                aria-label="Add phase"
+              >
+                <Plus size={14} aria-hidden />
+                <span className="ops-project-add-btn-label">PHASE</span>
               </button>
               <div className="ops-project-actions-menu" ref={actionsRef}>
                 <button
@@ -487,10 +500,17 @@ export function ProjectDetail({
       </header>
 
       <ProjectAddPanel
-        open={showAddModal}
-        onClose={() => setShowAddModal(false)}
+        open={showAddTaskModal}
+        onClose={() => setShowAddTaskModal(false)}
         project={project}
         staff={staff}
+        onRefresh={() => router.refresh()}
+      />
+
+      <ProjectAddPhasePanel
+        open={showAddPhaseModal}
+        onClose={() => setShowAddPhaseModal(false)}
+        project={project}
         onRefresh={() => router.refresh()}
       />
 

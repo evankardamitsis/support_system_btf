@@ -63,6 +63,7 @@ export type AgentPlanGroup = {
   headerExtra?: React.ReactNode
   items: AgentPlanItem[]
   emptyLabel?: string
+  footer?: React.ReactNode
 }
 
 export type AgentPlanProps = {
@@ -493,6 +494,9 @@ export function AgentPlan({
                             })}
                           </ul>
                         )}
+                        {group.footer ? (
+                          <div className="ops-agent-plan-group-footer">{group.footer}</div>
+                        ) : null}
                       </div>
                     </div>
                   </div>

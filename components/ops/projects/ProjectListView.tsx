@@ -223,11 +223,13 @@ function PhaseTitleEditor({
   )
 }
 
-function SubtaskAddForm({
+function InlineAddForm({
   pending,
+  placeholder,
   onAdd,
 }: {
   pending: boolean
+  placeholder: string
   onAdd: (title: string) => void
 }) {
   const [title, setTitle] = useState('')
@@ -246,7 +248,7 @@ function SubtaskAddForm({
         className="btf-input"
         value={title}
         onChange={e => setTitle(e.target.value)}
-        placeholder="Subtask title"
+        placeholder={placeholder}
         disabled={pending}
       />
       <button type="submit" className="dash-btn-primary btn-primary" disabled={pending}>
@@ -275,6 +277,7 @@ export function ProjectListView({
   const [collapsedPhases, setCollapsedPhases] = useState<Set<string>>(() => new Set())
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
   const [addingSubtaskFor, setAddingSubtaskFor] = useState<string | null>(null)
+  const [addingTaskForPhase, setAddingTaskForPhase] = useState<string | null>(null)
   const [phaseToDelete, setPhaseToDelete] = useState<{ id: string; name: string } | null>(null)
   const [taskToDelete, setTaskToDelete] = useState<OpsProjectTask | null>(null)
 
@@ -477,10 +480,11 @@ export function ProjectListView({
                 }
                 disabled={pending}
               >
-                + Subtask
+                + SUBTASK
               </button>
               {addingSubtaskFor === task.id ? (
-                <SubtaskAddForm
+                <InlineAddForm
+                  placeholder="Subtask title"
                   pending={pending}
                   onAdd={subtaskTitle => {
                     runWithToast(
@@ -503,6 +507,40 @@ export function ProjectListView({
           ),
         }
       }),
+      footer: (
+        <div className="ops-agent-plan-item-footer">
+          <button
+            type="button"
+            className="ops-agent-plan-add-subtask"
+            onClick={() =>
+              setAddingTaskForPhase(current => (current === phaseId ? null : phaseId))
+            }
+            disabled={pending}
+          >
+            + TASK
+          </button>
+          {addingTaskForPhase === phaseId ? (
+            <InlineAddForm
+              placeholder="Task title"
+              pending={pending}
+              onAdd={taskTitle => {
+                runWithToast(
+                  () =>
+                    createTask({
+                      projectId: project.id,
+                      phaseId: phaseId === '__unassigned__' ? null : phaseId,
+                      title: taskTitle,
+                    }),
+                  { loading: 'Adding task…', success: 'Task added' }
+                ).then(() => {
+                  setAddingTaskForPhase(null)
+                  onRefresh()
+                })
+              }}
+            />
+          ) : null}
+        </div>
+      ),
     }
   }
 
@@ -528,6 +566,8 @@ export function ProjectListView({
     pending,
     staff,
     addingSubtaskFor,
+    addingTaskForPhase,
+    project.id,
   ])
 
   return (

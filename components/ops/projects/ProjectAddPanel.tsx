@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { useModalDialog } from '@/lib/ui/use-modal-dialog'
-import { createPhase, createTask } from '@/app/actions/projects'
+import { createTask } from '@/app/actions/projects'
 import type { AssigneeOption } from '@/components/tickets/EditableAssigneeSelect'
 import {
   TASK_PRIORITIES,
@@ -27,8 +27,6 @@ export function ProjectAddPanel({
 }) {
   const dialogRef = useModalDialog(open, onClose)
   const [pending, startTransition] = useTransition()
-  const [newPhaseName, setNewPhaseName] = useState('')
-  const [addingPhase, setAddingPhase] = useState(false)
   const [newTaskPhaseId, setNewTaskPhaseId] = useState('')
   const [newTaskAssigneeId, setNewTaskAssigneeId] = useState('')
   const [newTaskTitle, setNewTaskTitle] = useState('')
@@ -36,27 +34,11 @@ export function ProjectAddPanel({
 
   useEffect(() => {
     if (open) return
-    setNewPhaseName('')
-    setAddingPhase(false)
     setNewTaskPhaseId('')
     setNewTaskAssigneeId('')
     setNewTaskTitle('')
     setNewTaskPriority('normal')
   }, [open])
-
-  function handleAddPhase(e: React.FormEvent) {
-    e.preventDefault()
-    if (!newPhaseName.trim()) return
-    startTransition(async () => {
-      await runWithToast(() => createPhase(project.id, newPhaseName), {
-        loading: 'Adding phase…',
-        success: 'Phase added',
-      })
-      setNewPhaseName('')
-      setAddingPhase(false)
-      onRefresh()
-    })
-  }
 
   function handleAddTask(e: React.FormEvent) {
     e.preventDefault()
@@ -180,47 +162,6 @@ export function ProjectAddPanel({
               </button>
             </div>
           </form>
-
-          <div className="ops-add-task-modal-phase">
-            {addingPhase ? (
-              <form onSubmit={handleAddPhase} className="ops-add-task-modal-phase-form">
-                <label className="dash-label" htmlFor="ops-new-phase-name">
-                  Phase name
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  <input
-                    id="ops-new-phase-name"
-                    className="btf-input flex-1 min-w-[10rem]"
-                    value={newPhaseName}
-                    onChange={e => setNewPhaseName(e.target.value)}
-                    placeholder="Phase name"
-                    disabled={pending}
-                    autoFocus
-                  />
-                  <button type="submit" className="dash-btn-primary btn-primary" disabled={pending}>
-                    Add phase
-                  </button>
-                  <button
-                    type="button"
-                    className="dash-btn-ghost"
-                    onClick={() => setAddingPhase(false)}
-                    disabled={pending}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <button
-                type="button"
-                className="dash-btn-ghost text-sm"
-                onClick={() => setAddingPhase(true)}
-                disabled={pending}
-              >
-                + Add phase
-              </button>
-            )}
-          </div>
         </div>
       ) : null}
     </dialog>
