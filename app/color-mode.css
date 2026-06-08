@@ -109,14 +109,20 @@ html[data-color-mode='light'] [data-theme='dashboard'] {
 }
 
 /* Dashboard canvas — warm gray field with soft lime wash + faint grid */
-html[data-color-mode='light'] [data-theme='dashboard'] .dash-main,
-html[data-color-mode='light'] [data-theme='dashboard'] .dash-main:has(.ops-layout) {
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-main {
   background-color: var(--dash-content);
   background-image: radial-gradient(
     120% 70% at 50% -12%,
     rgba(200, 222, 56, 0.07),
     transparent 58%
   );
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-main:has(.ops-layout) {
+  background-color: var(--dash-content);
+  background-image:
+    radial-gradient(120% 70% at 50% -12%, rgba(167, 139, 250, 0.07), transparent 58%),
+    radial-gradient(90% 50% at 100% 0%, rgba(200, 222, 56, 0.04), transparent 45%);
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .dash-main::before,
@@ -566,7 +572,17 @@ html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-column--done 
 
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-card {
   background: #ffffff;
+  border-color: #e6e6e0;
   box-shadow: var(--ops-shadow-card);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-card:hover {
+  box-shadow: var(--ops-shadow-card-hover);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-column-head {
+  background: rgba(255, 255, 255, 0.72);
+  border-bottom-color: #e6e6e0;
 }
 
 /* Agent plan — flat panel, saturated status colors */
@@ -750,15 +766,225 @@ html[data-color-mode='light'] [data-theme='dashboard'] .ops-projects-row:hover {
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-add-panel,
-html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-actions--panel,
-html[data-color-mode='light'] [data-theme='dashboard'] .ops-offer-project-panel {
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-actions--panel {
   background: #ffffff;
   border-color: #e6e6e0;
   box-shadow: var(--shadow-elevated);
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-offer-project-panel {
-  background: var(--ops-surface-muted);
+  background: #f6f6f2;
+  border-color: #e6e6e0;
+}
+
+/* ═══ OPS — dashboard, lists, hosting, offers ════════════════════════════════ */
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-dashboard-panel {
+  background: #ffffff;
+  border-color: #e6e6e0;
+  box-shadow: var(--shadow-elevated);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-dashboard-panel-head {
+  background: #f6f6f2;
+  border-bottom-color: #e6e6e0;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-attention-item:hover,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-dashboard-simple-row:hover {
+  background: var(--surface-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-attention-item--danger {
+  background: #fef2f2;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-attention-item--danger:hover {
+  background: #fee2e2;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-attention-item--warn {
+  background: #fffbeb;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-attention-item--warn:hover {
+  background: #fef3c7;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-projects-filter,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-attention-filter {
+  background: #ffffff;
+  border-color: #e6e6e0;
+  color: var(--text-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-projects-filter:hover,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-attention-filter:hover {
+  border-color: #d4d4ce;
+  color: var(--text-1);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-projects-filter--active,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-attention-filter--active {
+  background: #f5f3ff;
+  border-color: #c4b5fd;
+  color: var(--ops-progress-label);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-layout .dash-link-accent,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-dashboard .dash-link-accent {
+  color: var(--ops-progress-label);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-layout .dash-link-accent:hover,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-dashboard .dash-link-accent:hover {
+  color: #5b21b6;
+  opacity: 1;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-card-meta {
+  color: var(--text-3);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-projects-name,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-hosting-name {
+  color: var(--text-1);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-hosting-name:hover {
+  color: var(--ops-progress-label);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-hosting-row--due-month {
+  background: #fffbeb;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-hosting-row--due-month:hover {
+  background: #fef3c7;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-hosting-row--expiring {
+  background: #fef2f2;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-hosting-row--expiring:hover {
+  background: #fee2e2;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-hosting-status--active {
+  color: #15803d;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-hosting-status--expired {
+  color: #b91c1c;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-hosting-status--canceled {
+  color: var(--text-3);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-hosting-expiry--soon {
+  color: #b45309;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-hosting-expiry--past {
+  color: #b91c1c;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-hosting-action--secondary {
+  background: #ffffff;
+  border-color: #e6e6e0;
+  color: var(--text-1);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-hosting-action--secondary:hover:not(:disabled) {
+  background: #f5f3ff;
+  border-color: #c4b5fd;
+  color: var(--ops-progress-label);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-hosting-row--expiring .ops-hosting-action--primary {
+  background: #f59e0b;
+  border-color: #d97706;
+  color: #ffffff;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-detail-table {
+  border-color: #e6e6e0;
+  background: #ffffff;
+  box-shadow: var(--shadow-elevated);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-detail-table-head {
+  background: #f6f6f2;
+  border-bottom-color: #e6e6e0;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-detail-table-row:not(:last-child) {
+  border-bottom-color: #e6e6e0;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-detail-table-row:hover {
+  background: var(--surface-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-detail-totals {
+  border-top-color: #e6e6e0;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-detail-toolbars {
+  background: #f6f6f2;
+  border-bottom-color: #e6e6e0;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-totals {
+  background: #f6f6f2;
+  border-color: #e6e6e0;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-iban-row:hover {
+  background: var(--surface-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offer-iban-row--selected {
+  background: #f5f3ff;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-template {
+  background: #ffffff;
+  border-color: #e6e6e0;
+  box-shadow: var(--shadow-elevated);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-template:hover {
+  border-color: #d4d4ce;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-template--active {
+  background: linear-gradient(180deg, #ffffff 0%, #faf5ff 100%);
+  border-color: #c4b5fd;
+  box-shadow: 0 2px 6px rgba(109, 40, 217, 0.08), 0 4px 14px rgba(109, 40, 217, 0.06);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-row:hover {
+  background: var(--surface-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-entry {
+  border-bottom-color: #e6e6e0;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-email-panel {
+  background: #faf5ff;
+  border-top-color: #e9d5ff;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-overview-phase-bar {
+  background: #ebebe6;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-overview-phase-fill {
+  background: #a78bfa;
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-add-btn--open {
@@ -799,9 +1025,11 @@ html[data-color-mode='light'] [data-theme='dashboard'] .ops-task-drawer-title-in
 
 /* ═══ Project detail / tasks — flat surfaces, no gray gradients ═══════════════ */
 
-/* Header card — solid white, no chrome gradient wash */
+/* Header card — white gradient, status top stripe */
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-head {
-  background: var(--ops-surface);
+  background: linear-gradient(180deg, #ffffff 0%, #fafaf7 100%);
+  border-color: #e6e6e0;
+  box-shadow: var(--shadow-elevated);
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-head-toggle {
@@ -1086,14 +1314,30 @@ html[data-color-mode='light'] [data-theme='dashboard'] .ops-status-select--done 
   border-color: #6ee7b7;
 }
 
-/* Overview tab — flat cards, readable purple accents */
+/* Overview tab — elevated cards on gray canvas */
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-overview-card,
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-overview-health {
-  background: var(--ops-surface);
+  background: #ffffff;
+  border-color: #e6e6e0;
+  box-shadow: var(--shadow-elevated);
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-overview-health-alert {
-  background: var(--ops-surface-muted);
+  background: #f6f6f2;
+  border-color: #e6e6e0;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-overview-health-alert--hot {
+  background: #fef2f2;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-overview-health-alert--warn {
+  background: #fffbeb;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-overview-status {
+  background: #f6f6f2;
+  border-color: #e6e6e0;
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-overview-card-title {
@@ -1114,10 +1358,16 @@ html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-files-item {
   background: var(--ops-surface-muted);
 }
 
-/* Task drawer accordions — flat panels */
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-task-drawer-head {
+  background: #f6f6f2;
+  border-bottom-color: #e6e6e0;
+}
+
+/* Task drawer accordions — inset panels */
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-task-drawer-accordion,
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-task-drawer-description-preview {
-  background: var(--ops-surface-muted);
+  background: #f6f6f2;
+  border-color: #e6e6e0;
 }
 
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-task-drawer-accordion--open {

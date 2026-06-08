@@ -66,3 +66,45 @@
   border-color: color-mix(in srgb, #f59e0b 50%, var(--border));
   background: color-mix(in srgb, #f59e0b 18%, var(--dash-chrome, #0e0e0e));
 }
+
+/* Light mode — white chips with semantic tints */
+html[data-color-mode='light'] .btn {
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 15, 15, 0.04);
+}
+
+html[data-color-mode='light'] .project {
+  color: #15803d;
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+}
+
+html[data-color-mode='light'] .project:hover {
+  color: #166534;
+  background: #d1fae5;
+  border-color: #34d399;
+}
+
+html[data-color-mode='light'] .offer {
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+html[data-color-mode='light'] .offer:hover {
+  color: #1e40af;
+  background: #dbeafe;
+  border-color: #60a5fa;
+}
+
+html[data-color-mode='light'] .hosting {
+  color: #b45309;
+  background: #fffbeb;
+  border-color: #fcd34d;
+}
+
+html[data-color-mode='light'] .hosting:hover {
+  color: #92400e;
+  background: #fef3c7;
+  border-color: #fbbf24;
+}
