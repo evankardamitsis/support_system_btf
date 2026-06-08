@@ -23,7 +23,7 @@ export function SegmentedControl({ options, value, onChange }: SegmentedControlP
             style={{
               fontFamily: 'var(--font-dm-mono)',
               background: active ? 'var(--accent)' : 'var(--surface)',
-              color: active ? 'var(--bg)' : 'var(--text-2)',
+              color: active ? 'var(--primary-foreground)' : 'var(--text-2)',
               borderRight: '1px solid var(--border)',
               borderRadius: 0,
             }}

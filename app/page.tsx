@@ -1,6 +1,7 @@
-import Link from 'next/link'
 import Image from 'next/image'
+import Link from 'next/link'
 import { AppFooter } from '@/components/layout/AppFooter'
+import { LandingHeader } from '@/components/layout/LandingHeader'
 
 export default function LandingPage() {
   return (
@@ -9,31 +10,7 @@ export default function LandingPage() {
       className="min-h-dvh flex flex-col"
       style={{ background: 'var(--bg)', color: 'var(--text-1)' }}
     >
-      {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <header
-        className="flex items-center justify-between px-8 md:px-16 py-5 shrink-0"
-        style={{ borderBottom: '1px solid var(--border)' }}
-      >
-        <Image
-          src="/btf-wordmark.svg"
-          alt="Below The Fold"
-          width={120}
-          height={16}
-          priority
-          style={{ height: 14, width: 'auto' }}
-        />
-        <Link
-          href="/auth/login"
-          className="text-[11px] tracking-[0.15em] uppercase px-4 py-2 cursor-pointer transition-opacity duration-150 hover:opacity-70"
-          style={{
-            fontFamily: 'var(--font-dm-mono)',
-            color: 'var(--text-2)',
-            border: '1px solid var(--border)',
-          }}
-        >
-          Sign in
-        </Link>
-      </header>
+      <LandingHeader />
 
       {/* ── Hero ────────────────────────────────────────────────────────────── */}
       <main className="relative flex-1 flex flex-col justify-center px-8 md:px-16 py-16 md:py-20 overflow-hidden">
@@ -85,7 +62,7 @@ export default function LandingPage() {
                 className="landing-cta group flex items-center justify-between gap-6 px-8 py-5 w-full md:w-auto md:min-w-[340px] cursor-pointer"
                 style={{
                   fontFamily: 'var(--font-dm-mono)',
-                  color: 'var(--bg)',
+                  color: 'var(--primary-foreground)',
                   border: 'none',
                   borderRadius: 0,
                 }}
@@ -116,11 +93,11 @@ export default function LandingPage() {
               alt=""
               width={400}
               height={54}
+              className="landing-hero-wordmark"
               style={{
                 width: '100%',
                 height: 'auto',
                 opacity: 0.08,
-                filter: 'invert(0)',
               }}
             />
           </div>

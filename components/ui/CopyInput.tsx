@@ -32,7 +32,7 @@ export function CopyInput({ value }: { value: string }) {
         style={{
           fontFamily: 'var(--font-dm-mono)',
           background: copied ? 'var(--success)' : 'var(--surface-2)',
-          color: copied ? 'var(--bg)' : 'var(--text-2)',
+          color: copied ? 'var(--primary-foreground)' : 'var(--text-2)',
           borderLeft: '1px solid var(--border)',
           borderRadius: 0,
         }}

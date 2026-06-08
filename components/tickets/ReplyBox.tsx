@@ -39,7 +39,7 @@ export function ReplyBox({ onSubmit, showInternalToggle = false }: ReplyBoxProps
             }}
           >
             {isInternal && (
-              <span className="text-[8px]" style={{ color: 'var(--bg)' }}>✓</span>
+              <span className="text-[8px]" style={{ color: 'var(--primary-foreground)' }}>✓</span>
             )}
           </div>
           <span
@@ -81,7 +81,7 @@ export function ReplyBox({ onSubmit, showInternalToggle = false }: ReplyBoxProps
           style={{
             fontFamily: 'var(--font-dm-mono)',
             background: isInternal ? 'var(--warning)' : 'var(--accent)',
-            color: 'var(--bg)',
+            color: 'var(--primary-foreground)',
             border: 'none',
             borderRadius: 0,
           }}

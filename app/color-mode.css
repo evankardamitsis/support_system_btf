@@ -1,0 +1,1308 @@
+/* ─── Color mode (dark default via :root; light via data attribute) ─────────── */
+
+html {
+  color-scheme: dark;
+}
+
+html[data-color-mode='light'] {
+  color-scheme: light;
+
+  /* Flat, high-contrast light base — no gray-on-gray stacking */
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f6f6f3;
+  --border: #d4d4ce;
+  --border-2: #a8a8a0;
+  /* Lime for fills; olive ink for text/borders (readable on white) */
+  --accent-fill: #c8de38;
+  --accent-dim-fill: #a8be18;
+  --accent: #3d4a00;
+  --accent-dim: #5a6b00;
+  --accent-text: #3d4a00;
+  --accent-surface: rgba(200, 222, 56, 0.2);
+  --text-1: #0f0f0f;
+  --text-2: #3a3a42;
+  --text-3: #5c5c66;
+  --danger: #d62828;
+  --warning: #c47d00;
+  --success: #15803d;
+
+  --background: #ffffff;
+  --foreground: #0f0f0f;
+  --card: #ffffff;
+  --card-foreground: #0f0f0f;
+  --popover: #ffffff;
+  --popover-foreground: #0f0f0f;
+  --primary: #c8de38;
+  --primary-foreground: #0f0f0f;
+  --secondary: #f6f6f3;
+  --secondary-foreground: #0f0f0f;
+  --muted: #f6f6f3;
+  --muted-foreground: #3a3a42;
+  --accent-foreground: #0f0f0f;
+  --destructive: #d62828;
+  --destructive-foreground: #ffffff;
+  --input: #d4d4ce;
+  --ring: #6b7f00;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #3a3a42;
+  --sidebar-border: #d4d4ce;
+
+  --overlay-scrim: rgba(15, 15, 15, 0.42);
+  --shadow-panel: 0 8px 28px rgba(15, 15, 15, 0.1);
+}
+
+/* Selection + shadcn focus — lime fill, not olive ink */
+html[data-color-mode='light'] ::selection {
+  background: var(--accent-fill);
+  color: var(--primary-foreground);
+}
+
+html[data-color-mode='light'] [data-slot='select-item']:focus,
+html[data-color-mode='light'] [data-slot='select-item'][data-highlighted] {
+  background: var(--accent-surface);
+  color: var(--text-1);
+}
+
+/* Global accent ink — links/hover text outside dashboard shell */
+html[data-color-mode='light'] .app-footer-desktop-link:hover,
+html[data-color-mode='light'] .app-contact-value a:hover,
+html[data-color-mode='light'] .legal-doc-section a {
+  color: var(--accent-text);
+}
+
+html[data-color-mode='light'] .btf-input:focus {
+  border-color: var(--accent-dim);
+}
+
+html[data-color-mode='light'] [data-theme='landing'],
+html[data-color-mode='light'] [data-theme='auth'] {
+  --text-2: #3a3a42;
+  --text-3: #5c5c66;
+  --muted-foreground: #3a3a42;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] {
+  --dash-chrome: #ffffff;
+  --dash-content: #ffffff;
+  --dash-ops-content: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f6f6f3;
+  --border: #d4d4ce;
+  --border-2: #a8a8a0;
+  --text-2: #3a3a42;
+  --text-3: #5c5c66;
+  --muted-foreground: #3a3a42;
+  --ops-surface: #ffffff;
+  --ops-surface-2: #f6f6f3;
+  --ops-surface-muted: #fafaf8;
+  --ops-border-soft: #e4e4de;
+  --ops-progress-label: #5b21b6;
+  --ops-progress-copy: #4c1d95;
+  --ops-shadow-panel: 0 1px 2px rgba(15, 15, 15, 0.05), 0 6px 18px rgba(15, 15, 15, 0.06);
+  --ops-shadow-card: 0 1px 3px rgba(15, 15, 15, 0.06);
+  --ops-shadow-card-hover: 0 2px 8px rgba(15, 15, 15, 0.08);
+  --ops-shadow-card-drag: 0 10px 28px rgba(15, 15, 15, 0.12);
+}
+
+/* Dashboard canvas — solid white, no gray radial washes */
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-main,
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-main:has(.ops-layout) {
+  background-color: var(--dash-content);
+  background-image: none;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-main::before,
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-main:has(.ops-layout)::before {
+  display: none;
+}
+
+/* Landing / auth grids — hide gray vignette grids in light */
+html[data-color-mode='light'] .grid-bg,
+html[data-color-mode='light'] .grid-bg-subtle {
+  background-image: none;
+}
+
+html[data-color-mode='light'] .grid-bg-fade,
+html[data-color-mode='light'] .grid-bg-subtle-fade,
+html[data-color-mode='light'] .landing-hero-bg {
+  mask-image: none;
+}
+
+/* Wordmarks */
+html[data-color-mode='light'] .theme-wordmark {
+  filter: brightness(0);
+}
+
+html[data-color-mode='light'] .landing-hero-wordmark {
+  filter: brightness(0);
+}
+
+/* Modals */
+html[data-color-mode='light'] .app-modal::backdrop {
+  background: var(--overlay-scrim);
+}
+
+/* Date inputs */
+html[data-color-mode='light'] .btf-input[type='date'],
+html[data-color-mode='light'] .btf-input[type='datetime-local'],
+html[data-color-mode='light'] .btf-input[type='time'],
+html[data-color-mode='light'] .btf-input[type='month'],
+html[data-color-mode='light'] .btf-input[type='week'],
+html[data-color-mode='light'] input[type='date'],
+html[data-color-mode='light'] input[type='datetime-local'],
+html[data-color-mode='light'] input[type='time'],
+html[data-color-mode='light'] input[type='month'],
+html[data-color-mode='light'] input[type='week'],
+html[data-color-mode='light'] .date-input-picker {
+  color-scheme: light;
+}
+
+html[data-color-mode='light'] .btf-input[type='date']::-webkit-calendar-picker-indicator,
+html[data-color-mode='light'] .btf-input[type='datetime-local']::-webkit-calendar-picker-indicator,
+html[data-color-mode='light'] .btf-input[type='time']::-webkit-calendar-picker-indicator,
+html[data-color-mode='light'] .btf-input[type='month']::-webkit-calendar-picker-indicator,
+html[data-color-mode='light'] .btf-input[type='week']::-webkit-calendar-picker-indicator,
+html[data-color-mode='light'] input[type='date']::-webkit-calendar-picker-indicator,
+html[data-color-mode='light'] input[type='datetime-local']::-webkit-calendar-picker-indicator,
+html[data-color-mode='light'] input[type='time']::-webkit-calendar-picker-indicator,
+html[data-color-mode='light'] input[type='month']::-webkit-calendar-picker-indicator,
+html[data-color-mode='light'] input[type='week']::-webkit-calendar-picker-indicator {
+  filter: none;
+  opacity: 0.8;
+}
+
+/* Product switcher — readable purple, no glow */
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-product-option--ops:hover:not(.is-active),
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-product-option--ops.is-active,
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-product-dropdown-trigger--ops {
+  color: #6d28d9;
+  text-shadow: none;
+  animation: none;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-product-dropdown-trigger--support,
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-product-option--support.is-active {
+  text-shadow: none;
+  animation: none;
+}
+
+/* Ops progress — flat track + lavender fill, dark meta (no shine gradient) */
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-progress-bar {
+  background: #ebebe6;
+  box-shadow: none;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-progress-fill {
+  background: #c4b5fd;
+  background-size: 100% 100%;
+  animation: none;
+  box-shadow: none;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-progress-meta {
+  text-shadow: none;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-progress-meta,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-progress-pct,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-progress-tasks {
+  color: var(--ops-progress-copy);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-progress-meta-sep {
+  color: var(--ops-progress-label);
+}
+
+/* Client quick-create — flat panel, no blue-gray gradient */
+html[data-color-mode='light'] [data-theme='dashboard'] .client-select-with-create--active .client-select-input {
+  background: #eff8ff;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .client-quick-create {
+  background: #eff8ff;
+  border-color: #38bdf8;
+  box-shadow: 0 2px 10px rgba(2, 132, 199, 0.08);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .client-quick-create-title {
+  color: #0c4a6e;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .client-quick-create-desc {
+  color: #0369a1;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .client-quick-create-fields .dash-label {
+  color: #0c4a6e;
+}
+
+/* Avatars on accent — flat lime fill */
+html[data-color-mode='light'] [data-theme='dashboard'] .entity-card .entity-avatar,
+html[data-color-mode='light'] [data-theme='dashboard'] .profile-avatar {
+  background: var(--accent-fill);
+}
+
+/* Landing CTA — keep lime punchy, drop muddy dark overlays */
+html[data-color-mode='light'] .landing-cta::before {
+  display: none;
+}
+
+html[data-color-mode='light'] .landing-cta::after {
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 100%
+  );
+}
+
+html[data-color-mode='light'] .landing-cta:hover,
+html[data-color-mode='light'] .landing-cta:focus-visible {
+  box-shadow:
+    0 10px 28px rgba(200, 222, 56, 0.35),
+    0 0 0 1px rgba(15, 15, 15, 0.06) inset;
+  filter: none;
+}
+
+/* Softer panel shadows site-wide */
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-notify-popover-trigger {
+  box-shadow: 0 1px 4px rgba(15, 15, 15, 0.06);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-notify-popover-panel {
+  box-shadow: 0 10px 32px rgba(15, 15, 15, 0.12);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-huddle-modal-layer {
+  box-shadow: 0 16px 48px rgba(15, 15, 15, 0.14);
+}
+
+/* Ops purple UI — darker text on light surfaces */
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-product-dropdown-option--ops:hover,
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-product-dropdown-option--ops.is-active,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-module-card-title,
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-active-badge,
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-action:hover:not(:disabled),
+html[data-color-mode='light'] [data-theme='dashboard'] .financial-offers-action--active,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-actions-btn:hover:not(:disabled),
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-actions-btn--open,
+html[data-color-mode='light'] [data-theme='dashboard'] .package-chip--fixed {
+  color: #6d28d9;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-module-card {
+  background: #faf5ff;
+  box-shadow: none;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-module-card:hover {
+  background: #f3e8ff;
+  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.1);
+}
+
+/* Kanban / status — swap pastel-on-dark for saturated-on-light */
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-column-head--backlog .ops-kanban-column-label,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-count--backlog,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-status-badge--backlog,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-status-select--backlog,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-status-select--pending {
+  color: #475569;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-count--backlog,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-status-select--backlog,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-status-select--pending {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-column-head--in_progress .ops-kanban-column-label,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-count--in_progress,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-status-badge--in_progress,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-status-select--in_progress {
+  color: #6d28d9;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-count--in_progress,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-status-select--in_progress {
+  background: #f3e8ff;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-column-head--review .ops-kanban-column-label,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-count--review,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-status-badge--review,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-status-select--review {
+  color: #b45309;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-count--review,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-status-select--review {
+  background: #fffbeb;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-column-head--done .ops-kanban-column-label,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-count--done,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-status-badge--done,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-status-select--done {
+  color: #15803d;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-count--done,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-status-select--done {
+  background: #ecfdf5;
+}
+
+/* Metric strip — flat cards, no dark gradient wash */
+html[data-color-mode='light'] [data-theme='dashboard'] .metric-card {
+  background: var(--surface);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .metric-card::before {
+  animation: none;
+  opacity: 1;
+  height: 3px;
+}
+
+/* Ticket status tints — lighter on white */
+html[data-color-mode='light'] [data-theme='dashboard'] .tickets-row--status-open {
+  background: rgba(96, 165, 250, 0.07);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .tickets-row--status-open:hover,
+html[data-color-mode='light'] [data-theme='dashboard'] .tickets-row--static.tickets-row--status-open:hover {
+  background: rgba(96, 165, 250, 0.12);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .tickets-row--status-waiting,
+html[data-color-mode='light'] [data-theme='dashboard'] .tickets-row--awaiting-approval {
+  background: rgba(251, 146, 60, 0.08);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .tickets-row--status-waiting:hover,
+html[data-color-mode='light'] [data-theme='dashboard'] .tickets-row--static.tickets-row--status-waiting:hover,
+html[data-color-mode='light'] [data-theme='dashboard'] .tickets-row--awaiting-approval:hover {
+  background: rgba(251, 146, 60, 0.13);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .tickets-row--awaiting-approval .tickets-subject-title {
+  color: #c2410c;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .tickets-row--status-hold {
+  background: rgba(192, 132, 252, 0.07);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .tickets-row--status-hold:hover,
+html[data-color-mode='light'] [data-theme='dashboard'] .tickets-row--static.tickets-row--status-hold:hover {
+  background: rgba(192, 132, 252, 0.12);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .tickets-row--needs-approval {
+  background: var(--accent-surface);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .tickets-row--needs-approval:hover {
+  background: rgba(200, 222, 56, 0.22);
+}
+
+/* Kanban columns — flat tinted columns, readable empty states */
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-column {
+  background: var(--ops-surface-muted);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-column--backlog {
+  background: #f8fafc;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-column--in_progress {
+  background: #faf5ff;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-column--review {
+  background: #fffbeb;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-column--done {
+  background: #ecfdf5;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-column--backlog .ops-kanban-column-empty--active {
+  color: #475569;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-column--in_progress .ops-kanban-column-empty--active {
+  color: #6d28d9;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-column--review .ops-kanban-column-empty--active {
+  color: #b45309;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-column--done .ops-kanban-column-empty--active {
+  color: #15803d;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-kanban-card {
+  background: #ffffff;
+  box-shadow: var(--ops-shadow-card);
+}
+
+/* Agent plan — flat panel, saturated status colors */
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan {
+  background: var(--ops-surface);
+  box-shadow: var(--ops-shadow-panel);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-group-toggle:hover {
+  color: var(--accent-text);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-item-row:hover,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-child-row:hover {
+  background: var(--accent-surface);
+}
+
+/* Drawers / overlays */
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-task-drawer-root {
+  background: var(--overlay-scrim);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-task-drawer {
+  background: var(--surface);
+  box-shadow: -8px 0 32px rgba(15, 15, 15, 0.12);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-search-results {
+  box-shadow: 0 12px 36px rgba(15, 15, 15, 0.12);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-search--focused {
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-fill) 50%, transparent);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-search-group-label {
+  color: var(--accent-text);
+  text-shadow: none;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-search-hit:hover {
+  background: var(--surface-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-search-kbd {
+  background: var(--surface-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-search-overlay {
+  background: var(--overlay-scrim);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-search-panel {
+  box-shadow: 0 12px 36px rgba(15, 15, 15, 0.12);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-message-action,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-message-action:hover {
+  color: var(--accent-text);
+  box-shadow: none;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-message-action svg {
+  color: var(--accent-text);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-hosting-banner {
+  color: #92400e;
+  background: #fffbeb;
+  border-color: #fcd34d;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-nav-link:hover {
+  background: var(--surface-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-nav-link.is-active {
+  border-left-color: var(--accent-fill);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-tab.is-active {
+  border-bottom-color: var(--accent-fill);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .tickets-row--needs-approval,
+html[data-color-mode='light'] [data-theme='dashboard'] .tickets-row--static:hover {
+  border-left-color: var(--accent-fill);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-table-row:hover {
+  background: var(--surface-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .entity-card:hover {
+  background: var(--surface-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-product-dropdown-trigger--support,
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-product-option--support.is-active,
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-product-option--support:hover:not(.is-active),
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-product-only--support {
+  color: var(--accent-text);
+}
+
+/* Lime-tinted badges/chips — olive text, lime border */
+html[data-color-mode='light'] [data-theme='dashboard'] .team-role-badge--admin,
+html[data-color-mode='light'] [data-theme='dashboard'] .package-chip--grow,
+html[data-color-mode='light'] [data-theme='dashboard'] .retainer-package-option.is-active[data-package='grow'] {
+  color: var(--accent-text);
+  border-color: color-mix(in srgb, var(--accent-fill) 45%, var(--border));
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-fab {
+  background: var(--accent-fill);
+  border-color: color-mix(in srgb, var(--accent-fill) 70%, var(--border));
+  box-shadow: 0 4px 18px rgba(15, 15, 15, 0.12);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-fab-glow {
+  display: none;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-fab:hover {
+  box-shadow: 0 6px 22px rgba(15, 15, 15, 0.16);
+}
+
+/* ═══ OPS — override .ops-layout dark tokens (closer ancestor than dashboard) ═══ */
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-layout {
+  --ops-surface: #ffffff;
+  --ops-surface-2: #f6f6f3;
+  --ops-surface-muted: #fafaf8;
+  --ops-border-soft: #e4e4de;
+  --ops-progress-label: #5b21b6;
+  --ops-progress-copy: #4c1d95;
+  --ops-accent-active: #15803d;
+  --ops-accent-hold: #b45309;
+  --ops-accent-completed: #1d4ed8;
+  --ops-shadow-panel: 0 1px 2px rgba(15, 15, 15, 0.05), 0 6px 18px rgba(15, 15, 15, 0.06);
+  --ops-shadow-card: 0 1px 3px rgba(15, 15, 15, 0.06);
+  --ops-shadow-card-hover: 0 2px 8px rgba(15, 15, 15, 0.08);
+  --ops-shadow-card-drag: 0 10px 28px rgba(15, 15, 15, 0.12);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-projects-status--active,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-status-pill--active {
+  color: #15803d;
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-projects-status--on_hold,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-status-pill--on_hold {
+  color: #b45309;
+  background: #fffbeb;
+  border-color: #fcd34d;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-projects-status--completed,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-status-pill--completed {
+  color: #1d4ed8;
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-projects-internal-badge {
+  color: #b45309;
+  background: #fffbeb;
+  border-color: #fcd34d;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-projects-table,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-hosting-table,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-projects-grid-head {
+  background: var(--ops-surface);
+  box-shadow: none;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-projects-row:hover {
+  background: var(--surface-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-actions-dropdown {
+  box-shadow: 0 8px 24px rgba(15, 15, 15, 0.1);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-add-panel,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-actions--panel,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-offer-project-panel {
+  background: var(--ops-surface);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-offer-project-panel {
+  background: var(--ops-surface-muted);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-add-btn--open {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-filter-check-input:checked ~ .ops-project-filter-check-label {
+  color: var(--accent-text);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-filter-check-mark {
+  border-left-color: var(--primary-foreground);
+  border-bottom-color: var(--primary-foreground);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-task-drawer-delete:hover:not(:disabled) {
+  color: #b91c1c;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-connector {
+  border-left-color: color-mix(in srgb, var(--border-2) 55%, transparent);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-progress-label,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-progress-pct {
+  color: var(--ops-progress-label);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-projects-cell-progress,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-projects-cell-progress .dash-meta {
+  color: var(--ops-progress-copy);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-task-drawer-parent,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-task-drawer-title-input:focus {
+  color: var(--ops-progress-label);
+}
+
+/* ═══ Project detail / tasks — flat surfaces, no gray gradients ═══════════════ */
+
+/* Header card — solid white, no chrome gradient wash */
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-head {
+  background: var(--ops-surface);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-head-toggle {
+  background: var(--ops-surface-2);
+  color: var(--text-3);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-head-toggle:hover {
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+
+/* View switcher — flat tinted rail, crisp active pill */
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-view-toggle {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+  box-shadow: none;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-view-btn:hover:not(.ops-project-view-btn--active) {
+  color: var(--ops-progress-label);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-view-btn--active {
+  color: var(--ops-progress-label);
+  background: #ffffff;
+  box-shadow:
+    inset 0 0 0 1px #c4b5fd,
+    0 1px 3px rgba(91, 33, 182, 0.12);
+}
+
+/* Toolbar filters — flat checkbox, no dash-chrome fill */
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-filter-check-box {
+  background: var(--ops-surface);
+  box-shadow: none;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-filter-check-input:checked + .ops-project-filter-check-ui .ops-project-filter-check-box {
+  background: var(--accent-fill);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-fill) 40%, transparent);
+}
+
+/* Actions menu — readable hover, no pastel purple wash */
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-actions-btn:hover:not(:disabled),
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-actions-btn--open {
+  background: #f5f3ff;
+  border-color: #c4b5fd;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-actions-item--complete {
+  color: #15803d;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-actions-item--complete:hover:not(:disabled) {
+  background: #ecfdf5;
+  color: #166534;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-actions-item--danger {
+  color: #b91c1c;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-actions-item--danger:hover:not(:disabled) {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+/* List view phases — flat cards, tone tints on white (not gray-mixed) */
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-phase {
+  background: var(--ops-surface);
+  box-shadow: var(--ops-shadow-panel);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-phase-body {
+  background: var(--ops-surface-muted);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-phase-count {
+  background: var(--ops-surface-2);
+  color: var(--text-3);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-phase-manage-btn:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-phase-tone-row--0,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-phase--tone-0 .ops-list-phase-head {
+  background: #faf5ff;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-phase-tone-row--1,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-phase--tone-1 .ops-list-phase-head {
+  background: #eff6ff;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-phase-tone-row--2,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-phase--tone-2 .ops-list-phase-head {
+  background: #fffbeb;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-phase-tone-row--3,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-phase--tone-3 .ops-list-phase-head {
+  background: #ecfdf5;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-phase-tone-row--4,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-phase--tone-4 .ops-list-phase-head {
+  background: #fff1f2;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-phase-tone-row--5,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-phase--tone-5 .ops-list-phase-head {
+  background: #ecfeff;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-phase-progress-fill {
+  background: #22c55e;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-phase-progress-label {
+  color: var(--ops-progress-label);
+}
+
+/* Task rows — zebra + hover on surface tokens, not chrome mix */
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-task-group:nth-child(even) .ops-list-task:not(.ops-list-task--priority-high) {
+  background: var(--ops-surface-muted);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-task:hover:not(.ops-list-task--priority-high) {
+  background: var(--surface-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-task--priority-high,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-task-group:nth-child(even) .ops-list-task--priority-high {
+  background: #fef2f2;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-task--priority-high:hover {
+  background: #fee2e2;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-list-task--priority-high.ops-list-task--done {
+  background: #fff5f5;
+}
+
+/* Agent plan status — saturated icons + badges on light */
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-icon--done {
+  color: #15803d;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-icon--progress {
+  color: #1d4ed8;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-icon--review {
+  color: #b45309;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-icon--failed {
+  color: #b91c1c;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-badge--done,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-badge--completed {
+  color: #15803d;
+  background: #ecfdf5;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-badge--in_progress {
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-badge--review,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-badge--need-help {
+  color: #b45309;
+  background: #fffbeb;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-badge--failed {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-badge--backlog,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-badge--pending {
+  color: var(--text-3);
+  background: var(--surface-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-chip {
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-chip--accent {
+  color: var(--accent-text);
+  background: var(--accent-surface);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-chip--warn {
+  color: #b45309;
+  background: #fffbeb;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-chip--danger {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-open-btn {
+  color: var(--accent-text);
+}
+
+/* Agent plan list (primary tasks view) — phase headers + add actions */
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-body {
+  background: var(--ops-surface);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-group--spaced {
+  border-top-color: var(--ops-border-soft);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-group-head {
+  background: var(--ops-surface-muted);
+  border-radius: 0.4rem;
+  padding: 0.35rem 0.5rem;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-group-progress {
+  color: var(--text-3);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-add-subtask {
+  color: var(--accent-text);
+  font-weight: 500;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-add-subtask:hover {
+  color: #3f4d00;
+  text-decoration: underline;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-connector,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-children {
+  border-left-color: color-mix(in srgb, var(--border-2) 45%, transparent);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-item-details,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-agent-plan-child-details {
+  border-left-color: color-mix(in srgb, var(--border-2) 40%, transparent);
+}
+
+/* Task / phase selects on rows — flat fills, no chrome wash */
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-priority-select--normal {
+  color: var(--text-2);
+  background: var(--ops-surface);
+  border-color: var(--ops-border-soft);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-priority-select--low {
+  color: var(--text-3);
+  background: var(--ops-surface-muted);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-priority-select--high {
+  color: #b91c1c;
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-status-select--in_progress {
+  border-color: #c4b5fd;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-status-select--review {
+  border-color: #fcd34d;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-status-select--done {
+  border-color: #6ee7b7;
+}
+
+/* Overview tab — flat cards, readable purple accents */
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-overview-card,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-overview-health {
+  background: var(--ops-surface);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-overview-health-alert {
+  background: var(--ops-surface-muted);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-overview-card-title {
+  color: var(--ops-progress-label);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-overview-link,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-files-link:hover,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-files-task,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-task-drawer-text-action:hover,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-task-drawer-accordion-trigger:hover,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-task-drawer-accordion-badge,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-files-upload:hover {
+  color: var(--ops-progress-label);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-files-item {
+  background: var(--ops-surface-muted);
+}
+
+/* Task drawer accordions — flat panels */
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-task-drawer-accordion,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-task-drawer-description-preview {
+  background: var(--ops-surface-muted);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-task-drawer-accordion--open {
+  background: var(--ops-surface-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-task-drawer-description-preview:hover {
+  background: #f5f3ff;
+  border-color: #c4b5fd;
+}
+
+/* ═══ COMMS — panel, sidebar, stream chat ═══════════════════════════════════ */
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-panel {
+  background: var(--surface);
+  box-shadow: 0 16px 48px rgba(15, 15, 15, 0.14);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-panel-title,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-panel-brand-icon {
+  color: var(--accent-text);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-panel-brand-icon {
+  background: var(--accent-surface);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-panel-tab.is-active {
+  background: var(--accent-surface);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  color: var(--text-1);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-panel-content {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-channel-sidebar {
+  background: var(--surface-2);
+  box-shadow: none;
+  border-right-color: var(--border);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-channel-pill {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-channel-pill:hover:not(:disabled) {
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--accent-fill) 35%, var(--border));
+  color: var(--text-1);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-channel-pill.is-active {
+  background: var(--accent-surface);
+  border-color: color-mix(in srgb, var(--accent-fill) 45%, var(--border));
+  color: var(--text-1);
+  box-shadow: inset 3px 0 0 var(--accent-fill);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-channel-dm-toggle {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-channel-dm-picker {
+  box-shadow: 0 10px 28px rgba(15, 15, 15, 0.12);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-huddle-banner-item {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-huddle-banner-item:hover {
+  background: #d1fae5;
+  border-color: #34d399;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-huddle-banner-icon {
+  background: #a7f3d0;
+  color: #047857;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-channel-pill-live {
+  background: #a7f3d0;
+  color: #047857;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-channel-pill.has-live-huddle {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-icon-action--channels:hover:not(:disabled),
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-icon-action--channels[aria-expanded='true'],
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-icon-action--huddle:hover:not(:disabled),
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-composer-action:hover:not(:disabled),
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-composer-action.is-active {
+  color: var(--accent-text);
+  background: var(--accent-surface);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-composer-hint span,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-slash-palette-item-name,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-slash-palette-kind,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-search-hit-channel {
+  color: var(--accent-text);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-slash-palette {
+  background: var(--surface-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-slash-palette-list {
+  scrollbar-color: var(--border) var(--surface-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-slash-palette-list::-webkit-scrollbar-track {
+  background: var(--surface-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-giphy-picker {
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgba(15, 15, 15, 0.12);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-giphy-picker-input,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-giphy-picker-item {
+  background: var(--surface-2);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-huddle-modal-backdrop,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-sidebar-backdrop {
+  background: var(--overlay-scrim);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-huddle-modal,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-huddle-modal--minimized {
+  box-shadow: 0 16px 48px rgba(15, 15, 15, 0.14);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-fab-badge {
+  border-color: var(--surface);
+}
+
+/* Stream chat — light surfaces + readable message bubbles */
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-chat .str-chat {
+  --str-chat__primary-color: var(--accent-text);
+  --str-chat__background-color: #ffffff;
+  --str-chat__secondary-background-color: #f6f6f3;
+  --str-chat__text-color: var(--text-1);
+  --str-chat__text-low-emphasis-color: var(--text-3);
+  --str-chat__border-color: var(--border);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-chat .str-chat,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-chat .str-chat__container,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-chat .str-chat__channel,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-chat .str-chat__main-panel,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-chat .str-chat__window,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-chat .str-chat__list {
+  background-color: #ffffff !important;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-chat .str-chat__message-input,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-chat .str-chat__message-composer,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-composer-shell {
+  background: #f6f6f3 !important;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-message-action {
+  color: var(--accent-text);
+  background: var(--accent-surface);
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  box-shadow: none;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-message-action:hover {
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+  color: var(--accent-text);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-message-action svg {
+  color: var(--accent-text);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-chat .str-chat__message--me .str-chat__message-bubble,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-chat .str-chat__message-simple--me .str-chat__message-bubble {
+  background: var(--accent-surface) !important;
+  color: var(--text-1) !important;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-chat .str-chat__message:not(.str-chat__message--me) .str-chat__message-bubble,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-chat .str-chat__message-simple:not(.str-chat__message-simple--me) .str-chat__message-bubble {
+  background: var(--surface-2) !important;
+  color: var(--text-1) !important;
+  border: 1px solid var(--border);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-chat .str-chat__message-list,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-chat .str-chat__ul,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-chat .str-chat__list {
+  background: #ffffff !important;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-chat .str-chat__date-separator-date,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-chat .str-chat__message--system__text {
+  background: var(--surface-2) !important;
+  color: var(--text-2) !important;
+  border: 1px solid var(--border);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-chat .str-chat__message-composer-container,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-chat .str-chat__dropzone-root {
+  background: #f6f6f3 !important;
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-delete-message-dialog .str-chat__modal__dialog {
+  background: var(--surface);
+  color: var(--text-1);
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 32px rgba(15, 15, 15, 0.12);
+}
+
+@media (max-width: 1023px) {
+  html[data-color-mode='light'] [data-theme='dashboard'] .ops-comms-channel-sidebar {
+    box-shadow: 8px 0 24px rgba(15, 15, 15, 0.12);
+  }
+}
+
+/* ─── Toggle control ─────────────────────────────────────────────────────────── */
+
+.color-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--surface);
+  color: var(--text-2);
+  font-family: var(--font-dm-mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+
+.color-mode-toggle:hover {
+  color: var(--text-1);
+  border-color: var(--border-2);
+  background: var(--surface-2);
+}
+
+.color-mode-toggle:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.color-mode-toggle--compact {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.color-mode-toggle--compact span {
+  display: none;
+}
+
+[data-theme='dashboard'] .dash-topbar-theme-toggle {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+html[data-color-mode='light'] [data-theme='dashboard'] .dash-topbar-theme-toggle {
+  box-shadow: 0 1px 3px rgba(15, 15, 15, 0.06);
+}
+
+/* ─── Public / auth chrome ───────────────────────────────────────────────────── */
+
+.public-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.legal-shell-header {
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.auth-shell-chrome {
+  position: absolute;
+  top: max(0.75rem, env(safe-area-inset-top, 0px));
+  right: max(0.875rem, env(safe-area-inset-right, 0px));
+  z-index: 20;
+}

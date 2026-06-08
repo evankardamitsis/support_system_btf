@@ -17,6 +17,8 @@ import {
   type ModalCloseSource,
   type ModalProps,
 } from 'stream-chat-react'
+import { useColorMode } from '@/components/providers/ColorModeProvider'
+import { getStreamChatTheme } from '@/lib/ui/stream-chat-theme'
 
 type PopoverPosition = {
   top: number
@@ -61,6 +63,8 @@ function OpsCommsDeleteMessagePopover({
   onClose,
   onCloseAttempt,
 }: Pick<ModalProps, 'open' | 'onClose' | 'onCloseAttempt'> & { children?: ReactNode }) {
+  const { mode } = useColorMode()
+  const streamChatTheme = getStreamChatTheme(mode)
   const popoverRef = useRef<HTMLDivElement>(null)
   const [position, setPosition] = useState<PopoverPosition | null>(null)
 
@@ -132,7 +136,7 @@ function OpsCommsDeleteMessagePopover({
           style={style}
           role="presentation"
         >
-          <div className="str-chat str-chat__theme-dark ops-comms-delete-message-dialog">
+          <div className={`str-chat ${streamChatTheme} ops-comms-delete-message-dialog`}>
             <div className="str-chat__modal__dialog" role="alertdialog" aria-modal="true">
               {children}
             </div>

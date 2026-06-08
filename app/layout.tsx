@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { DM_Mono, Geist } from 'next/font/google'
+import { ColorModeProvider } from '@/components/providers/ColorModeProvider'
 import { AppToaster } from '@/components/ui/AppToaster'
+import { ColorModeScript } from '@/components/ui/ColorModeScript'
 import './globals.css'
 
 const dmMono = DM_Mono({
@@ -33,10 +35,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-GB" className={`${dmMono.variable} ${geist.variable}`}>
+    <html lang="en-GB" className={`${dmMono.variable} ${geist.variable}`} suppressHydrationWarning>
+      <head>
+        <ColorModeScript />
+      </head>
       <body suppressHydrationWarning>
-        {children}
-        <AppToaster />
+        <ColorModeProvider>
+          {children}
+          <AppToaster />
+        </ColorModeProvider>
       </body>
     </html>
   )

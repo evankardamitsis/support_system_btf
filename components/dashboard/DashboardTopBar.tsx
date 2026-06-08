@@ -15,6 +15,7 @@ import {
 } from '@/lib/admin/product-areas'
 import { DashboardSearch } from './DashboardSearch'
 import { OpsDashboardSearch } from './OpsDashboardSearch'
+import { ColorModeToggle } from '@/components/ui/ColorModeToggle'
 import { OpsNotificationBell } from './OpsNotificationBell'
 
 function initials(n?: string, e?: string) {
@@ -133,7 +134,7 @@ export function DashboardTopBar({
               alt="BTF"
               width={96}
               height={14}
-              className="dash-topbar-logo"
+              className="dash-topbar-logo theme-wordmark"
               priority
             />
           </Link>
@@ -155,6 +156,7 @@ export function DashboardTopBar({
             >
               <Search size={18} aria-hidden />
             </button>
+            <ColorModeToggle compact className="dash-topbar-theme-toggle" />
             {showNotifications ? <OpsNotificationBell /> : null}
             <div className="dash-topbar-account-wrap" ref={ref}>
               <button

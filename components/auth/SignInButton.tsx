@@ -14,7 +14,7 @@ export function SignInButton() {
       style={{
         fontFamily: 'var(--font-dm-mono)',
         background: 'var(--accent)',
-        color: 'var(--bg)',
+        color: 'var(--primary-foreground)',
         border: 'none',
         borderRadius: 0,
       }}
@@ -23,7 +23,7 @@ export function SignInButton() {
         <>
           <span
             className="inline-block w-4 h-4 border-2 rounded-full animate-spin shrink-0"
-            style={{ borderColor: 'var(--bg)', borderTopColor: 'transparent', opacity: 0.85 }}
+            style={{ borderColor: 'var(--primary-foreground)', borderTopColor: 'transparent', opacity: 0.85 }}
             aria-hidden
           />
           Signing in…

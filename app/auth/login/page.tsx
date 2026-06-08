@@ -56,6 +56,7 @@ export default async function LoginPage({
             alt="Below The Fold"
             width={130}
             height={18}
+            className="theme-wordmark"
             style={{ height: 17, width: 'auto' }}
             priority
           />

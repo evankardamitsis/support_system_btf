@@ -109,6 +109,7 @@ export default async function RegisterStaffPage({
             alt="Below The Fold"
             width={130}
             height={18}
+            className="theme-wordmark"
             style={{ height: 17, width: 'auto' }}
             priority
           />
@@ -242,7 +243,7 @@ export default async function RegisterStaffPage({
                   style={{
                     fontFamily: 'var(--font-dm-mono)',
                     background: 'var(--accent)',
-                    color: 'var(--bg)',
+                    color: 'var(--primary-foreground)',
                     border: 'none',
                     borderRadius: 0,
                   }}

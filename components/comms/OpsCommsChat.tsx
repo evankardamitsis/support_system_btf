@@ -42,7 +42,9 @@ import { useCommsNarrowLayout } from '@/lib/comms/use-comms-narrow-layout'
 import { isHuddleStartedLogText } from '@/lib/comms/huddle-chat-log'
 import { huddleContextForChannel } from '@/lib/comms/huddle'
 import { playHuddleChime } from '@/lib/ui/play-notification-chime'
+import { useColorMode } from '@/components/providers/ColorModeProvider'
 import { notifyError } from '@/lib/notify'
+import { getStreamChatTheme } from '@/lib/ui/stream-chat-theme'
 import { cn } from '@/lib/utils'
 
 type DeleteTarget = {
@@ -91,6 +93,8 @@ export function OpsCommsChat({
   activeChannelId,
   onSelectChannel,
 }: OpsCommsChatProps) {
+  const { mode } = useColorMode()
+  const streamChatTheme = getStreamChatTheme(mode)
   const deleteChatButtonRef = useRef<HTMLButtonElement>(null)
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null)
   const [deletePending, setDeletePending] = useState(false)
@@ -398,7 +402,7 @@ export function OpsCommsChat({
         onJoinHuddle={handleJoinLiveHuddle}
       />
       <div className="ops-comms-chat">
-        <Chat client={chatClient} theme="str-chat__theme-dark">
+        <Chat client={chatClient} theme={streamChatTheme}>
           <Channel channel={channel} key={activeChannelId}>
             <WithComponents
               overrides={{

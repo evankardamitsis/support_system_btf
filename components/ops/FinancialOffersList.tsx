@@ -18,6 +18,7 @@ import {
 } from '@/lib/ops/financial-offer/calculate'
 import { formatDateTimeHuman } from '@/lib/tickets/display'
 import type { FinancialOfferRecord } from '@/lib/ops/financial-offer/types'
+import { triggerOfferAcceptedCelebration } from '@/lib/celebration/offer-accepted'
 import { runWithToast } from '@/lib/notify'
 
 export function FinancialOffersList({
@@ -51,6 +52,7 @@ export function FinancialOffersList({
         success: 'Offer marked as accepted',
       })
       if (ok === null) return
+      triggerOfferAcceptedCelebration()
       router.refresh()
     })
   }

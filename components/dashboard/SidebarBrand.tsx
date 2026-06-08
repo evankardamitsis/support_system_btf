@@ -27,7 +27,7 @@ export function SidebarBrand({
             alt="BTF"
             width={96}
             height={14}
-            className="dash-sidebar-logo"
+            className="dash-sidebar-logo theme-wordmark"
             priority
           />
         </Link>
