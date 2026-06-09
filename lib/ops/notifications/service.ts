@@ -223,3 +223,30 @@ export async function notifyProjectCompleted(
     dedupeKey: `project-completed:${input.projectId}`,
   })
 }
+
+export async function notifyClientRegistered(
+  supabase: Db,
+  input: {
+    userId: string
+    clientId: string
+    registrantName: string
+    clientName: string
+    kind: 'primary' | 'team'
+  },
+  adminIds: string[]
+) {
+  if (!adminIds.length) return
+
+  const title =
+    input.kind === 'primary'
+      ? `Client registered — ${input.clientName}`
+      : `Team member joined — ${input.clientName}`
+
+  await insertOpsNotificationForUsers(supabase, adminIds, {
+    type: 'client_registered',
+    title,
+    body: input.registrantName,
+    href: `/admin/clients/${input.clientId}`,
+    dedupeKey: `client-registered:${input.userId}`,
+  })
+}

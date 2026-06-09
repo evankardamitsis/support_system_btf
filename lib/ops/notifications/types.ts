@@ -6,6 +6,7 @@ export const OPS_NOTIFICATION_TYPES = [
   'hosting_renewal',
   'project_completed',
   'mention',
+  'client_registered',
 ] as const
 
 export type OpsNotificationType = (typeof OPS_NOTIFICATION_TYPES)[number]

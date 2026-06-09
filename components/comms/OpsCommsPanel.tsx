@@ -9,6 +9,7 @@ import type { StreamChat as StreamChatClient } from 'stream-chat'
 import { StreamVideo, type StreamVideoClient } from '@stream-io/video-react-sdk'
 import type { StreamCommsCredentials } from '@/lib/comms/stream-server'
 import { OpsCommsChat } from '@/components/comms/OpsCommsChat'
+import { useComms } from '@/lib/comms/comms-context'
 import { Button } from '@/components/ui/button'
 
 type OpsCommsPanelProps = {
@@ -37,17 +38,23 @@ export function OpsCommsPanel({
   onSelectChannel,
 }: OpsCommsPanelProps) {
   const reducedMotion = useReducedMotion()
+  const { huddleLive, huddleMinimized, setHuddleMinimized } = useComms()
 
   useEffect(() => {
     if (!open) return
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
+      if (event.key !== 'Escape') return
+      if (huddleLive && !huddleMinimized) {
+        setHuddleMinimized(true)
+        return
+      }
+      onClose()
     }
 
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [open, onClose])
+  }, [huddleLive, huddleMinimized, onClose, open, setHuddleMinimized])
 
   return (
     <AnimatePresence>

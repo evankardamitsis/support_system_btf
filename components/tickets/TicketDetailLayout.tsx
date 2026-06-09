@@ -43,6 +43,7 @@ type RetainerOption = {
   period_end: string
   hours_total: number
   hours_used: number
+  package_name?: string | null
 }
 
 export function TicketDetailLayout({
@@ -70,6 +71,7 @@ export function TicketDetailLayout({
   hoursOverageNote = null,
   isAdmin = false,
   hoursBilling = true,
+  retainerTracksHours = true,
   noHours = false,
   assignedTo = null,
   staffOptions = [],
@@ -98,6 +100,7 @@ export function TicketDetailLayout({
   hoursOverageNote?: string | null
   isAdmin?: boolean
   hoursBilling?: boolean
+  retainerTracksHours?: boolean
   noHours?: boolean
   assignedTo?: string | null
   staffOptions?: AssigneeOption[]
@@ -331,6 +334,7 @@ export function TicketDetailLayout({
           hoursOverageNote={hoursOverageNote}
           isAdmin={isAdmin}
           hoursBilling={hoursBilling}
+          retainerTracksHours={retainerTracksHours}
           noHours={noHours}
           onResolve={() => {
             if (hoursBilling) {

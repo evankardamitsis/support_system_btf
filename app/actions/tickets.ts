@@ -171,7 +171,7 @@ export async function createTicket(formData: FormData): Promise<string> {
   if (error || !ticket) throw new Error(error?.message ?? 'Failed to create ticket')
 
   if (assignedTo) {
-    await notifyAssigneeIfNeeded({
+    void notifyAssigneeIfNeeded({
       ticketId: ticket.id,
       ticketTitle: title,
       clientId,
@@ -181,6 +181,7 @@ export async function createTicket(formData: FormData): Promise<string> {
     })
   }
 
+  revalidateTicketPaths(ticket.id)
   return ticket.id
 }
 

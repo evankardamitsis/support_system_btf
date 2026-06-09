@@ -29,6 +29,10 @@ type OpsCommsHuddleProps = {
   channelId: string
   channelLabel: string
   ticketId?: string | null
+  minimized?: boolean
+  onMinimizedChange?: (minimized: boolean) => void
+  autoMinimizeOnJoin?: boolean
+  onLiveChange?: (live: boolean) => void
   onClose?: () => void
 }
 
@@ -88,11 +92,13 @@ function HuddleModalFrame({
               ) : (
                 <button
                   type="button"
-                  className="ops-comms-huddle-shell-icon-btn"
-                  aria-label="Minimize huddle"
+                  className="ops-comms-huddle-shell-icon-btn ops-comms-huddle-shell-icon-btn--chat"
+                  aria-label="Minimize and keep chatting"
+                  title="Keep chatting"
                   onClick={onMinimize}
                 >
                   <Minimize2 aria-hidden />
+                  <span className="ops-comms-huddle-shell-icon-btn-label">Chat</span>
                 </button>
               )
             ) : null}
@@ -301,6 +307,10 @@ export function OpsCommsHuddle({
   channelId,
   channelLabel,
   ticketId,
+  minimized: minimizedProp = false,
+  onMinimizedChange,
+  autoMinimizeOnJoin = false,
+  onLiveChange,
   onClose,
 }: OpsCommsHuddleProps) {
   const call = useMemo(
@@ -318,7 +328,15 @@ export function OpsCommsHuddle({
     currentUserName: credentials.userName,
   })
   const [phase, setPhase] = useState<'prejoin' | 'live'>('prejoin')
-  const [minimized, setMinimized] = useState(false)
+  const minimized = minimizedProp
+
+  const setMinimized = useCallback(
+    (value: boolean | ((current: boolean) => boolean)) => {
+      const next = typeof value === 'function' ? value(minimized) : value
+      onMinimizedChange?.(next)
+    },
+    [minimized, onMinimizedChange]
+  )
   const [joining, setJoining] = useState(false)
   const [preparing, setPreparing] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -382,16 +400,22 @@ export function OpsCommsHuddle({
   }, [minimized, onClose, phase])
 
   useEffect(() => {
+    onLiveChange?.(phase === 'live')
+  }, [onLiveChange, phase])
+
+  useEffect(() => {
     return () => {
       void huddleLog.leaveWithLog()
+      onLiveChange?.(false)
     }
-  }, [huddleLog.leaveWithLog])
+  }, [huddleLog.leaveWithLog, onLiveChange])
 
   const leaveHuddle = useCallback(() => {
     void huddleLog.leaveWithLog().finally(() => {
+      onLiveChange?.(false)
       onClose?.()
     })
-  }, [huddleLog.leaveWithLog, onClose])
+  }, [huddleLog.leaveWithLog, onClose, onLiveChange])
 
   const startHuddle = useCallback(() => {
     setJoining(true)
@@ -405,7 +429,7 @@ export function OpsCommsHuddle({
         await call.camera.disable().catch(() => {})
         await huddleLog.logJoin(wasEmpty)
         setLiveCount(null)
-        setMinimized(false)
+        setMinimized(autoMinimizeOnJoin)
         setPhase('live')
       } catch (err) {
         setError(formatHuddleError(err))
@@ -413,7 +437,7 @@ export function OpsCommsHuddle({
         setJoining(false)
       }
     })()
-  }, [call, credentials, huddleLog, liveCount, videoClient])
+  }, [autoMinimizeOnJoin, call, credentials, huddleLog, liveCount, setMinimized, videoClient])
 
   const handleBackdropClick = useCallback(() => {
     if (phase === 'live') {

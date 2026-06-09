@@ -25,6 +25,7 @@ const TYPE_LABELS: Record<OpsNotificationRecord['type'], string> = {
   hosting_renewal: 'Hosting',
   project_completed: 'Project',
   mention: 'Mention',
+  client_registered: 'Client',
 }
 
 function toPopoverItem(item: OpsNotificationRecord): NotificationPopoverItem {

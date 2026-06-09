@@ -28,7 +28,6 @@ import { OpsCommsComposerActions } from '@/components/comms/OpsCommsComposerActi
 import { OpsCommsComposerShell } from '@/components/comms/OpsCommsComposerShell'
 import { OpsCommsEmptySuggestionList } from '@/components/comms/OpsCommsEmptySuggestionList'
 import { createOpsCommsMessageComposerUI } from '@/components/comms/OpsCommsMessageComposerUI'
-import { OpsCommsHuddle } from '@/components/comms/OpsCommsHuddle'
 import { OpsCommsMessageUI } from '@/components/comms/OpsCommsMessageUI'
 import { OpsCommsSearch } from '@/components/comms/OpsCommsSearch'
 import { OpsCommsDeleteChatPopover } from '@/components/comms/OpsCommsDeleteChatPopover'
@@ -99,8 +98,7 @@ export function OpsCommsChat({
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null)
   const [deletePending, setDeletePending] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
-  const { huddleAutoOpen, setHuddleAutoOpen } = useComms()
-  const [huddleOpen, setHuddleOpen] = useState(false)
+  const { openHuddle, huddleSession, huddleLive } = useComms()
   const [searchOpen, setSearchOpen] = useState(false)
   const [channelPresence, setChannelPresence] = useState<ReturnType<typeof readChannelPresence> | null>(
     null
@@ -130,15 +128,18 @@ export function OpsCommsChat({
   )
   const staffNames = useMemo(() => staffNameMap(credentials.staff), [credentials.staff])
 
-  useEffect(() => {
-    setHuddleOpen(false)
-  }, [activeChannelId])
+  const activeHuddleChannel =
+    huddleLive && huddleSession?.channelId === activeChannelId
 
-  useEffect(() => {
-    if (!huddleAutoOpen || !huddleContext.enabled) return
-    setHuddleOpen(true)
-    setHuddleAutoOpen(false)
-  }, [huddleAutoOpen, huddleContext.enabled, setHuddleAutoOpen])
+  function startHuddle(autoMinimizeOnJoin: boolean) {
+    if (!huddleContext.enabled) return
+    openHuddle({
+      channelId: activeChannelId,
+      channelLabel: channelShortTitle,
+      ticketId,
+      autoMinimizeOnJoin,
+    })
+  }
 
   const syncChannelPresence = useMemo(
     () => () => {
@@ -179,7 +180,7 @@ export function OpsCommsChat({
     assigneeName: ticketAssignee.name,
     onlineMemberIds,
     onOpenTicketChannel: onSelectChannel,
-    onStartHuddle: () => setHuddleOpen(true),
+    onStartHuddle: () => startHuddle(true),
     huddleEnabled: huddleContext.enabled,
     onAssigneeChanged: refreshTicketAssignee,
   })
@@ -354,7 +355,16 @@ export function OpsCommsChat({
 
   function handleJoinLiveHuddle(channelId: string) {
     handleSelectChannel(channelId)
-    setHuddleOpen(true)
+    const data = chatClient.channel('messaging', channelId).data as
+      | Record<string, unknown>
+      | undefined
+    const label = getChannelShortTitle(channelId, data)
+    openHuddle({
+      channelId,
+      channelLabel: label,
+      ticketId: ticketIdFromChannelId(channelId),
+      autoMinimizeOnJoin: true,
+    })
   }
 
   useEffect(() => {
@@ -454,10 +464,25 @@ export function OpsCommsChat({
                     {huddleContext.enabled ? (
                       <button
                         type="button"
-                        className="ops-comms-icon-action ops-comms-icon-action--huddle"
-                        title={huddleContext.title}
+                        className={cn(
+                          'ops-comms-icon-action ops-comms-icon-action--huddle',
+                          activeHuddleChannel && 'is-live'
+                        )}
+                        title={
+                          activeHuddleChannel ? 'Huddle active — open controls' : huddleContext.title
+                        }
                         aria-label={huddleContext.title}
-                        onClick={() => setHuddleOpen(true)}
+                        onClick={() => {
+                          if (activeHuddleChannel) {
+                            openHuddle({
+                              channelId: activeChannelId,
+                              channelLabel: channelShortTitle,
+                              ticketId,
+                            })
+                            return
+                          }
+                          startHuddle(false)
+                        }}
                       >
                         <Headphones aria-hidden />
                       </button>
@@ -486,18 +511,6 @@ export function OpsCommsChat({
             </WithComponents>
           </Channel>
         </Chat>
-        {huddleOpen ? (
-          <OpsCommsHuddle
-            videoClient={videoClient}
-            credentials={credentials}
-            context={huddleContext}
-            channel={channel}
-            channelId={activeChannelId}
-            channelLabel={channelShortTitle}
-            ticketId={ticketId}
-            onClose={() => setHuddleOpen(false)}
-          />
-        ) : null}
         <OpsCommsSearch
           chatClient={chatClient}
           credentials={credentials}

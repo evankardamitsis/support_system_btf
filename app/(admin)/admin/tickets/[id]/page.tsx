@@ -68,10 +68,8 @@ export default async function AdminTicketDetailPage({
   ])
 
   const hoursLogged = Boolean(hourLog)
-  const hoursBilling = ticketUsesHourBilling(
-    retainerTracksHours(activeRetainer),
-    ticket.no_hours
-  )
+  const clientRetainerTracksHours = retainerTracksHours(activeRetainer)
+  const hoursBilling = ticketUsesHourBilling(clientRetainerTracksHours, ticket.no_hours)
   const estimatedHours =
     ticket.estimated_hours != null ? Number(ticket.estimated_hours) : null
   const actualHours = ticket.actual_hours != null ? Number(ticket.actual_hours) : null
@@ -127,6 +125,7 @@ export default async function AdminTicketDetailPage({
         extraHoursActiveAt={ticket.extra_hours_active_at ?? null}
         isAdmin={isAdmin}
         hoursBilling={hoursBilling}
+        retainerTracksHours={clientRetainerTracksHours}
         noHours={ticket.no_hours}
         assignedTo={ticket.assigned_to ?? null}
         staffOptions={staffForMentions}

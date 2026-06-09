@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import { createTicket } from '@/app/actions/tickets'
 import { DashCancel } from '@/components/dashboard/DashCancel'
 import { runWithToast } from '@/lib/notify'
@@ -18,21 +18,29 @@ export function AdminNewTicketForm({
   defaultClientId?: string
 }) {
   const router = useRouter()
-  const [pending, startTransition] = useTransition()
+  const [submitting, setSubmitting] = useState(false)
   const [noHours, setNoHours] = useState(false)
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
+    if (submitting) return
+
     const formData = new FormData(e.currentTarget)
-    startTransition(async () => {
-      const id = await runWithToast(() => createTicket(formData), {
-        loading: 'Creating ticket…',
-        success: 'Ticket created',
-      })
-      if (!id) return
-      router.push(`/admin/tickets/${id}`)
-      router.refresh()
-    })
+    setSubmitting(true)
+
+    void (async () => {
+      try {
+        const id = await runWithToast(() => createTicket(formData), {
+          loading: 'Creating ticket…',
+          success: 'Ticket created',
+        })
+        if (!id) return
+        router.push('/admin/tickets')
+        router.refresh()
+      } finally {
+        setSubmitting(false)
+      }
+    })()
   }
 
   return (
@@ -46,7 +54,7 @@ export function AdminNewTicketForm({
           required
           className="dash-select w-full text-sm"
           defaultValue={defaultClientId ?? ''}
-          disabled={pending}
+          disabled={submitting}
         >
           <option value="">Select client…</option>
           {clients.map(c => (
@@ -65,13 +73,13 @@ export function AdminNewTicketForm({
           required
           className="btf-input w-full"
           placeholder="Brief description of the issue"
-          disabled={pending}
+          disabled={submitting}
         />
       </div>
       {staff.length > 0 ? (
         <div>
           <label className="dash-label">Assign to</label>
-          <select name="assigned_to" className="dash-select w-full text-sm" defaultValue="" disabled={pending}>
+          <select name="assigned_to" className="dash-select w-full text-sm" defaultValue="" disabled={submitting}>
             <option value="">Unassigned</option>
             {staff.map(member => (
               <option key={member.id} value={member.id}>
@@ -87,7 +95,7 @@ export function AdminNewTicketForm({
           type="checkbox"
           checked={noHours}
           onChange={event => setNoHours(event.target.checked)}
-          disabled={pending}
+          disabled={submitting}
           className="mt-0.5"
         />
         <span className="text-sm leading-relaxed" style={{ color: 'var(--text-2)' }}>
@@ -108,7 +116,7 @@ export function AdminNewTicketForm({
               </div>
             </>
           ) : (
-            <select name="type" defaultValue="task" className="dash-select w-full text-sm" disabled={pending}>
+            <select name="type" defaultValue="task" className="dash-select w-full text-sm" disabled={submitting}>
               <option value="task">Task</option>
               <option value="bug">Bug</option>
               <option value="request">Request</option>
@@ -122,7 +130,7 @@ export function AdminNewTicketForm({
             name="priority"
             defaultValue="normal"
             className="dash-select w-full text-sm"
-            disabled={pending}
+            disabled={submitting}
           >
             <option value="low">Low</option>
             <option value="normal">Normal</option>
@@ -141,7 +149,7 @@ export function AdminNewTicketForm({
             min="0"
             className="btf-input w-full tabular-nums"
             placeholder="Optional plan / quote"
-            disabled={pending}
+            disabled={submitting}
           />
         </div>
       ) : null}
@@ -153,12 +161,12 @@ export function AdminNewTicketForm({
           className="btf-input w-full resize-y"
           style={{ minHeight: 100 }}
           placeholder="Provide as much detail as possible…"
-          disabled={pending}
+          disabled={submitting}
         />
       </div>
       <div className="flex flex-wrap gap-3 pt-1">
-        <button type="submit" className="dash-btn-primary btn-primary cursor-pointer" disabled={pending}>
-          {pending ? 'Creating…' : 'Create ticket'}
+        <button type="submit" className="dash-btn-primary btn-primary cursor-pointer" disabled={submitting}>
+          {submitting ? 'Creating…' : 'Create ticket'}
         </button>
         <DashCancel href="/admin/tickets" />
       </div>

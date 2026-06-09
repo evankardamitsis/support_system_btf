@@ -30,6 +30,8 @@ import {
   shouldUseStandardResolveFlow,
 } from '@/lib/tickets/extra-hours'
 import { formatDateRange } from '@/lib/dates'
+import { packageLabel } from '@/lib/retainers/billing-model'
+import type { RetainerPackage } from '@/lib/retainers/packages'
 import { formatDateTimeHuman } from '@/lib/tickets/display'
 import type { TicketStatus } from '@/lib/types'
 
@@ -39,6 +41,7 @@ type RetainerOption = {
   period_end: string
   hours_total: number
   hours_used: number
+  package_name?: string | null
 }
 
 export type ExtraHoursItem = {
@@ -68,6 +71,7 @@ export function TicketDetailSidebar({
   hoursOverageNote = null,
   isAdmin = false,
   hoursBilling = true,
+  retainerTracksHours = true,
   noHours = false,
   onResolve,
   onResolveOffline,
@@ -87,6 +91,8 @@ export function TicketDetailSidebar({
   hoursOverageNote?: string | null
   isAdmin?: boolean
   hoursBilling?: boolean
+  /** Client retainer plan tracks hours (Grow/Care), independent of this ticket's no-hours flag. */
+  retainerTracksHours?: boolean
   noHours?: boolean
   onResolve: () => void
   onResolveOffline: () => void
@@ -373,11 +379,18 @@ export function TicketDetailSidebar({
 
       {activeRetainer ? (
         <section className="ticket-detail-aside-card ticket-detail-aside-card--muted">
-          <h3 className="ticket-detail-aside-title">Client retainer</h3>
+          <h3 className="ticket-detail-aside-title">
+            Client retainer
+            {activeRetainer.package_name ? (
+              <span className="ticket-detail-retainer-package">
+                {packageLabel(activeRetainer.package_name as RetainerPackage)}
+              </span>
+            ) : null}
+          </h3>
           <p className="ticket-detail-retainer-period tabular-nums">
             {formatDateRange(activeRetainer.period_start, activeRetainer.period_end)}
           </p>
-          {hoursBilling ? (
+          {retainerTracksHours ? (
             <>
               <div className="ticket-detail-retainer-row">
                 <span className="tabular-nums">
@@ -391,6 +404,11 @@ export function TicketDetailSidebar({
                 </span>
               </div>
               <UsageBar percent={pct} tone={tone} height={5} />
+              {noHours ? (
+                <p className="dash-meta leading-relaxed mt-2">
+                  This ticket is marked no-hours — it will not bill against the retainer.
+                </p>
+              ) : null}
             </>
           ) : (
             <p className="dash-meta leading-relaxed mt-2">
