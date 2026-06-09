@@ -147,6 +147,7 @@ export async function notifyClientTicketResolved(input: {
   clientId: string
   estimatedHours: number | null
   actualHours: number
+  noHours?: boolean
 }): Promise<NotifyResult> {
   const recipients = await getClientNotificationEmails(input.clientId)
   if (!recipients.length) {
@@ -159,32 +160,41 @@ export async function notifyClientTicketResolved(input: {
   const url = `${appOrigin()}/portal/tickets/${input.ticketId}`
   const ticketRef = formatTicketId(input.ticketId)
 
-  let detailLine =
-    'View the ticket in your portal for full details.'
-  const adminResult = tryCreateAdminClient()
-  if (!('error' in adminResult)) {
-    const retainer = await getRetainerForClient(adminResult.client, input.clientId, {
-      includePackage: true,
-    })
-    if (retainerTracksHours(retainer)) {
-      const hoursLine = resolvedHoursMessage(input.estimatedHours, input.actualHours)
-      const retainerLine = retainer
-        ? ` ${retainerRemainingMessage({
-            hoursTotal: retainer.hours_total,
-            hoursUsed: retainer.hours_used,
-            periodStart: retainer.period_start,
-            periodEnd: retainer.period_end,
-          })}`
-        : ''
-      detailLine = `${hoursLine}${retainerLine} View the ticket in your portal for full details.`
+  let emailTitle = 'Your ticket is resolved'
+  let subject = `Ticket resolved — ${ticketRef}`
+  let detailLine = 'View the ticket in your portal for full details.'
+
+  if (input.noHours) {
+    emailTitle = 'Your ticket is complete'
+    subject = `Ticket completed — ${ticketRef}`
+    detailLine =
+      'This was logged as a pre-existing issue — no estimate, approval, or retainer hours apply. View the ticket in your portal for full details.'
+  } else {
+    const adminResult = tryCreateAdminClient()
+    if (!('error' in adminResult)) {
+      const retainer = await getRetainerForClient(adminResult.client, input.clientId, {
+        includePackage: true,
+      })
+      if (retainerTracksHours(retainer)) {
+        const hoursLine = resolvedHoursMessage(input.estimatedHours, input.actualHours)
+        const retainerLine = retainer
+          ? ` ${retainerRemainingMessage({
+              hoursTotal: retainer.hours_total,
+              hoursUsed: retainer.hours_used,
+              periodStart: retainer.period_start,
+              periodEnd: retainer.period_end,
+            })}`
+          : ''
+        detailLine = `${hoursLine}${retainerLine} View the ticket in your portal for full details.`
+      }
     }
   }
 
   const sent = await sendEmail({
     to: recipients,
-    subject: `Ticket resolved — ${ticketRef}`,
+    subject,
     html: emailShell(
-      'Your ticket is resolved',
+      emailTitle,
       `BTF has completed <strong>${input.ticketTitle}</strong> (${ticketRef}). ${detailLine}`,
       'View ticket',
       url

@@ -14,6 +14,7 @@ import { formatDateTimeHuman } from '@/lib/tickets/display'
 import { isTicketClosed } from '@/lib/tickets/closed'
 import { requirePortalClient } from '@/lib/auth/portal-context'
 import { clientUsesHourBilling } from '@/lib/retainers/billing-model'
+import { ticketUsesHourBilling } from '@/lib/tickets/hours-billing'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
 function ticketId(id: string) {
@@ -37,11 +38,13 @@ export default async function PortalTicketDetailPage({
   const { id } = await params
   const { supabase, clientId } = await requirePortalClient()
 
-  const [{ data: ticket }, hoursBilling] = await Promise.all([
+  const [{ data: ticket }, clientHourBilling] = await Promise.all([
     supabase.from('tickets').select('*').eq('id', id).single(),
     clientUsesHourBilling(supabase, clientId),
   ])
   if (!ticket) notFound()
+
+  const hoursBilling = ticketUsesHourBilling(clientHourBilling, ticket.no_hours)
 
   const estimatedHours =
     ticket.estimated_hours != null ? Number(ticket.estimated_hours) : null

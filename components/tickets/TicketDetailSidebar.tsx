@@ -68,6 +68,7 @@ export function TicketDetailSidebar({
   hoursOverageNote = null,
   isAdmin = false,
   hoursBilling = true,
+  noHours = false,
   onResolve,
   onResolveOffline,
 }: {
@@ -86,6 +87,7 @@ export function TicketDetailSidebar({
   hoursOverageNote?: string | null
   isAdmin?: boolean
   hoursBilling?: boolean
+  noHours?: boolean
   onResolve: () => void
   onResolveOffline: () => void
 }) {
@@ -160,7 +162,9 @@ export function TicketDetailSidebar({
               {pending ? 'Resolving…' : 'Mark resolved'}
             </button>
             <p className="ticket-detail-aside-note dash-meta">
-              Fixed plan — no hours to log. The client is notified when you resolve.
+              {noHours
+                ? 'Pre-existing bug — no estimate, approval, or retainer hours. The client is emailed when you mark resolved.'
+                : 'Fixed plan — no hours to log. The client is notified when you resolve.'}
             </p>
           </div>
         ) : null}

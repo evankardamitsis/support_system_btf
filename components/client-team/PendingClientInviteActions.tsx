@@ -6,13 +6,21 @@ import { resendClientTeamInvite, revokeClientInvite } from '@/app/actions/client
 import { CopyInput } from '@/components/ui/CopyInput'
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
 import { notifyError, notifySuccess } from '@/lib/notify'
+import type {
+  InviteClientTeamMemberResult,
+  RevokeClientInviteResult,
+} from '@/lib/client-team/action-results'
 
 export function PendingClientInviteActions({
   inviteId,
   inviteUrl,
+  resendAction = resendClientTeamInvite,
+  revokeAction = revokeClientInvite,
 }: {
   inviteId: string
   inviteUrl: string
+  resendAction?: (inviteId: string) => Promise<InviteClientTeamMemberResult>
+  revokeAction?: (inviteId: string) => Promise<RevokeClientInviteResult>
 }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
@@ -24,7 +32,7 @@ export function PendingClientInviteActions({
     setError(null)
     setFallbackLink(null)
     startTransition(async () => {
-      const result = await revokeClientInvite(inviteId)
+      const result = await revokeAction(inviteId)
       if (!result.ok) {
         setError(result.error)
         notifyError(result.error)
@@ -40,7 +48,7 @@ export function PendingClientInviteActions({
     setError(null)
     setFallbackLink(null)
     startTransition(async () => {
-      const result = await resendClientTeamInvite(inviteId)
+      const result = await resendAction(inviteId)
       if (!result.ok) {
         setError(result.error)
         notifyError(result.error)

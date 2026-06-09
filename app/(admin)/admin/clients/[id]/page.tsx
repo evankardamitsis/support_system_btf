@@ -4,6 +4,9 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { GenerateInviteSection } from './GenerateInviteSection'
 import { ClientApprovalRemindersToggle } from '@/components/clients/ClientApprovalRemindersToggle'
+import { EditClientForm } from '@/components/clients/EditClientForm'
+import { AdminClientTeamPanel } from '@/components/clients/AdminClientTeamPanel'
+import { getClientTeamDirectoryForAdmin } from '@/app/actions/client-team'
 import { DeleteClientButton } from '@/components/clients/DeleteClientButton'
 import { requireAdmin } from '@/lib/auth/require-admin'
 import { MetricStrip } from '@/components/dashboard/MetricStrip'
@@ -32,7 +35,8 @@ export default async function AdminClientDetailPage({
   const { data: client } = await supabase.from('clients').select('*').eq('id', id).single()
   if (!client) notFound()
 
-  const [{ data: tickets }, { count: ticketCount }, activeRetainer, clientOps] = await Promise.all([
+  const [{ data: tickets }, { count: ticketCount }, activeRetainer, clientOps, clientTeam] =
+    await Promise.all([
     supabase
       .from('tickets')
       .select('id, title, status, priority, type, updated_at')
@@ -42,6 +46,7 @@ export default async function AdminClientDetailPage({
     supabase.from('tickets').select('*', { count: 'exact', head: true }).eq('client_id', id),
     getRetainerForClient(supabase, id, { includePackage: true }),
     getClientOpsSummary(supabase, id, client.name),
+    getClientTeamDirectoryForAdmin(id),
   ])
 
   const openTickets = tickets?.filter(t => t.status === 'open' || t.status === 'in_progress').length ?? 0
@@ -153,13 +158,26 @@ export default async function AdminClientDetailPage({
         ]}
       />
 
+      <EditClientForm
+        client={{
+          id,
+          name: client.name,
+          email: client.email,
+          contact_name: client.contact_name,
+          billing_cycle_day: client.billing_cycle_day,
+          sla_response_hours: client.sla_response_hours,
+        }}
+      />
+
       <ClientApprovalRemindersToggle
         clientId={id}
         enabled={client.approval_reminders_enabled ?? true}
         canManage={isAdmin}
       />
 
-      {hasRetainer ? (
+      <AdminClientTeamPanel clientId={id} directory={clientTeam} />
+
+      {hasRetainer || client.plan_name?.trim() || isAdmin ? (
         <ClientRetainerSection clientId={id} canManageLifecycle={isAdmin} />
       ) : clientOps.hosting.length > 0 ? (
         <ClientHostingLifecycleSection contracts={clientOps.hosting} />

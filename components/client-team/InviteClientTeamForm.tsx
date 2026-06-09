@@ -6,8 +6,17 @@ import { inviteClientTeamMember } from '@/app/actions/client-team'
 import { CopyInput } from '@/components/ui/CopyInput'
 import { FormPanel } from '@/components/dashboard/FormPanel'
 import { notifyError, notifySuccess } from '@/lib/notify'
+import type { InviteClientTeamMemberResult } from '@/lib/client-team/action-results'
 
-export function InviteClientTeamForm() {
+export function InviteClientTeamForm({
+  title = 'Invite teammate',
+  description = 'Add colleagues who need portal access. We email them an invite link to create their account. Ticket notification emails still go only to your main contact address.',
+  inviteAction = inviteClientTeamMember,
+}: {
+  title?: string
+  description?: string
+  inviteAction?: (formData: FormData) => Promise<InviteClientTeamMemberResult>
+}) {
   const router = useRouter()
   const [fallbackLink, setFallbackLink] = useState<string | null>(null)
   const [emailError, setEmailError] = useState<string | null>(null)
@@ -23,7 +32,7 @@ export function InviteClientTeamForm() {
     setFallbackLink(null)
     setPending(true)
 
-    const result = await inviteClientTeamMember(new FormData(form))
+    const result = await inviteAction(new FormData(form))
     setPending(false)
 
     if (!result.ok) {
@@ -47,12 +56,9 @@ export function InviteClientTeamForm() {
   }
 
   return (
-    <FormPanel title="Invite teammate">
+    <FormPanel title={title}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <p className="dash-meta leading-relaxed">
-          Add colleagues who need portal access. We email them an invite link to create their
-          account. Ticket notification emails still go only to your main contact address.
-        </p>
+        <p className="dash-meta leading-relaxed">{description}</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div>

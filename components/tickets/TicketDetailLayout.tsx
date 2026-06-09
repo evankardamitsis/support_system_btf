@@ -70,6 +70,7 @@ export function TicketDetailLayout({
   hoursOverageNote = null,
   isAdmin = false,
   hoursBilling = true,
+  noHours = false,
   assignedTo = null,
   staffOptions = [],
 }: {
@@ -97,6 +98,7 @@ export function TicketDetailLayout({
   hoursOverageNote?: string | null
   isAdmin?: boolean
   hoursBilling?: boolean
+  noHours?: boolean
   assignedTo?: string | null
   staffOptions?: AssigneeOption[]
 }) {
@@ -196,6 +198,14 @@ export function TicketDetailLayout({
                 ·
               </span>
               <span className="capitalize">{type}</span>
+              {noHours ? (
+                <>
+                  <span className="ticket-detail-sep" aria-hidden>
+                    ·
+                  </span>
+                  <span className="ticket-no-hours-badge">No hours</span>
+                </>
+              ) : null}
             </p>
             <div className="ticket-detail-title-row">
               <h1 className="ticket-detail-title">{title}</h1>
@@ -321,6 +331,7 @@ export function TicketDetailLayout({
           hoursOverageNote={hoursOverageNote}
           isAdmin={isAdmin}
           hoursBilling={hoursBilling}
+          noHours={noHours}
           onResolve={() => {
             if (hoursBilling) {
               setResolveOpen(true)

@@ -155,6 +155,7 @@ export interface Database {
           approval_reminder_count: number
           approval_reminder_sent_at: string | null
           on_hold_at: string | null
+          no_hours: boolean
         }
         Insert: {
           id?: string
@@ -171,6 +172,7 @@ export interface Database {
           resolved_at?: string | null
           estimated_hours?: number | null
           actual_hours?: number | null
+          no_hours?: boolean
           estimate_status?: 'pending_approval' | 'approved' | null
           estimate_submitted_at?: string | null
           estimate_approved_at?: string | null
@@ -213,6 +215,7 @@ export interface Database {
           approval_reminder_count?: number
           approval_reminder_sent_at?: string | null
           on_hold_at?: string | null
+          no_hours?: boolean
         }
         Relationships: []
       }

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { tryCreateAdminClient } from "@/lib/supabase/admin";
 import { requireClient } from "@/lib/auth/require-client";
+import { requireStaff } from "@/lib/auth/require-staff";
 import {
   clearIncompleteClientTeamSignup,
   findAuthUserByEmail,
@@ -25,6 +26,11 @@ function getAppOrigin(): string {
 
 function clientTeamInviteUrl(token: string): string {
   return `${getAppOrigin()}/auth/register-client?token=${token}`;
+}
+
+function revalidateClientTeamPaths(clientId: string) {
+  revalidatePath("/portal/team");
+  revalidatePath(`/admin/clients/${clientId}`);
 }
 
 function clientInvitesSetupError(error: {
@@ -115,7 +121,7 @@ async function deliverClientTeamInvite(
     inviteUrl: url,
   });
 
-  revalidatePath("/portal/team");
+  revalidateClientTeamPaths(input.clientId);
   return {
     ok: true,
     url,
@@ -124,12 +130,13 @@ async function deliverClientTeamInvite(
   };
 }
 
-export async function inviteClientTeamMember(
+async function inviteClientTeamMemberForClient(
+  clientId: string,
+  invitedBy: string,
+  invitedByName: string | null,
   formData: FormData,
+  options?: { allowMainContactEmail?: boolean },
 ): Promise<InviteClientTeamMemberResult> {
-  const { user, clientId, profile } = await requireClient();
-  const invitedByName = profile.full_name?.trim() || null;
-
   const email = (formData.get("email") as string)?.trim().toLowerCase();
   const fullName = (formData.get("full_name") as string)?.trim();
 
@@ -149,7 +156,10 @@ export async function inviteClientTeamMember(
     .eq("id", clientId)
     .single();
 
-  if (clientRow?.email?.trim().toLowerCase() === email) {
+  if (
+    !options?.allowMainContactEmail &&
+    clientRow?.email?.trim().toLowerCase() === email
+  ) {
     return failInvite(
       "This email is already the main contact for your account. They can sign in at /auth/login.",
     );
@@ -241,7 +251,7 @@ export async function inviteClientTeamMember(
       client_id: clientId,
       email,
       full_name: fullName,
-      invited_by: user.id,
+      invited_by: invitedBy,
     })
     .select("token")
     .single();
@@ -265,12 +275,40 @@ export async function inviteClientTeamMember(
   });
 }
 
-export async function resendClientTeamInvite(
-  inviteId: string,
+export async function inviteClientTeamMember(
+  formData: FormData,
 ): Promise<InviteClientTeamMemberResult> {
-  const { clientId, profile } = await requireClient();
-  const invitedByName = profile.full_name?.trim() || null;
+  const { user, clientId, profile } = await requireClient();
+  return inviteClientTeamMemberForClient(
+    clientId,
+    user.id,
+    profile.full_name?.trim() || null,
+    formData,
+  );
+}
 
+export async function inviteClientTeamMemberAsAdmin(
+  clientId: string,
+  formData: FormData,
+): Promise<InviteClientTeamMemberResult> {
+  const { user, profile } = await requireStaff();
+  if (!clientId) {
+    return failInvite("Client is required");
+  }
+  return inviteClientTeamMemberForClient(
+    clientId,
+    user.id,
+    profile.full_name?.trim() || null,
+    formData,
+    { allowMainContactEmail: true },
+  );
+}
+
+async function resendClientTeamInviteForClient(
+  clientId: string,
+  inviteId: string,
+  invitedByName: string | null,
+): Promise<InviteClientTeamMemberResult> {
   const adminResult = tryCreateAdminClient();
   if ("error" in adminResult) {
     return failInvite(adminResult.error);
@@ -302,6 +340,107 @@ export async function resendClientTeamInvite(
   });
 }
 
+export async function resendClientTeamInvite(
+  inviteId: string,
+): Promise<InviteClientTeamMemberResult> {
+  const { clientId, profile } = await requireClient();
+  return resendClientTeamInviteForClient(
+    clientId,
+    inviteId,
+    profile.full_name?.trim() || null,
+  );
+}
+
+export async function resendClientTeamInviteAsAdmin(
+  clientId: string,
+  inviteId: string,
+): Promise<InviteClientTeamMemberResult> {
+  const { profile } = await requireStaff();
+  return resendClientTeamInviteForClient(
+    clientId,
+    inviteId,
+    profile.full_name?.trim() || null,
+  );
+}
+
+async function loadClientTeamDirectory(
+  admin: SupabaseClient<Database>,
+  clientId: string,
+): Promise<ClientTeamDirectoryResult> {
+  const empty: ClientTeamDirectoryResult = {
+    clientName: "",
+    primaryContactEmail: "",
+    members: [],
+    pendingInvites: [],
+    error: null,
+  };
+
+  const [
+    { data: clientRow },
+    { data: profiles, error: profilesError },
+    { data: invites, error: invitesError },
+  ] = await Promise.all([
+    admin.from("clients").select("name, email").eq("id", clientId).single(),
+    admin
+      .from("users")
+      .select("id, full_name, created_at")
+      .eq("client_id", clientId)
+      .eq("role", "client")
+      .order("created_at", { ascending: true }),
+    admin
+      .from("client_invite_tokens")
+      .select("id, email, full_name, expires_at, created_at, token")
+      .eq("client_id", clientId)
+      .eq("used", false)
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false }),
+  ]);
+
+  if (profilesError) {
+    return { ...empty, error: profilesError.message };
+  }
+
+  if (invitesError) {
+    return {
+      ...empty,
+      error: clientInvitesSetupError(invitesError) ?? invitesError.message,
+    };
+  }
+
+  const primaryContactEmail = clientRow?.email?.trim().toLowerCase() ?? "";
+
+  const members = await Promise.all(
+    (profiles ?? []).map(async (p) => {
+      const email = (await getAuthEmailById(admin, p.id)) ?? "—";
+      return {
+        id: p.id,
+        email,
+        full_name: p.full_name,
+        is_primary_contact: email.toLowerCase() === primaryContactEmail,
+        created_at: p.created_at ?? "",
+      };
+    }),
+  );
+
+  const pendingInvites =
+    invites?.map((i) => ({
+      id: i.id,
+      email: i.email,
+      full_name: i.full_name,
+      expires_at: i.expires_at,
+      created_at: i.created_at ?? "",
+      invite_url: clientTeamInviteUrl(i.token),
+    })) ?? [];
+
+  return {
+    clientName: clientRow?.name ?? "",
+    primaryContactEmail: clientRow?.email ?? "",
+    members,
+    pendingInvites,
+    error: null,
+  };
+}
+
 export async function getClientTeamDirectory(): Promise<ClientTeamDirectoryResult> {
   const empty: ClientTeamDirectoryResult = {
     clientName: "",
@@ -312,81 +451,12 @@ export async function getClientTeamDirectory(): Promise<ClientTeamDirectoryResul
   };
 
   try {
-    const { supabase, clientId } = await requireClient();
+    const { clientId } = await requireClient();
     const adminResult = tryCreateAdminClient();
     if ("error" in adminResult) {
       return { ...empty, error: adminResult.error };
     }
-    const admin = adminResult.client;
-
-    const [
-      { data: clientRow },
-      { data: profiles, error: profilesError },
-      { data: invites, error: invitesError },
-    ] = await Promise.all([
-      supabase
-        .from("clients")
-        .select("name, email")
-        .eq("id", clientId)
-        .single(),
-      supabase
-        .from("users")
-        .select("id, full_name, created_at")
-        .eq("client_id", clientId)
-        .eq("role", "client")
-        .order("created_at", { ascending: true }),
-      supabase
-        .from("client_invite_tokens")
-        .select("id, email, full_name, expires_at, created_at, token")
-        .eq("client_id", clientId)
-        .eq("used", false)
-        .gt("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: false }),
-    ]);
-
-    if (profilesError) {
-      return { ...empty, error: profilesError.message };
-    }
-
-    if (invitesError) {
-      return {
-        ...empty,
-        error: clientInvitesSetupError(invitesError) ?? invitesError.message,
-      };
-    }
-
-    const primaryContactEmail = clientRow?.email?.trim().toLowerCase() ?? "";
-
-    const members = await Promise.all(
-      (profiles ?? []).map(async (p) => {
-        const email = (await getAuthEmailById(admin, p.id)) ?? "—";
-        return {
-          id: p.id,
-          email,
-          full_name: p.full_name,
-          is_primary_contact: email.toLowerCase() === primaryContactEmail,
-          created_at: p.created_at ?? "",
-        };
-      }),
-    );
-
-    const pendingInvites =
-      invites?.map((i) => ({
-        id: i.id,
-        email: i.email,
-        full_name: i.full_name,
-        expires_at: i.expires_at,
-        created_at: i.created_at ?? "",
-        invite_url: clientTeamInviteUrl(i.token),
-      })) ?? [];
-
-    return {
-      clientName: clientRow?.name ?? "",
-      primaryContactEmail: clientRow?.email ?? "",
-      members,
-      pendingInvites,
-      error: null,
-    };
+    return loadClientTeamDirectory(adminResult.client, clientId);
   } catch (err) {
     return {
       ...empty,
@@ -395,12 +465,43 @@ export async function getClientTeamDirectory(): Promise<ClientTeamDirectoryResul
   }
 }
 
-export async function revokeClientInvite(
+export async function getClientTeamDirectoryForAdmin(
+  clientId: string,
+): Promise<ClientTeamDirectoryResult> {
+  const empty: ClientTeamDirectoryResult = {
+    clientName: "",
+    primaryContactEmail: "",
+    members: [],
+    pendingInvites: [],
+    error: null,
+  };
+
+  try {
+    await requireStaff();
+    const adminResult = tryCreateAdminClient();
+    if ("error" in adminResult) {
+      return { ...empty, error: adminResult.error };
+    }
+    return loadClientTeamDirectory(adminResult.client, clientId);
+  } catch (err) {
+    return {
+      ...empty,
+      error: err instanceof Error ? err.message : "Could not load team",
+    };
+  }
+}
+
+async function revokeClientInviteForClient(
+  clientId: string,
   inviteId: string,
 ): Promise<RevokeClientInviteResult> {
-  const { supabase, clientId } = await requireClient();
+  const adminResult = tryCreateAdminClient();
+  if ("error" in adminResult) {
+    return { ok: false, error: adminResult.error };
+  }
+  const admin = adminResult.client;
 
-  const { data: invite, error: fetchError } = await supabase
+  const { data: invite, error: fetchError } = await admin
     .from("client_invite_tokens")
     .select("id, email")
     .eq("id", inviteId)
@@ -415,12 +516,7 @@ export async function revokeClientInvite(
     return { ok: false, error: "Invite not found or already used" };
   }
 
-  const adminResult = tryCreateAdminClient();
-  if ("error" in adminResult) {
-    return { ok: false, error: adminResult.error };
-  }
-
-  const { error: deleteError } = await adminResult.client
+  const { error: deleteError } = await admin
     .from("client_invite_tokens")
     .delete()
     .eq("id", inviteId)
@@ -431,12 +527,23 @@ export async function revokeClientInvite(
     return { ok: false, error: deleteError.message };
   }
 
-  await clearIncompleteClientTeamSignup(
-    adminResult.client,
-    invite.email,
-    clientId,
-  );
+  await clearIncompleteClientTeamSignup(admin, invite.email, clientId);
 
-  revalidatePath("/portal/team");
+  revalidateClientTeamPaths(clientId);
   return { ok: true };
+}
+
+export async function revokeClientInvite(
+  inviteId: string,
+): Promise<RevokeClientInviteResult> {
+  const { clientId } = await requireClient();
+  return revokeClientInviteForClient(clientId, inviteId);
+}
+
+export async function revokeClientInviteAsAdmin(
+  clientId: string,
+  inviteId: string,
+): Promise<RevokeClientInviteResult> {
+  await requireStaff();
+  return revokeClientInviteForClient(clientId, inviteId);
 }

@@ -11627,6 +11627,19 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   color: var(--text-3);
 }
 
+[data-theme="dashboard"] .ticket-no-hours-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  background: color-mix(in srgb, var(--border) 65%, transparent);
+  border-radius: 0.2rem;
+}
+
 [data-theme="dashboard"] .ticket-detail-client-link {
   color: var(--text-2);
   text-decoration: none;

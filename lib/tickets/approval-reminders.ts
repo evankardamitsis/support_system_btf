@@ -35,6 +35,7 @@ type PendingTicketRow = {
   estimate_submitted_at: string | null
   completion_submitted_at: string | null
   approval_reminder_count: number
+  no_hours?: boolean
 }
 
 function ticketApprovalKind(row: PendingTicketRow): TicketApprovalKind | null {
@@ -91,7 +92,7 @@ export async function processTicketApprovalReminders(): Promise<{
   const { data: tickets, error } = await supabase
     .from('tickets')
     .select(
-      'id, title, client_id, status, estimate_status, completion_status, estimated_hours, estimate_submitted_at, completion_submitted_at, approval_reminder_count'
+      'id, title, client_id, status, estimate_status, completion_status, estimated_hours, estimate_submitted_at, completion_submitted_at, approval_reminder_count, no_hours'
     )
     .or('estimate_status.eq.pending_approval,completion_status.eq.pending_approval')
 
@@ -99,6 +100,7 @@ export async function processTicketApprovalReminders(): Promise<{
 
   for (const row of tickets ?? []) {
     if (remindersDisabled.has(row.client_id)) continue
+    if (row.no_hours) continue
 
     const kind = ticketApprovalKind(row)
     const pendingSince = ticketPendingSince(row)

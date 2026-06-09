@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   cancelRetainer,
+  deleteClientRetainer,
   freezeRetainer,
   resumeRetainer,
   unfreezeRetainer,
@@ -17,7 +18,7 @@ import {
 } from '@/lib/retainers/status'
 import { notifyError, notifySuccess } from '@/lib/notify'
 
-type ConfirmAction = 'freeze' | 'cancel'
+type ConfirmAction = 'freeze' | 'cancel' | 'delete'
 
 const confirmCopy: Record<
   ConfirmAction,
@@ -56,16 +57,32 @@ const confirmCopy: Record<
     pendingLabel: 'Canceling…',
     success: 'Retainer canceled',
   },
+  delete: {
+    title: 'Delete retainer?',
+    description: (
+      <>
+        Permanently removes every billing period, logged hours, and extra-hours records for this
+        client. The client plan is cleared — you can set up a fresh retainer afterward. Existing
+        tickets stay open. This cannot be undone.
+      </>
+    ),
+    confirmLabel: 'Delete retainer',
+    confirmVariant: 'danger',
+    pendingLabel: 'Deleting…',
+    success: 'Retainer deleted',
+  },
 }
 
 export function RetainerStatusControls({
   clientId,
   status,
   canManage,
+  hasRetainerPeriods = false,
 }: {
   clientId: string
   status: RetainerLifecycleStatus
   canManage: boolean
+  hasRetainerPeriods?: boolean
 }) {
   const router = useRouter()
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null)
@@ -87,15 +104,21 @@ export function RetainerStatusControls({
   }
 
   function runConfirmedAction(action: ConfirmAction) {
-    const actionFn =
-      action === 'freeze'
-        ? () => freezeRetainer(clientId)
-        : () => cancelRetainer(clientId)
-
     setError(null)
     startTransition(async () => {
       try {
-        await actionFn()
+        if (action === 'delete') {
+          const result = await deleteClientRetainer(clientId)
+          if (!result.ok) {
+            setError(result.error)
+            notifyError(result.error)
+            return
+          }
+        } else {
+          const actionFn =
+            action === 'freeze' ? () => freezeRetainer(clientId) : () => cancelRetainer(clientId)
+          await actionFn()
+        }
         notifySuccess(confirmCopy[action].success)
         setConfirmAction(null)
         router.refresh()
@@ -193,6 +216,17 @@ export function RetainerStatusControls({
               }
             >
               {pending ? 'Working…' : 'Resume retainer'}
+            </button>
+          ) : null}
+
+          {hasRetainerPeriods ? (
+            <button
+              type="button"
+              className="dash-btn-danger cursor-pointer"
+              disabled={pending}
+              onClick={() => openConfirm('delete')}
+            >
+              Delete retainer
             </button>
           ) : null}
         </div>

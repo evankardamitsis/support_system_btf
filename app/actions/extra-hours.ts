@@ -10,7 +10,7 @@ import {
   notifyStaffExtraHoursApproved,
 } from '@/lib/email/ticket-notifications'
 import { getRetainerForClient } from '@/lib/retainers/active'
-import { clientUsesHourBilling } from '@/lib/retainers/billing-model'
+import { loadTicketHourBilling } from '@/lib/tickets/hours-billing'
 import { assertClientCanUseRetainer } from '@/lib/retainers/guards'
 import { isTicketClosed } from '@/lib/tickets/closed'
 import { billApprovedExtraHoursForTicket } from '@/lib/tickets/extra-hours-billing'
@@ -48,7 +48,7 @@ export async function submitExtraHours(ticketId: string, minutes: number, note?:
 
   const { data: ticket, error: ticketErr } = await supabase
     .from('tickets')
-    .select('id, client_id, status, title')
+    .select('id, client_id, status, title, no_hours')
     .eq('id', ticketId)
     .single()
 
@@ -56,8 +56,8 @@ export async function submitExtraHours(ticketId: string, minutes: number, note?:
   if (!canRequestExtraHours(ticket.status)) {
     throw new Error('Extra hours can only be requested on resolved or closed tickets')
   }
-  if (!(await clientUsesHourBilling(supabase, ticket.client_id))) {
-    throw new Error('This client is on a fixed plan — extra hours are not used')
+  if (!(await loadTicketHourBilling(supabase, ticket.client_id, ticket.no_hours))) {
+    throw new Error('This ticket does not use extra hours')
   }
 
   await assertClientCanUseRetainer(supabase, ticket.client_id)

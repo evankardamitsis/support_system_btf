@@ -8,6 +8,7 @@ import { computeTicketAnalytics } from '@/lib/tickets/analytics'
 import { Plus } from 'lucide-react'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 import { hourBillingByClientFromRetainers } from '@/lib/retainers/billing-model'
+import { ticketUsesHourBilling } from '@/lib/tickets/hours-billing'
 import { getStaffForMentions } from '@/app/actions/comments'
 import { isResolvedQueueStatus } from '@/lib/tickets/query'
 
@@ -52,7 +53,7 @@ export default async function AdminTicketsPage({
     supabase
       .from('tickets')
       .select(
-        'id, client_id, assigned_to, status, priority, title, type, created_at, updated_at, resolved_at, estimated_hours, actual_hours, estimate_status, completion_status, clients(name)'
+        'id, client_id, assigned_to, status, priority, title, type, created_at, updated_at, resolved_at, estimated_hours, actual_hours, estimate_status, completion_status, no_hours, clients(name)'
       )
       .order('updated_at', { ascending: false }),
     supabase.from('clients').select('id, name').order('name'),
@@ -146,7 +147,10 @@ export default async function AdminTicketsPage({
     estimate_status: t.estimate_status ?? null,
     completion_status: t.completion_status ?? null,
     clientName: (t.clients as unknown as { name: string } | null)?.name ?? null,
-    hoursBilling: hoursBillingByClient[t.client_id] ?? true,
+    hoursBilling: ticketUsesHourBilling(
+      hoursBillingByClient[t.client_id] ?? true,
+      t.no_hours
+    ),
     assignedTo: t.assigned_to ?? null,
     assigneeName: t.assigned_to ? (staffNameById.get(t.assigned_to) ?? null) : null,
   }))

@@ -112,6 +112,41 @@ export async function createClientAction(formData: FormData): Promise<string> {
   return client.id
 }
 
+export async function updateClientAction(clientId: string, formData: FormData): Promise<void> {
+  const { supabase } = await requireStaff()
+
+  const name = (formData.get('name') as string)?.trim()
+  const email = (formData.get('email') as string)?.trim().toLowerCase()
+  const contactName = (formData.get('contact_name') as string)?.trim() || null
+  const billingCycleDay = parseInt(formData.get('billing_cycle_day') as string, 10) || 1
+  const slaResponseHours = parseInt(formData.get('sla_response_hours') as string, 10) || 8
+
+  if (!clientId) throw new Error('Client is required')
+  if (!name) throw new Error('Company name is required')
+  if (!email || !email.includes('@')) throw new Error('A valid email is required')
+  if (billingCycleDay < 1 || billingCycleDay > 28) {
+    throw new Error('Billing cycle day must be between 1 and 28')
+  }
+  if (slaResponseHours < 1) throw new Error('SLA response hours must be at least 1')
+
+  const { error } = await supabase
+    .from('clients')
+    .update({
+      name,
+      email,
+      contact_name: contactName,
+      billing_cycle_day: billingCycleDay,
+      sla_response_hours: slaResponseHours,
+    })
+    .eq('id', clientId)
+
+  if (error) throw new Error(error.message)
+
+  revalidatePath(`/admin/clients/${clientId}`)
+  revalidatePath('/admin/clients')
+  revalidateClientPickers()
+}
+
 export async function generateInviteLink(clientId: string): Promise<string> {
   const supabase = await createClient()
 

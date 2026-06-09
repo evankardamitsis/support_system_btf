@@ -1,4 +1,9 @@
-import type { ClientPendingInvite, ClientTeamMember } from '@/lib/client-team/action-results'
+import type {
+  ClientPendingInvite,
+  ClientTeamMember,
+  InviteClientTeamMemberResult,
+  RevokeClientInviteResult,
+} from '@/lib/client-team/action-results'
 import { formatDate } from '@/lib/dates'
 import { PendingClientInviteActions } from '@/components/client-team/PendingClientInviteActions'
 
@@ -11,10 +16,14 @@ export function ClientTeamList({
   members,
   pendingInvites,
   primaryContactEmail,
+  resendInviteAction,
+  revokeInviteAction,
 }: {
   members: ClientTeamMember[]
   pendingInvites: ClientPendingInvite[]
   primaryContactEmail: string
+  resendInviteAction?: (inviteId: string) => Promise<InviteClientTeamMemberResult>
+  revokeInviteAction?: (inviteId: string) => Promise<RevokeClientInviteResult>
 }) {
   if (members.length === 0 && pendingInvites.length === 0) {
     return (
@@ -90,7 +99,12 @@ export function ClientTeamList({
                     {formatDate(inv.expires_at)}
                   </span>
                 </span>
-                <PendingClientInviteActions inviteId={inv.id} inviteUrl={inv.invite_url} />
+                <PendingClientInviteActions
+                  inviteId={inv.id}
+                  inviteUrl={inv.invite_url}
+                  resendAction={resendInviteAction}
+                  revokeAction={revokeInviteAction}
+                />
               </div>
             </div>
           ))}

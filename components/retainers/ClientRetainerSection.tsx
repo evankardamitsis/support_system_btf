@@ -28,10 +28,18 @@ export async function ClientRetainerSection({
   const retainerStatus = (client?.retainer_status ?? 'active') as RetainerLifecycleStatus
   const lifecycleBlocked = retainerStatus !== 'active'
 
-  const r = await getRetainerForClient(supabase, clientId, {
-    includeCost: true,
-    includePackage: true,
-  })
+  const [{ count: periodCount }, r] = await Promise.all([
+    supabase
+      .from('retainers')
+      .select('*', { count: 'exact', head: true })
+      .eq('client_id', clientId),
+    getRetainerForClient(supabase, clientId, {
+      includeCost: true,
+      includePackage: true,
+    }),
+  ])
+
+  const hasRetainerPeriods = (periodCount ?? 0) > 0
 
   const hoursBilling = retainerTracksHours(r)
   const hoursUsed = r ? Number(r.hours_used) : 0
@@ -49,6 +57,7 @@ export async function ClientRetainerSection({
         clientId={clientId}
         status={retainerStatus}
         canManage={canManageLifecycle}
+        hasRetainerPeriods={hasRetainerPeriods}
       />
 
       {r ? (

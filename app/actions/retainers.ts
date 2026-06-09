@@ -2,12 +2,15 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { tryCreateAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth/require-admin'
 import { insertRetainerPeriod } from '@/lib/retainers/insert-period'
 import { currentBillingPeriod } from '@/lib/retainers/period'
 import { isHoursBasedPackage } from '@/lib/retainers/billing-model'
 import { parseRetainerPackage, type RetainerPackage } from '@/lib/retainers/packages'
 import type { RetainerLifecycleStatus } from '@/lib/retainers/status'
+
+export type DeleteRetainerResult = { ok: true } | { ok: false; error: string }
 
 function parsePackage(raw: string | null): RetainerPackage {
   return parseRetainerPackage(raw)
@@ -150,4 +153,71 @@ export async function resumeRetainer(clientId: string): Promise<void> {
   }
 
   await setRetainerStatus(clientId, 'active')
+}
+
+/** Permanently remove all retainer periods and clear this client's plan. */
+export async function deleteClientRetainer(clientId: string): Promise<DeleteRetainerResult> {
+  const { isAdmin } = await requireAdmin()
+  if (!isAdmin) {
+    return { ok: false, error: 'Only admins can delete retainers' }
+  }
+
+  if (!clientId) {
+    return { ok: false, error: 'Client is required' }
+  }
+
+  const adminResult = tryCreateAdminClient()
+  if ('error' in adminResult) {
+    return { ok: false, error: adminResult.error }
+  }
+  const admin = adminResult.client
+
+  const { data: periods, error: periodsError } = await admin
+    .from('retainers')
+    .select('id')
+    .eq('client_id', clientId)
+
+  if (periodsError) {
+    return { ok: false, error: periodsError.message }
+  }
+
+  if (!periods?.length) {
+    return { ok: false, error: 'This client has no retainer periods to delete' }
+  }
+
+  const retainerIds = periods.map(period => period.id)
+
+  const { error: extraHoursError } = await admin
+    .from('ticket_extra_hours')
+    .delete()
+    .in('retainer_id', retainerIds)
+
+  if (extraHoursError) {
+    return { ok: false, error: extraHoursError.message }
+  }
+
+  const { error: deleteError } = await admin.from('retainers').delete().eq('client_id', clientId)
+
+  if (deleteError) {
+    return { ok: false, error: deleteError.message }
+  }
+
+  const { error: clientError } = await admin
+    .from('clients')
+    .update({
+      plan_name: null,
+      renewal_date: null,
+      retainer_status: 'active',
+      retainer_frozen_at: null,
+      retainer_canceled_at: null,
+    })
+    .eq('id', clientId)
+
+  if (clientError) {
+    return { ok: false, error: clientError.message }
+  }
+
+  revalidateClientRetainerPaths(clientId)
+  revalidatePath('/admin/tickets')
+  return { ok: true }
 }

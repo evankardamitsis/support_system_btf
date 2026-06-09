@@ -8,6 +8,7 @@ import { requireAdmin } from '@/lib/auth/require-admin'
 import { requireClient } from '@/lib/auth/require-client'
 import { getRetainerForClient } from '@/lib/retainers/active'
 import { clientUsesHourBilling } from '@/lib/retainers/billing-model'
+import { loadTicketHourBilling } from '@/lib/tickets/hours-billing'
 import { assertClientCanUseRetainer } from '@/lib/retainers/guards'
 import {
   getClientNotificationEmails,
@@ -146,6 +147,7 @@ export async function createTicket(formData: FormData): Promise<string> {
 
   const clientId = formData.get('client_id') as string
   const title = formData.get('title') as string
+  const noHours = formData.get('no_hours') === 'true'
 
   const { data: ticket, error } = await supabase
     .from('tickets')
@@ -155,9 +157,13 @@ export async function createTicket(formData: FormData): Promise<string> {
       assigned_to: assignedTo,
       title,
       description: (formData.get('description') as string) || null,
-      type: ((formData.get('type') as string) || 'task') as 'bug' | 'task' | 'request' | 'question',
+      type: (noHours
+        ? 'bug'
+        : (formData.get('type') as string) || 'task') as 'bug' | 'task' | 'request' | 'question',
       priority: ((formData.get('priority') as string) || 'normal') as TicketPriority,
-      estimated_hours: estimated != null && !Number.isNaN(estimated) ? estimated : null,
+      estimated_hours:
+        noHours || estimated == null || Number.isNaN(estimated) ? null : estimated,
+      no_hours: noHours,
     })
     .select('id')
     .single()
@@ -243,11 +249,14 @@ export async function updateTicketEstimatedHours(ticketId: string, hours: number
   await assertTicketOpen(supabase, ticketId)
   const { data: ticket } = await supabase
     .from('tickets')
-    .select('estimate_status, client_id')
+    .select('estimate_status, client_id, no_hours')
     .eq('id', ticketId)
     .single()
-  if (ticket && !(await clientUsesHourBilling(supabase, ticket.client_id))) {
-    throw new Error('This client is on a fixed plan — hour tracking is not used')
+  if (
+    ticket &&
+    !(await loadTicketHourBilling(supabase, ticket.client_id, ticket.no_hours))
+  ) {
+    throw new Error('This ticket does not use hour tracking')
   }
   if (isEstimateLocked(ticket?.estimate_status ?? null)) {
     throw new Error('Estimate is locked after submission or client approval')
@@ -268,13 +277,15 @@ export async function submitEstimateForApproval(ticketId: string) {
 
   const { data: ticket, error: fetchErr } = await supabase
     .from('tickets')
-    .select('id, title, client_id, estimated_hours, priority, estimate_status, status')
+    .select(
+      'id, title, client_id, estimated_hours, priority, estimate_status, status, no_hours'
+    )
     .eq('id', ticketId)
     .single()
 
   if (fetchErr || !ticket) throw new Error(fetchErr?.message ?? 'Ticket not found')
-  if (!(await clientUsesHourBilling(supabase, ticket.client_id))) {
-    throw new Error('This client is on a fixed plan — estimates are not used')
+  if (!(await loadTicketHourBilling(supabase, ticket.client_id, ticket.no_hours))) {
+    throw new Error('This ticket does not use estimates')
   }
   if (ticket.estimate_status === 'pending_approval') {
     throw new Error('Estimate is already awaiting client approval')
@@ -389,13 +400,13 @@ export async function submitWorkForClientCheck(ticketId: string) {
 
   const { data: ticket, error: fetchErr } = await supabase
     .from('tickets')
-    .select('id, title, client_id, estimate_status, completion_status, status')
+    .select('id, title, client_id, estimate_status, completion_status, status, no_hours')
     .eq('id', ticketId)
     .single()
 
   if (fetchErr || !ticket) throw new Error(fetchErr?.message ?? 'Ticket not found')
-  if (!(await clientUsesHourBilling(supabase, ticket.client_id))) {
-    throw new Error('This client is on a fixed plan — work approval is not used')
+  if (!(await loadTicketHourBilling(supabase, ticket.client_id, ticket.no_hours))) {
+    throw new Error('This ticket does not use work approval')
   }
   if (ticket.estimate_status !== 'approved') {
     throw new Error('Client must approve the estimate before submitting work for review')
@@ -595,19 +606,20 @@ export async function updateTicketStatus(ticketId: string, status: TicketStatus)
     title: string
     estimatedHours: number | null
     actualHours: number
+    noHours: boolean
   } | null = null
 
   if (status === 'resolved') {
     const { data: ticket } = await supabase
       .from('tickets')
       .select(
-        'estimate_status, completion_status, status, title, client_id, estimated_hours, actual_hours'
+        'estimate_status, completion_status, status, title, client_id, estimated_hours, actual_hours, no_hours'
       )
       .eq('id', ticketId)
       .single()
 
     const hourBilling = ticket?.client_id
-      ? await clientUsesHourBilling(supabase, ticket.client_id)
+      ? await loadTicketHourBilling(supabase, ticket.client_id, ticket.no_hours)
       : true
 
     if (hourBilling) {
@@ -645,6 +657,7 @@ export async function updateTicketStatus(ticketId: string, status: TicketStatus)
             estimatedHours:
               ticket.estimated_hours != null ? Number(ticket.estimated_hours) : null,
             actualHours: actual,
+            noHours: false,
           }
         }
       } else {
@@ -653,6 +666,7 @@ export async function updateTicketStatus(ticketId: string, status: TicketStatus)
           title: ticket.title,
           estimatedHours: null,
           actualHours: 0,
+          noHours: ticket.no_hours ?? false,
         }
       }
     }
@@ -673,6 +687,7 @@ export async function updateTicketStatus(ticketId: string, status: TicketStatus)
       clientId: resolvedNotify.clientId,
       estimatedHours: resolvedNotify.estimatedHours,
       actualHours: resolvedNotify.actualHours,
+      noHours: resolvedNotify.noHours,
     })
     if (!clientNotify.sent) {
       console.error('[email] client ticket-resolved notification failed:', clientNotify.error)
@@ -688,7 +703,7 @@ export async function resolveTicketSimple(ticketId: string) {
 
   const { data: ticket, error: ticketErr } = await supabase
     .from('tickets')
-    .select('id, client_id, status, title')
+    .select('id, client_id, status, title, no_hours')
     .eq('id', ticketId)
     .single()
 
@@ -697,9 +712,13 @@ export async function resolveTicketSimple(ticketId: string) {
     throw new Error(TICKET_LOCKED_MESSAGE)
   }
 
-  const hourBilling = await clientUsesHourBilling(supabase, ticket.client_id)
+  const hourBilling = await loadTicketHourBilling(
+    supabase,
+    ticket.client_id,
+    ticket.no_hours
+  )
   if (hourBilling) {
-    throw new Error('This client uses hour-based billing — log hours to resolve')
+    throw new Error('This ticket uses hour-based billing — log hours to resolve')
   }
 
   await assertClientCanUseRetainer(supabase, ticket.client_id)
@@ -716,6 +735,7 @@ export async function resolveTicketSimple(ticketId: string) {
     clientId: ticket.client_id,
     estimatedHours: null,
     actualHours: 0,
+    noHours: ticket.no_hours ?? false,
   })
   if (!clientNotify.sent) {
     console.error('[email] client ticket-resolved notification failed:', clientNotify.error)
@@ -737,13 +757,18 @@ export async function resolveTicketWithHours(
 
   const { data: ticket, error: ticketErr } = await supabase
     .from('tickets')
-    .select('id, client_id, status, estimate_status, completion_status, title, estimated_hours')
+    .select(
+      'id, client_id, status, estimate_status, completion_status, title, estimated_hours, no_hours'
+    )
     .eq('id', ticketId)
     .single()
 
   if (ticketErr || !ticket) throw new Error(ticketErr?.message ?? 'Ticket not found')
   if (isTicketClosed(ticket.status)) {
     throw new Error(TICKET_LOCKED_MESSAGE)
+  }
+  if (ticket.no_hours) {
+    throw new Error('This ticket is marked no hours — use Mark resolved instead')
   }
   if (ticket.estimate_status !== 'approved') {
     throw new Error('Client must approve the estimate before resolving')
@@ -824,7 +849,7 @@ export async function resolveTicketOffline(
   const { data: ticket, error: ticketErr } = await supabase
     .from('tickets')
     .select(
-      'id, client_id, status, estimate_status, estimated_hours, completion_status, title'
+      'id, client_id, status, estimate_status, estimated_hours, completion_status, title, no_hours'
     )
     .eq('id', ticketId)
     .single()
@@ -832,6 +857,9 @@ export async function resolveTicketOffline(
   if (ticketErr || !ticket) throw new Error(ticketErr?.message ?? 'Ticket not found')
   if (isTicketClosed(ticket.status)) {
     throw new Error(TICKET_LOCKED_MESSAGE)
+  }
+  if (ticket.no_hours) {
+    throw new Error('This ticket is marked no hours — use Mark resolved instead')
   }
 
   await assertClientCanUseRetainer(supabase, ticket.client_id)

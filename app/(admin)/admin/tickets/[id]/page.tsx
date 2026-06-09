@@ -8,6 +8,7 @@ import { TicketCommentForm } from '@/components/tickets/TicketCommentForm'
 import { TicketDetailLayout } from '@/components/tickets/TicketDetailLayout'
 import { getRetainerForClient } from '@/lib/retainers/active'
 import { retainerTracksHours } from '@/lib/retainers/billing-model'
+import { ticketUsesHourBilling } from '@/lib/tickets/hours-billing'
 import { isTicketClosed } from '@/lib/tickets/closed'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
@@ -67,7 +68,10 @@ export default async function AdminTicketDetailPage({
   ])
 
   const hoursLogged = Boolean(hourLog)
-  const hoursBilling = retainerTracksHours(activeRetainer)
+  const hoursBilling = ticketUsesHourBilling(
+    retainerTracksHours(activeRetainer),
+    ticket.no_hours
+  )
   const estimatedHours =
     ticket.estimated_hours != null ? Number(ticket.estimated_hours) : null
   const actualHours = ticket.actual_hours != null ? Number(ticket.actual_hours) : null
@@ -123,6 +127,7 @@ export default async function AdminTicketDetailPage({
         extraHoursActiveAt={ticket.extra_hours_active_at ?? null}
         isAdmin={isAdmin}
         hoursBilling={hoursBilling}
+        noHours={ticket.no_hours}
         assignedTo={ticket.assigned_to ?? null}
         staffOptions={staffForMentions}
       >
