@@ -1,10 +1,11 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { createTicket } from '@/app/actions/tickets'
 import { DashCancel } from '@/components/dashboard/DashCancel'
-import { runWithToast } from '@/lib/notify'
+import { SearchableSelect } from '@/components/ui/SearchableSelect'
+import { notifyError, runWithToast } from '@/lib/notify'
 
 import type { AssigneeOption } from './EditableAssigneeSelect'
 
@@ -20,12 +21,26 @@ export function AdminNewTicketForm({
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
   const [noHours, setNoHours] = useState(false)
+  const [clientId, setClientId] = useState(defaultClientId ?? '')
+
+  const clientOptions = useMemo(
+    () =>
+      [...clients]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map(client => ({ value: client.id, label: client.name })),
+    [clients]
+  )
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (submitting) return
+    if (!clientId) {
+      notifyError('Please select a client')
+      return
+    }
 
     const formData = new FormData(e.currentTarget)
+    formData.set('client_id', clientId)
     setSubmitting(true)
 
     void (async () => {
@@ -46,23 +61,19 @@ export function AdminNewTicketForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div>
-        <label className="dash-label">
+        <label className="dash-label" htmlFor="ticket-client">
           Client <span className="dash-label-required">*</span>
         </label>
-        <select
-          name="client_id"
-          required
-          className="dash-select w-full text-sm"
-          defaultValue={defaultClientId ?? ''}
+        <SearchableSelect
+          id="ticket-client"
+          options={clientOptions}
+          value={clientId}
+          onChange={setClientId}
+          placeholder="Select client…"
+          searchPlaceholder="Search clients…"
           disabled={submitting}
-        >
-          <option value="">Select client…</option>
-          {clients.map(c => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+          required
+        />
       </div>
       <div>
         <label className="dash-label">
