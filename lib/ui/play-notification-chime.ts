@@ -1,3 +1,6 @@
+import { isDesktopApp } from '@/lib/desktop/bridge'
+import { initDesktopFocus, subscribeDesktopFocus } from '@/lib/desktop/focus'
+
 const CHIME_VOLUME = 0.44
 const CHIME_VERSION = 11
 const HUDDLE_CHIME_VERSION = 1
@@ -241,11 +244,19 @@ function getSharedAudio(): HTMLAudioElement | null {
   return sharedAudio
 }
 
+function canPlayNotificationAudio() {
+  if (typeof document === 'undefined') return false
+  if (isDesktopApp()) {
+    return document.visibilityState !== 'hidden'
+  }
+  return document.visibilityState === 'visible'
+}
+
 async function playChimeNow(): Promise<void> {
   if (typeof window === 'undefined') {
     throw new Error('Audio is not available')
   }
-  if (document.visibilityState !== 'visible') {
+  if (!canPlayNotificationAudio()) {
     throw new Error('Tab is not visible')
   }
 
@@ -285,7 +296,7 @@ async function playHuddleChimeNow(): Promise<void> {
   if (typeof window === 'undefined') {
     throw new Error('Audio is not available')
   }
-  if (document.visibilityState !== 'visible') {
+  if (!canPlayNotificationAudio()) {
     throw new Error('Tab is not visible')
   }
 
@@ -361,6 +372,14 @@ export function initNotificationAudio() {
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
+      flushPendingChime()
+      flushPendingHuddleChime()
+    }
+  })
+
+  initDesktopFocus()
+  subscribeDesktopFocus(focused => {
+    if (focused) {
       flushPendingChime()
       flushPendingHuddleChime()
     }

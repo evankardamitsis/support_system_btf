@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { ResolveCelebrationProvider } from '@/components/admin/ResolveCelebrationProvider'
+import { DesktopBridgeInit } from '@/components/desktop/DesktopBridgeInit'
 import { NotificationAudioInit } from '@/components/dashboard/NotificationAudioInit'
 import { CommsProvider } from '@/lib/comms/comms-context'
 
@@ -35,6 +36,7 @@ export function DashboardShell({
     <ResolveCelebrationProvider>
     <CommsProvider>
     <NotificationAudioInit />
+    <DesktopBridgeInit />
     <div data-theme="dashboard" className="dash-shell flex flex-col h-dvh min-h-0 overflow-hidden">
       <TopBar
         userName={userName}

@@ -10,4 +10,16 @@ contextBridge.exposeInMainWorld('btfDesktop', {
   notify({ title, body, href }) {
     ipcRenderer.send('btf-desktop:notify', { title, body, href })
   },
+  setBadge(count) {
+    ipcRenderer.send('btf-desktop:set-badge', count)
+  },
+  bounce() {
+    ipcRenderer.send('btf-desktop:bounce')
+  },
+  onFocusChange(callback) {
+    if (typeof callback !== 'function') return () => {}
+    const listener = (_event, focused) => callback(Boolean(focused))
+    ipcRenderer.on('btf-desktop:focus-change', listener)
+    return () => ipcRenderer.removeListener('btf-desktop:focus-change', listener)
+  },
 })

@@ -1,4 +1,4 @@
-type DesktopNotifyInput = {
+export type DesktopNotifyInput = {
   title: string
   body?: string | null
   href?: string
@@ -8,6 +8,9 @@ type BtfDesktopBridge = {
   platform: string
   isDesktop: boolean
   notify: (input: DesktopNotifyInput) => void
+  setBadge: (count: number) => void
+  bounce: () => void
+  onFocusChange: (callback: (focused: boolean) => void) => () => void
 }
 
 declare global {
@@ -28,4 +31,14 @@ export function notifyDesktop(input: DesktopNotifyInput) {
     href: input.href,
   })
   return true
+}
+
+export function setDockBadge(count: number) {
+  if (!isDesktopApp() || !window.btfDesktop?.setBadge) return
+  window.btfDesktop.setBadge(Math.max(0, Math.floor(count)))
+}
+
+export function bounceDock() {
+  if (!isDesktopApp() || !window.btfDesktop?.bounce) return
+  window.btfDesktop.bounce()
 }

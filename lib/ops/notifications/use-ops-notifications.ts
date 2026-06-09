@@ -11,7 +11,8 @@ import {
 } from '@/lib/ops/notifications/service'
 import type { OpsNotificationRecord } from '@/lib/ops/notifications/types'
 import { isHuddleOpsNotification } from '@/lib/comms/huddle-chat-log'
-import { notifyDesktop } from '@/lib/desktop/bridge'
+import { setDesktopOpsUnread } from '@/lib/desktop/badge'
+import { notifyIfUnfocused } from '@/lib/desktop/notify-unfocused'
 import { playHuddleChime, playNotificationChime } from '@/lib/ui/play-notification-chime'
 
 type NotificationRow = Database['public']['Tables']['ops_notifications']['Row']
@@ -34,8 +35,7 @@ function upsertNotification(
 }
 
 function pushDesktopNotification(row: OpsNotificationRecord) {
-  if (document.visibilityState === 'visible') return
-  notifyDesktop({
+  notifyIfUnfocused({
     title: row.title,
     body: row.body,
     href: row.href,
@@ -152,6 +152,10 @@ export function useOpsNotifications() {
 
     return user.id
   }, [])
+
+  useEffect(() => {
+    setDesktopOpsUnread(unreadCount)
+  }, [unreadCount])
 
   useEffect(() => {
     const onFocus = () => {

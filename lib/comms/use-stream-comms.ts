@@ -12,6 +12,9 @@ import {
 } from '@stream-io/video-react-sdk'
 import type { StreamCommsCredentials } from '@/lib/comms/stream-server'
 import { ensureVideoConnected, isVideoConnected } from '@/lib/comms/ensure-video-connected'
+import { setDesktopCommsUnread } from '@/lib/desktop/badge'
+import { shouldUseDesktopAlerts } from '@/lib/desktop/focus'
+import { notifyIfUnfocused } from '@/lib/desktop/notify-unfocused'
 import { playNotificationChime } from '@/lib/ui/play-notification-chime'
 
 function getUnreadCount(chatClient: StreamChatClient) {
@@ -243,6 +246,7 @@ export function useStreamComms() {
     if (!mountedRef.current) return
 
     unreadRef.current = snapshot.unreadCount
+    setDesktopCommsUnread(snapshot.unreadCount)
     setAvailability(snapshot.availability)
     setState({
       ready: snapshot.availability === 'available' && isChatConnected(snapshot.chatClient),
@@ -285,9 +289,17 @@ export function useStreamComms() {
       const next = getUnreadCount(chatClient)
       const prev = unreadRef.current
       if (next > prev && !panelOpenRef.current) {
+        if (shouldUseDesktopAlerts()) {
+          notifyIfUnfocused({
+            title: 'COMMS',
+            body: 'New team message',
+            href: '/admin/tickets?openComms=1',
+          })
+        }
         playNotificationChime()
       }
       unreadRef.current = next
+      setDesktopCommsUnread(next)
       setState(prevState => ({
         ...prevState,
         unreadCount: next,
@@ -322,6 +334,7 @@ export function useStreamComms() {
       await channel.markRead()
       const next = getUnreadCount(chatClient!)
       unreadRef.current = next
+      setDesktopCommsUnread(next)
       setState(prev => ({ ...prev, unreadCount: next }))
     } catch {
       // Channel may be unavailable while reconnecting.

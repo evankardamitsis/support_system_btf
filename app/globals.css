@@ -12810,8 +12810,8 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   z-index: 120;
   display: flex;
   flex-direction: column;
-  width: min(40rem, calc(100vw - 2rem));
-  height: min(46rem, calc(100dvh - 6rem));
+  width: min(56rem, calc(100vw - 1.5rem));
+  height: min(62rem, calc(100dvh - 5rem));
   overflow: hidden;
   isolation: isolate;
   border: 1px solid var(--border-2);
@@ -12820,12 +12820,13 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.04),
     0 24px 64px rgba(0, 0, 0, 0.5);
+  font-size: 1rem;
 }
 
 @media (min-width: 1280px) {
   [data-theme="dashboard"] .ops-comms-panel {
-    width: min(44rem, calc(100vw - 2rem));
-    height: min(50rem, calc(100dvh - 5.5rem));
+    width: min(60rem, calc(100vw - 1.5rem));
+    height: min(68rem, calc(100dvh - 4.5rem));
   }
 }
 
@@ -12876,7 +12877,7 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 
 [data-theme="dashboard"] .ops-comms-panel-title {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   font-family: var(--font-dm-mono);
@@ -12885,7 +12886,7 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 
 [data-theme="dashboard"] .ops-comms-panel-subtitle {
   margin: 0.15rem 0 0;
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
   color: var(--text-3);
 }
 
@@ -12911,7 +12912,7 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   border-radius: 0.5rem;
   background: transparent;
   color: var(--text-3);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 600;
   padding: 0.5rem 0.65rem;
   cursor: pointer;
@@ -12980,7 +12981,7 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 
 [data-theme="dashboard"] .ops-comms-chat-layout {
   display: grid;
-  grid-template-columns: minmax(0, 10.5rem) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 14rem) minmax(0, 1fr);
   height: 100%;
   min-height: 0;
   overflow: hidden;
@@ -14675,6 +14676,70 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 [data-theme="dashboard"] .ops-comms-chat .str-chat__typing-indicator {
   padding: 0.15rem 0.65rem 0;
   min-height: 1.25rem;
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   color: var(--text-3);
+}
+
+/* COMMS enlarged typography (messages, sidebar, composer) */
+[data-theme="dashboard"] .ops-comms-channel-section-label {
+  font-size: 0.6875rem;
+}
+
+[data-theme="dashboard"] .ops-comms-channel-dm-toggle {
+  font-size: 0.75rem;
+  padding: 0.5rem 0.5rem;
+}
+
+[data-theme="dashboard"] .ops-comms-channel-pill {
+  font-size: 0.8125rem;
+  padding: 0.5rem 0.5rem;
+}
+
+[data-theme="dashboard"] .ops-comms-channel-pill-unread {
+  min-width: 1.15rem;
+  height: 1.15rem;
+  font-size: 0.625rem;
+}
+
+[data-theme="dashboard"] .ops-comms-chat-channel-title {
+  font-size: 0.8125rem;
+}
+
+[data-theme="dashboard"] .ops-comms-chat-channel-meta-text {
+  font-size: 0.6875rem;
+}
+
+[data-theme="dashboard"] .ops-comms-chat .str-chat__message-text,
+[data-theme="dashboard"] .ops-comms-chat .str-chat__message-text p,
+[data-theme="dashboard"] .ops-comms-chat .str-chat__message-text-inner {
+  font-size: 0.9375rem !important;
+  line-height: 1.55 !important;
+}
+
+[data-theme="dashboard"] .ops-comms-chat .str-chat__message-simple-name,
+[data-theme="dashboard"] .ops-comms-chat .str-chat__message-sender-name {
+  font-size: 0.8125rem !important;
+}
+
+[data-theme="dashboard"] .ops-comms-chat .str-chat__date-separator-date,
+[data-theme="dashboard"] .ops-comms-chat .str-chat__message-data time {
+  font-size: 0.75rem !important;
+}
+
+[data-theme="dashboard"] .ops-comms-chat .str-chat__textarea textarea,
+[data-theme="dashboard"] .ops-comms-chat .str-chat__message-input textarea {
+  font-size: 0.9375rem !important;
+  line-height: 1.45 !important;
+}
+
+[data-theme="dashboard"] .ops-comms-search-input {
+  font-size: 0.875rem;
+}
+
+[data-theme="dashboard"] .ops-comms-search-hit-text {
+  font-size: 0.8125rem;
+}
+
+[data-theme="dashboard"] .ops-comms-panel-state {
+  font-size: 0.9375rem;
 }

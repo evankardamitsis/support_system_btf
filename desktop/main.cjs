@@ -58,6 +58,8 @@ function createWindow() {
 
   void mainWindow.loadURL(APP_URL)
 
+  wireWindowFocusEvents()
+
   if (isDev) {
     mainWindow.webContents.openDevTools({ mode: 'detach' })
   }
@@ -65,6 +67,21 @@ function createWindow() {
   mainWindow.on('closed', () => {
     mainWindow = null
   })
+}
+
+function wireWindowFocusEvents() {
+  if (!mainWindow) return
+
+  const sendFocusState = () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return
+    mainWindow.webContents.send('btf-desktop:focus-change', mainWindow.isFocused())
+  }
+
+  mainWindow.on('focus', sendFocusState)
+  mainWindow.on('blur', sendFocusState)
+  mainWindow.on('show', sendFocusState)
+  mainWindow.on('hide', sendFocusState)
+  sendFocusState()
 }
 
 function buildMenu() {
@@ -221,6 +238,18 @@ app.on('open-url', (event, url) => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
+})
+
+ipcMain.on('btf-desktop:set-badge', (_event, count) => {
+  if (process.platform !== 'darwin' || !app.dock) return
+  const value = typeof count === 'number' && Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0
+  app.dock.setBadge(value > 0 ? (value > 99 ? '99+' : String(value)) : '')
+})
+
+ipcMain.on('btf-desktop:bounce', () => {
+  if (process.platform === 'darwin' && app.dock) {
+    app.dock.bounce('informational')
+  }
 })
 
 ipcMain.on('btf-desktop:notify', (_event, payload) => {
