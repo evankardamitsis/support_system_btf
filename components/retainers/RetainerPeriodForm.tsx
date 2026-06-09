@@ -3,9 +3,20 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createRetainerPeriod } from '@/app/actions/retainers'
+import { DateInput } from '@/components/ui/DateInput'
 import { PACKAGE_LABELS, RETAINER_PACKAGES, type RetainerPackage } from '@/lib/retainers/packages'
 import { isHoursBasedPackage } from '@/lib/retainers/billing-model'
 import { runWithToast } from '@/lib/notify'
+
+function defaultPeriodDates() {
+  const start = new Date()
+  const end = new Date(start)
+  end.setDate(end.getDate() + 30)
+  return {
+    start: start.toISOString().split('T')[0],
+    end: end.toISOString().split('T')[0],
+  }
+}
 
 export function RetainerPeriodForm({
   clientId,
@@ -24,8 +35,8 @@ export function RetainerPeriodForm({
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
-  const today = new Date().toISOString().split('T')[0]
-  const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const [periodStart, setPeriodStart] = useState(() => defaultPeriodDates().start)
+  const [periodEnd, setPeriodEnd] = useState(() => defaultPeriodDates().end)
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -37,6 +48,10 @@ export function RetainerPeriodForm({
     formData.set('package_name', packageName)
     formData.set('billing_cycle_day', String(billingCycleDay))
     formData.set('use_custom_dates', customDates ? 'true' : 'false')
+    if (customDates) {
+      formData.set('period_start', periodStart)
+      formData.set('period_end', periodEnd)
+    }
 
     const ok = await runWithToast(() => createRetainerPeriod(formData), {
       loading: 'Saving retainer…',
@@ -50,6 +65,9 @@ export function RetainerPeriodForm({
     setError(null)
     setPackageName('care')
     setCustomDates(false)
+    const defaults = defaultPeriodDates()
+    setPeriodStart(defaults.start)
+    setPeriodEnd(defaults.end)
     form.reset()
     router.refresh()
   }
@@ -135,23 +153,28 @@ export function RetainerPeriodForm({
           {customDates ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <div>
-                <label className="dash-label">Start</label>
-                <input
-                  name="period_start"
-                  type="date"
-                  defaultValue={today}
-                  className="btf-input w-full"
+                <label className="dash-label" htmlFor={`period-start-${clientId}`}>
+                  Start
+                </label>
+                <DateInput
+                  id={`period-start-${clientId}`}
+                  value={periodStart}
+                  onChange={setPeriodStart}
                   disabled={pending}
+                  required
                 />
               </div>
               <div>
-                <label className="dash-label">End</label>
-                <input
-                  name="period_end"
-                  type="date"
-                  defaultValue={nextMonth}
-                  className="btf-input w-full"
+                <label className="dash-label" htmlFor={`period-end-${clientId}`}>
+                  End
+                </label>
+                <DateInput
+                  id={`period-end-${clientId}`}
+                  value={periodEnd}
+                  onChange={setPeriodEnd}
+                  min={periodStart}
                   disabled={pending}
+                  required
                 />
               </div>
             </div>
