@@ -7,7 +7,9 @@ import { ClientApprovalRemindersToggle } from '@/components/clients/ClientApprov
 import { EditClientForm } from '@/components/clients/EditClientForm'
 import { AdminClientTeamPanel } from '@/components/clients/AdminClientTeamPanel'
 import { getClientTeamDirectoryForAdmin } from '@/app/actions/client-team'
+import { ClientPortalStatusBadge } from '@/components/clients/ClientPortalStatusBadge'
 import { DeleteClientButton } from '@/components/clients/DeleteClientButton'
+import { getClientPortalRegistrationStatus } from '@/lib/clients/portal-registration'
 import { requireAdmin } from '@/lib/auth/require-admin'
 import { MetricStrip } from '@/components/dashboard/MetricStrip'
 import { TicketsTable } from '@/components/tickets/TicketsTable'
@@ -35,8 +37,14 @@ export default async function AdminClientDetailPage({
   const { data: client } = await supabase.from('clients').select('*').eq('id', id).single()
   if (!client) notFound()
 
-  const [{ data: tickets }, { count: ticketCount }, activeRetainer, clientOps, clientTeam] =
-    await Promise.all([
+  const [
+    { data: tickets },
+    { count: ticketCount },
+    activeRetainer,
+    clientOps,
+    clientTeam,
+    { data: legacyInvite },
+  ] = await Promise.all([
     supabase
       .from('tickets')
       .select('id, title, status, priority, type, updated_at')
@@ -47,7 +55,19 @@ export default async function AdminClientDetailPage({
     getRetainerForClient(supabase, id, { includePackage: true }),
     getClientOpsSummary(supabase, id, client.name),
     getClientTeamDirectoryForAdmin(id),
+    supabase
+      .from('invite_tokens')
+      .select('id')
+      .eq('client_id', id)
+      .eq('used', false)
+      .gt('expires_at', new Date().toISOString())
+      .limit(1)
+      .maybeSingle(),
   ])
+
+  const portalStatus = getClientPortalRegistrationStatus(clientTeam, {
+    hasLegacyInvitePending: Boolean(legacyInvite),
+  })
 
   const openTickets = tickets?.filter(t => t.status === 'open' || t.status === 'in_progress').length ?? 0
   const hasActiveHosting = clientOps.hosting.some(contract => contract.status === 'active')
@@ -132,7 +152,10 @@ export default async function AdminClientDetailPage({
             {client.name.charAt(0)}
           </div>
           <div className="min-w-0">
-            <h1 className="profile-name">{client.name}</h1>
+            <div className="profile-name-row">
+              <h1 className="profile-name">{client.name}</h1>
+              {!clientTeam.error ? <ClientPortalStatusBadge status={portalStatus} /> : null}
+            </div>
             <p className="profile-meta">
               {client.contact_name ? `${client.contact_name} · ` : ''}
               {client.email}

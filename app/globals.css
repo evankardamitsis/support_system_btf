@@ -10987,6 +10987,13 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   flex-shrink: 0;
 }
 
+[data-theme="dashboard"] .profile-name-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 0.75rem;
+}
+
 [data-theme="dashboard"] .profile-name {
   font-size: clamp(1.5rem, 3vw, 2rem);
   font-weight: 500;
@@ -10994,6 +11001,38 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   line-height: 1.1;
   color: var(--text-1);
   font-family: var(--font-dm-mono);
+}
+
+[data-theme="dashboard"] .client-portal-badge {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0.22rem 0.55rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-family: var(--font-dm-mono);
+  border-radius: 999px;
+  border: 1px solid var(--border);
+}
+
+[data-theme="dashboard"] .client-portal-badge--registered {
+  color: #86efac;
+  border-color: color-mix(in srgb, #4ade80 45%, var(--border));
+  background: color-mix(in srgb, #4ade80 12%, transparent);
+}
+
+[data-theme="dashboard"] .client-portal-badge--pending {
+  color: #fdba74;
+  border-color: color-mix(in srgb, #fb923c 45%, var(--border));
+  background: color-mix(in srgb, #fb923c 10%, transparent);
+}
+
+[data-theme="dashboard"] .client-portal-badge--inactive {
+  color: var(--text-3);
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--border) 35%, transparent);
 }
 
 [data-theme="dashboard"] .profile-meta {
