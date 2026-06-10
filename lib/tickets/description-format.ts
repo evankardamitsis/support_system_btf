@@ -1,4 +1,4 @@
-import DOMPurify from 'isomorphic-dompurify'
+import sanitizeHtml from 'sanitize-html'
 
 const HTML_TAG_PATTERN = /<\/?[a-z][\s\S]*>/i
 
@@ -25,8 +25,8 @@ export function normalizeTicketDescription(raw: string | null | undefined): stri
 }
 
 export function sanitizeTicketDescriptionHtml(html: string): string {
-  return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: [
+  return sanitizeHtml(html, {
+    allowedTags: [
       'p',
       'br',
       'strong',
@@ -45,7 +45,12 @@ export function sanitizeTicketDescriptionHtml(html: string): string {
       'code',
       'pre',
     ],
-    ALLOWED_ATTR: ['href', 'target', 'rel'],
-    ALLOW_DATA_ATTR: false,
+    allowedAttributes: {
+      a: ['href', 'target', 'rel'],
+    },
+    allowedSchemes: ['http', 'https', 'mailto'],
+    transformTags: {
+      a: sanitizeHtml.simpleTransform('a', { rel: 'noopener noreferrer nofollow' }),
+    },
   })
 }
