@@ -21,6 +21,8 @@ import {
 import { useResolveCelebration } from '@/components/admin/ResolveCelebrationProvider'
 import { ResolveHoursModal } from './ResolveHoursModal'
 import { ResolveOfflineModal } from './ResolveOfflineModal'
+import { FormattedTicketDescription } from '@/components/tickets/FormattedTicketDescription'
+import { isEmptyTicketDescription } from '@/lib/tickets/description-format'
 import { TicketDetailSidebar, type ExtraHoursItem } from './TicketDetailSidebar'
 import { DeleteTicketButton } from './DeleteTicketButton'
 import { TicketCommsButton } from '@/components/comms/TicketCommsButton'
@@ -308,10 +310,13 @@ export function TicketDetailLayout({
         </div>
       </header>
 
-      {description ? (
+      {description && !isEmptyTicketDescription(description) ? (
         <section className="ticket-detail-brief anim-fade-up anim-fade-up-2">
           <h2 className="ticket-detail-brief-label">Request</h2>
-          <p className="ticket-detail-brief-body">{description}</p>
+          <FormattedTicketDescription
+            content={description}
+            className="ticket-detail-brief-body"
+          />
         </section>
       ) : null}
 

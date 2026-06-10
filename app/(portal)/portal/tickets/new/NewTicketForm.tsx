@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createPortalTicket } from '@/app/actions/tickets'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { DashCancel } from '@/components/dashboard/DashCancel'
+import { TicketDescriptionEditor } from '@/components/tickets/TicketDescriptionEditor'
 import { runWithToast } from '@/lib/notify'
 
 const typeOptions = ['BUG', 'TASK', 'REQUEST', 'QUESTION']
@@ -59,14 +60,7 @@ export function NewTicketForm() {
 
         <div>
           <label className="dash-label">Description</label>
-          <textarea
-            name="description"
-            rows={6}
-            className="btf-input w-full resize-y"
-            placeholder="Provide as much detail as possible…"
-            style={{ minHeight: 120 }}
-            disabled={pending}
-          />
+          <TicketDescriptionEditor disabled={pending} minHeight={160} />
         </div>
 
         <div className="flex flex-wrap gap-3 pt-1">

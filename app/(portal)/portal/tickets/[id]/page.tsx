@@ -14,6 +14,8 @@ import { formatDateTimeHuman } from '@/lib/tickets/display'
 import { isTicketClosed } from '@/lib/tickets/closed'
 import { requirePortalClient } from '@/lib/auth/portal-context'
 import { clientUsesHourBilling } from '@/lib/retainers/billing-model'
+import { FormattedTicketDescription } from '@/components/tickets/FormattedTicketDescription'
+import { isEmptyTicketDescription } from '@/lib/tickets/description-format'
 import { ticketUsesHourBilling } from '@/lib/tickets/hours-billing'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
@@ -141,10 +143,13 @@ export default async function PortalTicketDetailPage({
                 hoursOverageNote={ticket.hours_overage_note}
               />
             ) : null}
-            {ticket.description ? (
+            {ticket.description && !isEmptyTicketDescription(ticket.description) ? (
               <section className="portal-ticket-request">
                 <h2 className="portal-ticket-request-label">Your request</h2>
-                <p className="portal-ticket-request-body">{ticket.description}</p>
+                <FormattedTicketDescription
+                  content={ticket.description}
+                  className="portal-ticket-request-body"
+                />
               </section>
             ) : null}
           </div>

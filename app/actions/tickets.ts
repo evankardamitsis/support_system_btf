@@ -8,6 +8,7 @@ import { requireAdmin } from '@/lib/auth/require-admin'
 import { requireClient } from '@/lib/auth/require-client'
 import { getRetainerForClient } from '@/lib/retainers/active'
 import { clientUsesHourBilling } from '@/lib/retainers/billing-model'
+import { normalizeTicketDescription } from '@/lib/tickets/description-format'
 import { loadTicketHourBilling } from '@/lib/tickets/hours-billing'
 import { assertClientCanUseRetainer } from '@/lib/retainers/guards'
 import {
@@ -156,7 +157,7 @@ export async function createTicket(formData: FormData): Promise<string> {
       created_by: user.id,
       assigned_to: assignedTo,
       title,
-      description: (formData.get('description') as string) || null,
+      description: normalizeTicketDescription(formData.get('description') as string | null),
       type: (noHours
         ? 'bug'
         : (formData.get('type') as string) || 'task') as 'bug' | 'task' | 'request' | 'question',
@@ -204,7 +205,7 @@ export async function createPortalTicket(formData: FormData): Promise<string> {
       client_id: clientId,
       created_by: user.id,
       title,
-      description: (formData.get('description') as string) || null,
+      description: normalizeTicketDescription(formData.get('description') as string | null),
       type,
     })
     .select('id')

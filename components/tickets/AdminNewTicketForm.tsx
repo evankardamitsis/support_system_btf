@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { createTicket } from '@/app/actions/tickets'
 import { DashCancel } from '@/components/dashboard/DashCancel'
+import { TicketDescriptionEditor } from '@/components/tickets/TicketDescriptionEditor'
 import { SearchableSelect } from '@/components/ui/SearchableSelect'
 import { notifyError, runWithToast } from '@/lib/notify'
 
@@ -166,14 +167,7 @@ export function AdminNewTicketForm({
       ) : null}
       <div>
         <label className="dash-label">Description</label>
-        <textarea
-          name="description"
-          rows={5}
-          className="btf-input w-full resize-y"
-          style={{ minHeight: 100 }}
-          placeholder="Provide as much detail as possible…"
-          disabled={submitting}
-        />
+        <TicketDescriptionEditor disabled={submitting} minHeight={160} />
       </div>
       <div className="flex flex-wrap gap-3 pt-1">
         <button type="submit" className="dash-btn-primary btn-primary cursor-pointer" disabled={submitting}>
