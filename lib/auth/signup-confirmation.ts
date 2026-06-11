@@ -7,6 +7,11 @@ export function isAlreadyRegisteredAuthError(message: string): boolean {
   return /already (registered|exists)/i.test(message)
 }
 
+/** Supabase Auth throttles signup confirmation resends (~1 per minute). */
+export function isAuthEmailRateLimitError(message: string): boolean {
+  return /only request this after/i.test(message) || /rate limit/i.test(message)
+}
+
 /** Ask Supabase Auth to send (or resend) the signup confirmation email. */
 export async function sendSignupConfirmationEmail(
   supabase: SupabaseClient<Database>,
@@ -41,8 +46,8 @@ export type RegisterInvitedAuthUserResult =
   | { ok: false; error: string; alreadyConfirmed?: boolean }
 
 /**
- * Sign up an invited user and always deliver a Supabase confirmation email when
- * email confirmation is required (no session returned).
+ * Sign up an invited user. When email confirmation is required, Supabase sends the
+ * confirmation email on signUp — only resend for existing unconfirmed accounts.
  */
 export async function registerInvitedAuthUser(
   input: RegisterInvitedAuthUserInput
@@ -101,8 +106,16 @@ export async function registerInvitedAuthUser(
     return { ok: true, session: true, userId }
   }
 
+  // signUp already triggers the confirmation email for new accounts.
+  if (!alreadyExists) {
+    return { ok: true, session: false, userId, confirmationSent: true }
+  }
+
   const confirmError = await sendSignupConfirmationEmail(input.supabase, email)
   if (confirmError) {
+    if (isAuthEmailRateLimitError(confirmError)) {
+      return { ok: true, session: false, userId, confirmationSent: true }
+    }
     return {
       ok: false,
       error: `Account created but confirmation email failed: ${confirmError}`,
