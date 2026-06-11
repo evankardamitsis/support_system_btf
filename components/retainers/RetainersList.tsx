@@ -31,7 +31,9 @@ export function RetainersList({ retainers }: { retainers: RetainerListItem[] }) 
     return (
       <div className="retainers-table dash-empty">
         <p className="dash-empty-title">No retainers yet</p>
-        <p className="dash-empty-hint">Retainers appear when you set up a client plan.</p>
+        <p className="dash-empty-hint">
+          Use the form above to create a retainer period for a client.
+        </p>
       </div>
     )
   }
