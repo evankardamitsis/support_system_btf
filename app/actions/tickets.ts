@@ -9,6 +9,11 @@ import { requireClient } from '@/lib/auth/require-client'
 import { getRetainerForClient } from '@/lib/retainers/active'
 import { clientUsesHourBilling } from '@/lib/retainers/billing-model'
 import { normalizeTicketDescription } from '@/lib/tickets/description-format'
+import {
+  autoApproveTicketEstimate,
+  autoApproveTicketWork,
+  isClientPortalRegistered,
+} from '@/lib/tickets/portal-approval'
 import { loadTicketHourBilling } from '@/lib/tickets/hours-billing'
 import { assertClientCanUseRetainer } from '@/lib/retainers/guards'
 import {
@@ -300,6 +305,17 @@ export async function submitEstimateForApproval(ticketId: string) {
     throw new Error('Enter estimated hours before submitting')
   }
 
+  const adminResult = tryCreateAdminClient()
+  if ('error' in adminResult) {
+    throw new Error(adminResult.error)
+  }
+
+  if (!(await isClientPortalRegistered(adminResult.client, ticket.client_id))) {
+    await autoApproveTicketEstimate(supabase, ticket)
+    revalidateTicketPaths(ticketId)
+    return
+  }
+
   const clientEmails = await getClientNotificationEmails(ticket.client_id)
   if (!clientEmails.length) {
     throw new Error(
@@ -418,6 +434,17 @@ export async function submitWorkForClientCheck(ticketId: string) {
   }
   if (ticket.completion_status === 'approved') {
     throw new Error('Client has already approved this work')
+  }
+
+  const adminResult = tryCreateAdminClient()
+  if ('error' in adminResult) {
+    throw new Error(adminResult.error)
+  }
+
+  if (!(await isClientPortalRegistered(adminResult.client, ticket.client_id))) {
+    await autoApproveTicketWork(supabase, ticket)
+    revalidateTicketPaths(ticketId)
+    return
   }
 
   const clientEmails = await getClientNotificationEmails(ticket.client_id)

@@ -6,6 +6,7 @@ import { createRetainerPeriod } from '@/app/actions/retainers'
 import { DateInput } from '@/components/ui/DateInput'
 import { PACKAGE_LABELS, RETAINER_PACKAGES, type RetainerPackage } from '@/lib/retainers/packages'
 import { isHoursBasedPackage } from '@/lib/retainers/billing-model'
+import { DashCancel } from '@/components/dashboard/DashCancel'
 import { runWithToast } from '@/lib/notify'
 
 function defaultPeriodDates() {
@@ -23,11 +24,15 @@ export function RetainerPeriodForm({
   billingCycleDay = 1,
   submitLabel = 'Save retainer',
   showCustomDates = false,
+  successRedirect,
+  cancelHref,
 }: {
   clientId: string
   billingCycleDay?: number
   submitLabel?: string
   showCustomDates?: boolean
+  successRedirect?: string
+  cancelHref?: string
 }) {
   const router = useRouter()
   const [packageName, setPackageName] = useState<RetainerPackage>('care')
@@ -63,6 +68,11 @@ export function RetainerPeriodForm({
       return
     }
     setError(null)
+    if (successRedirect) {
+      router.push(successRedirect)
+      router.refresh()
+      return
+    }
     setPackageName('care')
     setCustomDates(false)
     const defaults = defaultPeriodDates()
@@ -188,13 +198,16 @@ export function RetainerPeriodForm({
 
       {error ? <p className="ticket-modal-error">{error}</p> : null}
 
-      <button
-        type="submit"
-        className="dash-btn-primary btn-primary cursor-pointer"
-        disabled={pending}
-      >
-        {pending ? 'Saving…' : submitLabel}
-      </button>
+      <div className="flex flex-wrap gap-3 pt-1">
+        <button
+          type="submit"
+          className="dash-btn-primary btn-primary cursor-pointer"
+          disabled={pending}
+        >
+          {pending ? 'Saving…' : submitLabel}
+        </button>
+        {cancelHref ? <DashCancel href={cancelHref} /> : null}
+      </div>
     </form>
   )
 }

@@ -15,6 +15,10 @@ import { assertClientCanUseRetainer } from '@/lib/retainers/guards'
 import { isTicketClosed } from '@/lib/tickets/closed'
 import { billApprovedExtraHoursForTicket } from '@/lib/tickets/extra-hours-billing'
 import { canCompleteExtraHoursWork, canRequestExtraHours } from '@/lib/tickets/extra-hours'
+import {
+  autoApproveExtraHoursRequest,
+  isClientPortalRegistered,
+} from '@/lib/tickets/portal-approval'
 
 async function requireStaff() {
   const supabase = await createClient()
@@ -67,6 +71,41 @@ export async function submitExtraHours(ticketId: string, minutes: number, note?:
     throw new Error('No active retainer period for this client — add a retainer before requesting extra hours')
   }
 
+  const adminResult = tryCreateAdminClient()
+  if ('error' in adminResult) {
+    throw new Error(adminResult.error)
+  }
+  const admin = adminResult.client
+
+  const portalRegistered = await isClientPortalRegistered(admin, ticket.client_id)
+
+  if (!portalRegistered) {
+    const { data: inserted, error } = await admin
+      .from('ticket_extra_hours')
+      .insert({
+        ticket_id: ticketId,
+        retainer_id: retainer.id,
+        agent_id: user.id,
+        minutes,
+        note: note?.trim() || null,
+        status: 'pending_approval',
+      })
+      .select('id')
+      .single()
+
+    if (error || !inserted) throw new Error(error?.message ?? 'Failed to request extra hours')
+
+    await autoApproveExtraHoursRequest(admin, {
+      extraHoursId: inserted.id,
+      ticketId,
+      ticketTitle: ticket.title,
+      minutes,
+    })
+
+    revalidateExtraHoursPaths(ticketId)
+    return { ok: true as const }
+  }
+
   const clientEmails = await getClientNotificationEmails(ticket.client_id)
   if (!clientEmails.length) {
     throw new Error(
@@ -74,12 +113,7 @@ export async function submitExtraHours(ticketId: string, minutes: number, note?:
     )
   }
 
-  const adminResult = tryCreateAdminClient()
-  if ('error' in adminResult) {
-    throw new Error(adminResult.error)
-  }
-
-  const { error } = await adminResult.client.from('ticket_extra_hours').insert({
+  const { error } = await admin.from('ticket_extra_hours').insert({
     ticket_id: ticketId,
     retainer_id: retainer.id,
     agent_id: user.id,

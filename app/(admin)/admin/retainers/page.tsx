@@ -1,12 +1,11 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/auth/require-admin'
-import { FormPanel } from '@/components/dashboard/FormPanel'
+import { DashButton } from '@/components/dashboard/DashButton'
 import { PageHeader } from '@/components/dashboard/PageHeader'
 import { MetricStrip } from '@/components/dashboard/MetricStrip'
-import { AdminNewRetainerForm } from '@/components/retainers/AdminNewRetainerForm'
 import { RetainersList } from '@/components/retainers/RetainersList'
-import type { RetainerLifecycleStatus } from '@/lib/retainers/status'
+import { Plus } from 'lucide-react'
 import { isActivePeriod } from '@/lib/retainers/packages'
 import { retainerTracksHours } from '@/lib/retainers/billing-model'
 
@@ -15,16 +14,10 @@ export default async function AdminRetainersPage() {
   if (!isAdmin) redirect('/admin/tickets')
 
   const supabase = await createClient()
-  const [{ data: retainers, error }, { data: clients }] = await Promise.all([
-    supabase
-      .from('retainers')
-      .select('*, clients(name)')
-      .order('period_start', { ascending: false }),
-    supabase
-      .from('clients')
-      .select('id, name, billing_cycle_day, retainer_status')
-      .order('name'),
-  ])
+  const { data: retainers, error } = await supabase
+    .from('retainers')
+    .select('*, clients(name)')
+    .order('period_start', { ascending: false })
 
   if (error) {
     return (
@@ -72,18 +65,13 @@ export default async function AdminRetainersPage() {
       <PageHeader
         title="Retainers"
         description={`Care, Grow & Fixed packages per client · ${now}`}
+        action={
+          <DashButton href="/admin/retainers/new">
+            <Plus size={14} />
+            New retainer
+          </DashButton>
+        }
       />
-
-      <FormPanel title="New retainer period">
-        <AdminNewRetainerForm
-          clients={(clients ?? []).map(client => ({
-            id: client.id,
-            name: client.name,
-            billing_cycle_day: client.billing_cycle_day,
-            retainer_status: (client.retainer_status ?? 'active') as RetainerLifecycleStatus,
-          }))}
-        />
-      </FormPanel>
 
       <MetricStrip
         foldLabel="Retainers"

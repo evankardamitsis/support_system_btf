@@ -74,8 +74,10 @@ export function AdminNewRetainerForm({
           key={selected.id}
           clientId={selected.id}
           billingCycleDay={selected.billing_cycle_day ?? 1}
-          submitLabel="Create retainer period"
+          submitLabel="Create retainer"
           showCustomDates
+          successRedirect="/admin/retainers"
+          cancelHref="/admin/retainers"
         />
       ) : null}
     </div>

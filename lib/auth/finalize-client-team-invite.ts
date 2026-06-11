@@ -2,14 +2,18 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 import { notifyAdminsClientRegistered } from '@/lib/auth/notify-admins-client-registered'
 
+export type FinalizeClientTeamInviteResult =
+  | { consumed: false }
+  | { consumed: true; clientId: string }
+
 /** Mark the client team invite consumed once the user has a confirmed session. */
 export async function finalizeClientTeamInvite(
   supabase: SupabaseClient<Database>
-): Promise<void> {
+): Promise<FinalizeClientTeamInviteResult> {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user?.email) return
+  if (!user?.email) return { consumed: false }
 
   const email = user.email.toLowerCase()
 
@@ -19,7 +23,7 @@ export async function finalizeClientTeamInvite(
     .eq('id', user.id)
     .single()
 
-  if (profile?.role !== 'client') return
+  if (profile?.role !== 'client') return { consumed: false }
 
   const { data: pendingInvite } = await supabase
     .from('client_invite_tokens')
@@ -29,7 +33,7 @@ export async function finalizeClientTeamInvite(
     .limit(1)
     .maybeSingle()
 
-  if (!pendingInvite) return
+  if (!pendingInvite) return { consumed: false }
 
   const { error } = await supabase
     .from('client_invite_tokens')
@@ -37,7 +41,7 @@ export async function finalizeClientTeamInvite(
     .eq('email', email)
     .eq('used', false)
 
-  if (error) return
+  if (error) return { consumed: false }
 
   const { data: client } = await supabase
     .from('clients')
@@ -59,4 +63,6 @@ export async function finalizeClientTeamInvite(
     clientName: client?.name?.trim() || 'Client',
     kind: 'team',
   })
+
+  return { consumed: true, clientId: pendingInvite.client_id }
 }
