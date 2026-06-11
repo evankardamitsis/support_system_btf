@@ -2111,6 +2111,13 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   box-shadow: 0 14px 28px color-mix(in srgb, black 28%, transparent);
 }
 
+[data-theme="dashboard"] .searchable-select-panel--fixed {
+  position: fixed;
+  top: auto;
+  left: auto;
+  right: auto;
+}
+
 [data-theme="dashboard"] .searchable-select-search-wrap {
   display: flex;
   align-items: center;
@@ -7691,6 +7698,10 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   overflow: hidden;
 }
 
+[data-theme="dashboard"] .dash-panel--form {
+  overflow: visible;
+}
+
 [data-theme="dashboard"] .dash-tabs {
   display: flex;
   flex-wrap: wrap;
@@ -8165,6 +8176,7 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 
 [data-theme="dashboard"] .tickets-table {
   width: 100%;
+  overflow-x: auto;
   border: 1px solid var(--border);
   background: var(--surface);
 }
@@ -8176,15 +8188,16 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 }
 
 [data-theme="dashboard"] .tickets-grid--admin {
+  min-width: 52rem;
   grid-template-columns:
-    minmax(108px, 0.7fr)
-    minmax(84px, 0.55fr)
-    minmax(180px, 2fr)
-    minmax(96px, 0.85fr)
-    minmax(88px, 0.75fr)
-    minmax(52px, 0.35fr)
-    minmax(52px, 0.35fr)
-    minmax(92px, 0.55fr)
+    minmax(100px, 0.65fr)
+    minmax(76px, 0.5fr)
+    minmax(160px, 2.2fr)
+    minmax(84px, 0.75fr)
+    minmax(64px, 6rem)
+    minmax(3.25rem, 3.75rem)
+    minmax(3.25rem, 3.75rem)
+    minmax(80px, 0.5fr)
     36px;
 }
 
@@ -8403,6 +8416,26 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+[data-theme="dashboard"] .tickets-cell-assignee .pill-select--assignee {
+  display: flex;
+  max-width: 100%;
+  min-width: 0;
+}
+
+[data-theme="dashboard"] .tickets-cell-assignee .assignee-pill-label {
+  max-width: 100%;
+  min-width: 0;
+}
+
+[data-theme="dashboard"] .tickets-cell-hours {
+  justify-self: start;
+}
+
+[data-theme="dashboard"] .tickets-cell-hours .tickets-cell-value {
+  min-width: 2.75rem;
+  text-align: right;
 }
 
 [data-theme="dashboard"] .assignee-pill-label--readonly {
@@ -8939,6 +8972,10 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 
 /* ─── Tablet + mobile table cards (tickets) — compact 2-line rows ───────────── */
 @media (max-width: 1024px) {
+  [data-theme="dashboard"] .tickets-grid--admin {
+    min-width: 0;
+  }
+
   [data-theme="dashboard"] .tickets-table-header {
     display: none;
   }
@@ -10494,6 +10531,12 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   background: rgba(232, 255, 71, 0.06);
 }
 
+[data-theme="dashboard"] .retainer-package-option.is-active[data-package='fixed'] {
+  border-color: rgba(167, 139, 250, 0.5);
+  color: #c4b5fd;
+  background: rgba(167, 139, 250, 0.08);
+}
+
 [data-theme="dashboard"] .retainer-package-option:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -11573,14 +11616,10 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
     max-width: 100%;
   }
 
-  [data-theme="dashboard"] .ticket-detail-hours-grid {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-  }
-
-  [data-theme="dashboard"] .ticket-detail-hours-readout {
-    align-items: flex-start;
-    text-align: left;
+  [data-theme="dashboard"] .ticket-detail-hours-row {
+    grid-template-columns: minmax(0, 1fr) minmax(3.75rem, 4.75rem);
+    gap: 0.5rem;
+    padding: 0.55rem 0.75rem;
   }
 }
 
@@ -11703,6 +11742,23 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   letter-spacing: -0.02em;
   color: var(--text-1);
   font-family: var(--font-geist);
+}
+
+[data-theme="dashboard"] .ticket-detail-title-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  border: none;
+  border-bottom: 1px solid transparent;
+  background: transparent;
+  border-radius: 0;
+}
+
+[data-theme="dashboard"] .ticket-detail-title-input:hover:not(:disabled),
+[data-theme="dashboard"] .ticket-detail-title-input:focus {
+  border-bottom-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  outline: none;
 }
 
 [data-theme="dashboard"] .ticket-comms-button {
@@ -12181,7 +12237,7 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 
 [data-theme="dashboard"] .ticket-detail-layout {
   display: grid;
-  grid-template-columns: 1fr minmax(240px, 272px);
+  grid-template-columns: 1fr minmax(260px, 300px);
   gap: 1.25rem;
   align-items: start;
 }
@@ -12213,23 +12269,114 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   margin-bottom: 0.875rem;
 }
 
-[data-theme="dashboard"] .ticket-detail-hours-grid {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.75rem 1rem;
-  align-items: end;
+[data-theme="dashboard"] .ticket-detail-aside-card > .ticket-detail-hours-panel {
+  margin-inline: -1.125rem;
+  margin-bottom: 0;
+  border-radius: 0;
+  border-inline: none;
 }
 
-[data-theme="dashboard"] .ticket-detail-hours-grid[data-has-extra="true"] {
-  grid-template-columns: 1fr auto auto;
+[data-theme="dashboard"] .ticket-detail-hours-panel {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border-2);
+  background: color-mix(in srgb, var(--surface) 94%, var(--dash-content) 6%);
 }
 
-[data-theme="dashboard"] .ticket-detail-hours-readout {
+[data-theme="dashboard"] .ticket-detail-hours-panel[data-has-logged='true'] {
+  border-left-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+}
+
+[data-theme="dashboard"] .ticket-detail-hours-rows {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 0.375rem;
+}
+
+[data-theme="dashboard"] .ticket-detail-hours-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(4.25rem, 5.25rem);
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid var(--border);
+}
+
+[data-theme="dashboard"] .ticket-detail-hours-row:last-child {
+  border-bottom: none;
+}
+
+[data-theme="dashboard"] .ticket-detail-hours-row--logged[data-filled='true'] {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+[data-theme="dashboard"] .ticket-detail-hours-input,
+[data-theme="dashboard"] .ticket-detail-hours-value {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
   text-align: right;
+  font-family: var(--font-dm-mono);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--text-1);
+}
+
+[data-theme="dashboard"] .ticket-detail-hours-input {
+  padding: 0.35rem 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  outline: none;
+  appearance: textfield;
+}
+
+[data-theme="dashboard"] .ticket-detail-hours-input::-webkit-outer-spin-button,
+[data-theme="dashboard"] .ticket-detail-hours-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+[data-theme="dashboard"] .ticket-detail-hours-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+[data-theme="dashboard"] .ticket-detail-hours-input:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+[data-theme="dashboard"] .ticket-detail-hours-input::placeholder {
+  color: var(--text-3);
+  font-weight: 500;
+}
+
+[data-theme="dashboard"] .ticket-detail-hours-value {
+  padding: 0.35rem 0.125rem;
+  color: var(--text-2);
+}
+
+[data-theme="dashboard"] .ticket-detail-hours-value[data-filled='true'],
+[data-theme="dashboard"] .ticket-detail-hours-row--logged[data-filled='true'] .ticket-detail-hours-input {
+  color: var(--accent);
+}
+
+[data-theme="dashboard"] .ticket-detail-hours-hint {
+  margin: 0;
+  padding: 0.625rem 0.875rem 0.75rem;
+  line-height: 1.45;
+  border-top: 1px solid color-mix(in srgb, var(--accent) 12%, var(--border));
+}
+
+[data-theme="dashboard"] .ticket-detail-hours-action {
+  margin-top: 0.875rem;
+}
+
+[data-theme="dashboard"] .ticket-detail-aside-card > .ticket-estimate-awaiting {
+  margin-inline: -1.125rem;
+  margin-bottom: 0;
+  border-inline: none;
+  border-radius: 0;
 }
 
 [data-theme="dashboard"] .ticket-detail-hours-logged {

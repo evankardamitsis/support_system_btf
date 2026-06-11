@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import {
+  adminSetTicketLoggedHours,
   submitEstimateForApproval,
   submitWorkForClientCheck,
   updateTicketEstimatedHours,
@@ -132,7 +133,8 @@ export function TicketDetailSidebar({
     !closed &&
     standardResolveFlow &&
     canResolveTicket(estimateStatus, completionStatus, status)
-  const showFixedResolve = !hoursBilling && !closed && isAdmin
+  const showNoHoursEstimate = noHours && isAdmin && !closed && retainerTracksHours
+  const showFixedResolve = !hoursBilling && !closed && isAdmin && !showNoHoursEstimate
   const showDisputeNote = !closed && completionDisputeNote && completionStatus === null
   const estimateLocked = closed || isEstimateLocked(estimateStatus)
   const logged =
@@ -157,6 +159,57 @@ export function TicketDetailSidebar({
           {hoursBilling ? 'Time on this ticket' : 'Ticket actions'}
         </h3>
 
+        {showNoHoursEstimate ? (
+          <div className="flex flex-col gap-3">
+            <p className="dash-meta leading-relaxed">
+              Marked as a pre-existing bug (no hours). Add an estimate to switch this ticket to
+              normal hour tracking, estimates, and retainer billing.
+            </p>
+            <div className="ticket-detail-hours-row">
+              <label className="ticket-detail-control-label" htmlFor="detail-estimate-no-hours">
+                Estimate
+              </label>
+              <input
+                id="detail-estimate-no-hours"
+                type="number"
+                step="0.25"
+                min="0.25"
+                className="ticket-detail-hours-input tabular-nums"
+                defaultValue={estimatedHours ?? ''}
+                placeholder="2"
+                disabled={pending}
+                onBlur={e => {
+                  const raw = e.target.value
+                  const next = raw.trim() === '' ? null : parseFloat(raw)
+                  if (next == null || Number.isNaN(next) || next <= 0) return
+                  startTransition(async () => {
+                    const ok = await runWithToast(
+                      () => updateTicketEstimatedHours(ticketId, next),
+                      {
+                        success: `Hour tracking enabled — estimate set to ${next}h`,
+                      }
+                    )
+                    if (ok !== null) refresh()
+                  })
+                }}
+              />
+            </div>
+            <div className="ticket-detail-resolve-actions flex flex-col gap-2">
+              <button
+                type="button"
+                className="dash-btn-secondary w-full cursor-pointer justify-center"
+                disabled={pending}
+                onClick={onResolve}
+              >
+                Mark resolved without hours
+              </button>
+              <p className="ticket-detail-aside-note dash-meta">
+                Or resolve as-is — no estimate, approval, or retainer hours.
+              </p>
+            </div>
+          </div>
+        ) : null}
+
         {showFixedResolve ? (
           <div className="ticket-detail-resolve-actions flex flex-col gap-2">
             <button
@@ -178,58 +231,107 @@ export function TicketDetailSidebar({
         {hoursBilling ? (
         <>
         <div
-          className="ticket-detail-hours-grid"
-          data-has-extra={closed || extraHoursActive || approvedExtraMinutes > 0 ? 'true' : undefined}
+          className="ticket-detail-hours-panel"
+          data-has-logged={logged !== '—' ? 'true' : undefined}
         >
-          <div className="ticket-detail-hours-field">
-            <label className="ticket-detail-control-label" htmlFor="detail-estimate">
-              Estimate
-            </label>
-            <input
-              id="detail-estimate"
-              type="number"
-              step="0.25"
-              min="0"
-              className="btf-input w-full text-sm tabular-nums"
-              defaultValue={estimatedHours ?? ''}
-              placeholder="—"
-              disabled={pending || estimateLocked}
-              onBlur={e => {
-                const raw = e.target.value
-                const next = raw.trim() === '' ? null : parseFloat(raw)
-                startTransition(async () => {
-                  const value = next == null || Number.isNaN(next) ? null : next
-                  const ok = await runWithToast(
-                    () => updateTicketEstimatedHours(ticketId, value),
-                    {
-                      success:
-                        value != null ? `Estimate set to ${value}h` : 'Estimate cleared',
-                    }
-                  )
-                  if (ok !== null) refresh()
-                })
-              }}
-            />
-          </div>
-          <div className="ticket-detail-hours-readout">
-            <span className="ticket-detail-control-label">Logged</span>
-            <span
-              className="ticket-detail-hours-logged tabular-nums"
+          <div className="ticket-detail-hours-rows">
+            <div className="ticket-detail-hours-row">
+              <label className="ticket-detail-control-label" htmlFor="detail-estimate">
+                Estimate
+              </label>
+              <input
+                id="detail-estimate"
+                type="number"
+                step="0.25"
+                min="0"
+                className="ticket-detail-hours-input tabular-nums"
+                defaultValue={estimatedHours ?? ''}
+                placeholder="—"
+                disabled={pending || estimateLocked}
+                onBlur={e => {
+                  const raw = e.target.value
+                  const next = raw.trim() === '' ? null : parseFloat(raw)
+                  startTransition(async () => {
+                    const value = next == null || Number.isNaN(next) ? null : next
+                    const ok = await runWithToast(
+                      () => updateTicketEstimatedHours(ticketId, value),
+                      {
+                        success:
+                          value != null ? `Estimate set to ${value}h` : 'Estimate cleared',
+                      }
+                    )
+                    if (ok !== null) refresh()
+                  })
+                }}
+              />
+            </div>
+
+            <div
+              className="ticket-detail-hours-row ticket-detail-hours-row--logged"
               data-filled={logged !== '—' ? 'true' : undefined}
             >
-              {logged}
-            </span>
-          </div>
-          {closed || extraHoursActive || approvedExtraMinutes > 0 ? (
-            <div className="ticket-detail-hours-readout">
-              <span className="ticket-detail-control-label">Extra</span>
-              <span
-                className="ticket-detail-hours-logged tabular-nums"
+              <label className="ticket-detail-control-label" htmlFor="detail-logged-hours">
+                Logged
+              </label>
+              {isAdmin ? (
+                <input
+                  key={actualHours ?? 'empty'}
+                  id="detail-logged-hours"
+                  type="number"
+                  step="0.25"
+                  min="0"
+                  className="ticket-detail-hours-input tabular-nums"
+                  defaultValue={actualHours != null && actualHours > 0 ? actualHours : ''}
+                  placeholder="—"
+                  disabled={pending}
+                  onBlur={e => {
+                    const raw = e.target.value
+                    const next = raw.trim() === '' ? null : parseFloat(raw)
+                    startTransition(async () => {
+                      const value = next == null || Number.isNaN(next) ? null : next
+                      const ok = await runWithToast(
+                        () => adminSetTicketLoggedHours(ticketId, value),
+                        {
+                          success:
+                            value != null && value > 0
+                              ? `Logged hours set to ${value}h`
+                              : 'Logged hours cleared',
+                        }
+                      )
+                      if (ok !== null) refresh()
+                    })
+                  }}
+                />
+              ) : (
+                <span
+                  className="ticket-detail-hours-value tabular-nums"
+                  data-filled={logged !== '—' ? 'true' : undefined}
+                >
+                  {logged}
+                </span>
+              )}
+            </div>
+
+            {closed || extraHoursActive || approvedExtraMinutes > 0 ? (
+              <div
+                className="ticket-detail-hours-row ticket-detail-hours-row--extra"
                 data-filled={extraHoursLabel !== '—' ? 'true' : undefined}
               >
-                {extraHoursLabel}
-              </span>
-            </div>
+                <span className="ticket-detail-control-label">Extra</span>
+                <span
+                  className="ticket-detail-hours-value tabular-nums"
+                  data-filled={extraHoursLabel !== '—' ? 'true' : undefined}
+                >
+                  {extraHoursLabel}
+                </span>
+              </div>
+            ) : null}
+          </div>
+
+          {isAdmin ? (
+            <p className="ticket-detail-hours-hint dash-meta">
+              Logged hours bill to the client retainer when you leave the field.
+            </p>
           ) : null}
         </div>
 
@@ -243,7 +345,7 @@ export function TicketDetailSidebar({
         {showSubmit ? (
           <button
             type="button"
-            className="dash-btn-primary btn-primary w-full cursor-pointer mt-4"
+            className="dash-btn-primary btn-primary w-full cursor-pointer ticket-detail-hours-action"
             disabled={pending}
             onClick={() =>
               startTransition(async () => {
@@ -272,7 +374,7 @@ export function TicketDetailSidebar({
             </p>
           </div>
         ) : showResolve || showSubmitWork ? (
-          <div className="ticket-detail-resolve-actions mt-4 flex flex-col gap-2">
+          <div className="ticket-detail-resolve-actions ticket-detail-hours-action flex flex-col gap-2">
             {showResolve ? (
               <button
                 type="button"
@@ -302,7 +404,7 @@ export function TicketDetailSidebar({
             ) : null}
           </div>
         ) : showCompleteExtraWork ? (
-          <div className="ticket-detail-resolve-actions mt-4 flex flex-col gap-2">
+          <div className="ticket-detail-resolve-actions ticket-detail-hours-action flex flex-col gap-2">
             <p className="ticket-detail-aside-note dash-meta">
               Extra hours approved — complete the additional work, then mark resolved to bill{' '}
               {approvedExtraMinutes > 0

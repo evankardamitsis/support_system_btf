@@ -78,6 +78,7 @@ export default async function AdminTicketDetailPage({
   const messageCount = enrichedComments.length
   const staffNames = staffForMentions.map(s => s.name)
   const closed = isTicketClosed(ticket.status as TicketStatus)
+  const canEditTicketDetails = isAdmin || !closed
   const retainerPeriods = new Map(
     (clientRetainers ?? []).map(r => [r.id, { period_start: r.period_start, period_end: r.period_end }])
   )
@@ -124,6 +125,7 @@ export default async function AdminTicketDetailPage({
         extraHours={extraHours}
         extraHoursActiveAt={ticket.extra_hours_active_at ?? null}
         isAdmin={isAdmin}
+        canEditTicketDetails={canEditTicketDetails}
         hoursBilling={hoursBilling}
         retainerTracksHours={clientRetainerTracksHours}
         noHours={ticket.no_hours}

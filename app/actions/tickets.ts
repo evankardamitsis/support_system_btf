@@ -253,19 +253,43 @@ export async function updateTicketPriority(ticketId: string, priority: TicketPri
 
 export async function updateTicketEstimatedHours(ticketId: string, hours: number | null) {
   const { supabase } = await requireStaff()
+  const { isAdmin } = await requireAdmin()
   await assertTicketOpen(supabase, ticketId)
   const { data: ticket } = await supabase
     .from('tickets')
     .select('estimate_status, client_id, no_hours')
     .eq('id', ticketId)
     .single()
-  if (
-    ticket &&
-    !(await loadTicketHourBilling(supabase, ticket.client_id, ticket.no_hours))
-  ) {
+
+  if (!ticket) throw new Error('Ticket not found')
+
+  if (ticket.no_hours) {
+    if (!isAdmin) {
+      throw new Error('This ticket does not use hour tracking')
+    }
+    if (!(await clientUsesHourBilling(supabase, ticket.client_id))) {
+      throw new Error('This client is on a fixed plan — hour estimates do not apply')
+    }
+    if (hours == null || hours <= 0 || Number.isNaN(hours)) {
+      throw new Error('Enter estimated hours to enable hour tracking on this ticket')
+    }
+    const value = Math.round(hours * 100) / 100
+    const { error } = await supabase
+      .from('tickets')
+      .update({
+        no_hours: false,
+        estimated_hours: value,
+      })
+      .eq('id', ticketId)
+    if (error) throw new Error(error.message)
+    revalidateTicketPaths(ticketId)
+    return
+  }
+
+  if (!(await loadTicketHourBilling(supabase, ticket.client_id, ticket.no_hours))) {
     throw new Error('This ticket does not use hour tracking')
   }
-  if (isEstimateLocked(ticket?.estimate_status ?? null)) {
+  if (isEstimateLocked(ticket.estimate_status ?? null)) {
     throw new Error('Estimate is locked after submission or client approval')
   }
   const value =
@@ -275,6 +299,116 @@ export async function updateTicketEstimatedHours(ticketId: string, hours: number
     .update({ estimated_hours: value })
     .eq('id', ticketId)
   if (error) throw new Error(error.message)
+  revalidateTicketPaths(ticketId)
+}
+
+export async function updateTicketTitle(ticketId: string, title: string): Promise<void> {
+  const { supabase } = await requireStaff()
+  const { isAdmin } = await requireAdmin()
+
+  if (!isAdmin) {
+    await assertTicketOpen(supabase, ticketId)
+  }
+
+  const trimmed = title.trim()
+  if (!trimmed) {
+    throw new Error('Title is required')
+  }
+
+  const { error } = await supabase.from('tickets').update({ title: trimmed }).eq('id', ticketId)
+  if (error) throw new Error(error.message)
+  revalidateTicketPaths(ticketId)
+}
+
+export async function updateTicketDescription(
+  ticketId: string,
+  description: string | null
+): Promise<void> {
+  const { supabase } = await requireStaff()
+  const { isAdmin } = await requireAdmin()
+
+  if (!isAdmin) {
+    await assertTicketOpen(supabase, ticketId)
+  }
+
+  const { error } = await supabase
+    .from('tickets')
+    .update({ description: normalizeTicketDescription(description) })
+    .eq('id', ticketId)
+
+  if (error) throw new Error(error.message)
+  revalidateTicketPaths(ticketId)
+}
+
+export async function adminSetTicketLoggedHours(
+  ticketId: string,
+  hours: number | null
+): Promise<void> {
+  const { isAdmin, user } = await requireAdmin()
+  if (!isAdmin || !user) {
+    throw new Error('Only admins can adjust logged hours')
+  }
+
+  const supabase = await createClient()
+  const adminResult = tryCreateAdminClient()
+  if ('error' in adminResult) {
+    throw new Error(adminResult.error)
+  }
+  const admin = adminResult.client
+
+  const { data: ticket, error: ticketErr } = await supabase
+    .from('tickets')
+    .select('id, client_id, no_hours')
+    .eq('id', ticketId)
+    .single()
+
+  if (ticketErr || !ticket) {
+    throw new Error(ticketErr?.message ?? 'Ticket not found')
+  }
+  if (ticket.no_hours) {
+    throw new Error('This ticket does not use hour tracking')
+  }
+  if (!(await loadTicketHourBilling(supabase, ticket.client_id, ticket.no_hours))) {
+    throw new Error('This ticket does not use hour tracking')
+  }
+
+  const { data: existingLogs, error: listErr } = await admin
+    .from('hours_log')
+    .select('id')
+    .eq('ticket_id', ticketId)
+    .eq('is_extra', false)
+
+  if (listErr) throw new Error(listErr.message)
+
+  for (const row of existingLogs ?? []) {
+    const { error: deleteErr } = await admin.from('hours_log').delete().eq('id', row.id)
+    if (deleteErr) throw new Error(deleteErr.message)
+  }
+
+  if (hours == null || hours <= 0 || Number.isNaN(hours)) {
+    await staffPatchTicket(ticketId, { hours_overage_note: null })
+    revalidateTicketPaths(ticketId)
+    return
+  }
+
+  await assertClientCanUseRetainer(supabase, ticket.client_id)
+
+  const retainer = await getRetainerForClient(supabase, ticket.client_id)
+  if (!retainer) {
+    throw new Error('No active retainer period for this client — add a retainer before logging hours')
+  }
+
+  const minutes = Math.round(hours * 60)
+  const { error: insertErr } = await admin.from('hours_log').insert({
+    ticket_id: ticketId,
+    retainer_id: retainer.id,
+    agent_id: user.id,
+    minutes,
+    note: 'Logged by admin',
+    is_extra: false,
+  })
+
+  if (insertErr) throw new Error(insertErr.message)
   revalidateTicketPaths(ticketId)
 }
 

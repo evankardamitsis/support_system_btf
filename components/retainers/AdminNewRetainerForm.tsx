@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ClientSelectWithCreate, type ClientOption } from '@/components/clients/ClientSelectWithCreate'
+import { FormPanel } from '@/components/dashboard/FormPanel'
 import { RetainerPeriodForm } from '@/components/retainers/RetainerPeriodForm'
 import {
   RETAINER_STATUS_LABELS,
@@ -70,15 +71,16 @@ export function AdminNewRetainerForm({
       ) : null}
 
       {selected && !lifecycleBlocked ? (
-        <RetainerPeriodForm
-          key={selected.id}
-          clientId={selected.id}
-          billingCycleDay={selected.billing_cycle_day ?? 1}
-          submitLabel="Create retainer"
-          showCustomDates
-          successRedirect="/admin/retainers"
-          cancelHref="/admin/retainers"
-        />
+        <FormPanel title="Package & billing">
+          <RetainerPeriodForm
+            clientId={selected.id}
+            billingCycleDay={selected.billing_cycle_day ?? 1}
+            submitLabel="Create retainer"
+            showCustomDates
+            successRedirect="/admin/retainers"
+            cancelHref="/admin/retainers"
+          />
+        </FormPanel>
       ) : null}
     </div>
   )

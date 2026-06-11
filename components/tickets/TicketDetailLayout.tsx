@@ -8,6 +8,7 @@ import {
   updateTicketAssignee,
   updateTicketPriority,
   updateTicketStatus,
+  updateTicketTitle,
 } from '@/app/actions/tickets'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { PriorityBadge } from '@/components/ui/PriorityBadge'
@@ -21,8 +22,7 @@ import {
 import { useResolveCelebration } from '@/components/admin/ResolveCelebrationProvider'
 import { ResolveHoursModal } from './ResolveHoursModal'
 import { ResolveOfflineModal } from './ResolveOfflineModal'
-import { FormattedTicketDescription } from '@/components/tickets/FormattedTicketDescription'
-import { isEmptyTicketDescription } from '@/lib/tickets/description-format'
+import { EditableTicketDescription } from '@/components/tickets/EditableTicketDescription'
 import { TicketDetailSidebar, type ExtraHoursItem } from './TicketDetailSidebar'
 import { DeleteTicketButton } from './DeleteTicketButton'
 import { TicketCommsButton } from '@/components/comms/TicketCommsButton'
@@ -72,6 +72,7 @@ export function TicketDetailLayout({
   completionDisputeNote = null,
   hoursOverageNote = null,
   isAdmin = false,
+  canEditTicketDetails = false,
   hoursBilling = true,
   retainerTracksHours = true,
   noHours = false,
@@ -101,6 +102,7 @@ export function TicketDetailLayout({
   completionDisputeNote?: string | null
   hoursOverageNote?: string | null
   isAdmin?: boolean
+  canEditTicketDetails?: boolean
   hoursBilling?: boolean
   retainerTracksHours?: boolean
   noHours?: boolean
@@ -213,7 +215,33 @@ export function TicketDetailLayout({
               ) : null}
             </p>
             <div className="ticket-detail-title-row">
-              <h1 className="ticket-detail-title">{title}</h1>
+              {canEditTicketDetails ? (
+                <input
+                  key={title}
+                  type="text"
+                  className="ticket-detail-title ticket-detail-title-input"
+                  defaultValue={title}
+                  disabled={pending}
+                  aria-label="Ticket title"
+                  onBlur={event => {
+                    const next = event.target.value.trim()
+                    if (!next || next === title) return
+                    startTransition(async () => {
+                      const ok = await runWithToast(() => updateTicketTitle(ticketId, next), {
+                        success: 'Title updated',
+                      })
+                      if (ok !== null) refresh()
+                    })
+                  }}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter') {
+                      event.currentTarget.blur()
+                    }
+                  }}
+                />
+              ) : (
+                <h1 className="ticket-detail-title">{title}</h1>
+              )}
               <TicketCommsButton ticketId={ticketId} />
             </div>
             <p className="ticket-detail-dates">
@@ -310,15 +338,11 @@ export function TicketDetailLayout({
         </div>
       </header>
 
-      {description && !isEmptyTicketDescription(description) ? (
-        <section className="ticket-detail-brief anim-fade-up anim-fade-up-2">
-          <h2 className="ticket-detail-brief-label">Request</h2>
-          <FormattedTicketDescription
-            content={description}
-            className="ticket-detail-brief-body"
-          />
-        </section>
-      ) : null}
+      <EditableTicketDescription
+        ticketId={ticketId}
+        description={description}
+        editable={canEditTicketDetails}
+      />
 
       <div className="ticket-detail-layout anim-fade-up anim-fade-up-3">
         <div className="ticket-detail-main">{children}</div>

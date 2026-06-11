@@ -46,10 +46,12 @@ export function SearchableSelect({
   const fieldId = id ?? autoId
   const listboxId = `${fieldId}-listbox`
   const wrapRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [highlightIndex, setHighlightIndex] = useState(0)
+  const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({})
 
   const selected = useMemo(
     () => options.find(option => option.value === value),
@@ -86,8 +88,29 @@ export function SearchableSelect({
   useEffect(() => {
     if (!open) return
     setHighlightIndex(0)
+
+    function syncPanelPosition() {
+      const trigger = triggerRef.current
+      if (!trigger) return
+      const rect = trigger.getBoundingClientRect()
+      setPanelStyle({
+        position: 'fixed',
+        top: rect.bottom + 6,
+        left: rect.left,
+        width: rect.width,
+        zIndex: 80,
+      })
+    }
+
+    syncPanelPosition()
     const t = window.setTimeout(() => searchRef.current?.focus(), 0)
-    return () => window.clearTimeout(t)
+    window.addEventListener('resize', syncPanelPosition)
+    window.addEventListener('scroll', syncPanelPosition, true)
+    return () => {
+      window.clearTimeout(t)
+      window.removeEventListener('resize', syncPanelPosition)
+      window.removeEventListener('scroll', syncPanelPosition, true)
+    }
   }, [open])
 
   useEffect(() => {
@@ -173,6 +196,7 @@ export function SearchableSelect({
       ) : null}
 
       <button
+        ref={triggerRef}
         id={fieldId}
         type="button"
         className={`searchable-select-trigger btf-input w-full client-select-input ${triggerClassName}`.trim()}
@@ -196,7 +220,7 @@ export function SearchableSelect({
       </button>
 
       {open ? (
-        <div className="searchable-select-panel anim-fade">
+        <div className="searchable-select-panel searchable-select-panel--fixed anim-fade" style={panelStyle}>
           <div className="searchable-select-search-wrap">
             <Search size={14} className="searchable-select-search-icon" aria-hidden />
             <input

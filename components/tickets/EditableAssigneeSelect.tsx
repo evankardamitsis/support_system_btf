@@ -2,6 +2,12 @@
 
 export type AssigneeOption = { id: string; name: string }
 
+function assigneeDisplayName(name: string, compact: boolean): string {
+  if (!compact) return name
+  const first = name.trim().split(/\s+/)[0]
+  return first || name
+}
+
 export function EditableAssigneeSelect({
   value,
   options,
@@ -9,6 +15,7 @@ export function EditableAssigneeSelect({
   disabled,
   ariaLabel,
   className = '',
+  compact = false,
 }: {
   value: string | null
   options: AssigneeOption[]
@@ -16,12 +23,17 @@ export function EditableAssigneeSelect({
   disabled?: boolean
   ariaLabel?: string
   className?: string
+  /** First name only — for dense tables; full name stays in title + select options */
+  compact?: boolean
 }) {
-  const label = value ? (options.find(o => o.id === value)?.name ?? 'Unknown') : 'Unassigned'
+  const fullName = value ? (options.find(o => o.id === value)?.name ?? 'Unknown') : 'Unassigned'
+  const label = value ? assigneeDisplayName(fullName, compact) : 'Unassigned'
 
   return (
     <div className={`pill-select pill-select--assignee ${className}`} data-editable="true">
-      <span className="assignee-pill-label">{label}</span>
+      <span className="assignee-pill-label" title={compact && value ? fullName : undefined}>
+        {label}
+      </span>
       <select
         className="pill-select-input"
         value={value ?? ''}

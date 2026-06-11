@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { requireAdmin } from '@/lib/auth/require-admin'
 import { PageHeader } from '@/components/dashboard/PageHeader'
-import { FormPanel } from '@/components/dashboard/FormPanel'
 import { AdminNewRetainerForm } from '@/components/retainers/AdminNewRetainerForm'
 import type { RetainerLifecycleStatus } from '@/lib/retainers/status'
 
@@ -33,17 +32,15 @@ export default async function AdminNewRetainerPage({
         description="Set up Care, Grow, or Fixed hours and billing for a client period."
       />
 
-      <FormPanel title="Retainer details">
-        <AdminNewRetainerForm
-          clients={(clients ?? []).map(client => ({
-            id: client.id,
-            name: client.name,
-            billing_cycle_day: client.billing_cycle_day,
-            retainer_status: (client.retainer_status ?? 'active') as RetainerLifecycleStatus,
-          }))}
-          defaultClientId={defaultClientId}
-        />
-      </FormPanel>
+      <AdminNewRetainerForm
+        clients={(clients ?? []).map(client => ({
+          id: client.id,
+          name: client.name,
+          billing_cycle_day: client.billing_cycle_day,
+          retainer_status: (client.retainer_status ?? 'active') as RetainerLifecycleStatus,
+        }))}
+        defaultClientId={defaultClientId}
+      />
     </div>
   )
 }

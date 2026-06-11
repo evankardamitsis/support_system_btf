@@ -1,6 +1,7 @@
--- BTF Support — Demo Seed Data
--- Run in Supabase SQL Editor. Deletes all existing demo data first.
+-- BTF Support — Demo Seed Data (local / staging only — do NOT run on production)
+-- Optional fictional clients and tickets for UI demos.
 -- Replace 'kardamitsis.e@gmail.com' if your admin email differs.
+-- To remove QA data from a live project, see supabase/cleanup-test-data.sql
 
 DO $$
 DECLARE

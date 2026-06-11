@@ -1,47 +1,60 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createRetainerPeriod } from '@/app/actions/retainers'
 import { DateInput } from '@/components/ui/DateInput'
 import { PACKAGE_LABELS, RETAINER_PACKAGES, type RetainerPackage } from '@/lib/retainers/packages'
 import { isHoursBasedPackage } from '@/lib/retainers/billing-model'
+import { currentBillingPeriod } from '@/lib/retainers/period'
 import { DashCancel } from '@/components/dashboard/DashCancel'
 import { runWithToast } from '@/lib/notify'
 
-function defaultPeriodDates() {
-  const start = new Date()
-  const end = new Date(start)
-  end.setDate(end.getDate() + 30)
-  return {
-    start: start.toISOString().split('T')[0],
-    end: end.toISOString().split('T')[0],
-  }
-}
-
-export function RetainerPeriodForm({
-  clientId,
-  billingCycleDay = 1,
-  submitLabel = 'Save retainer',
-  showCustomDates = false,
-  successRedirect,
-  cancelHref,
-}: {
+type RetainerPeriodFormProps = {
   clientId: string
   billingCycleDay?: number
   submitLabel?: string
   showCustomDates?: boolean
   successRedirect?: string
   cancelHref?: string
-}) {
+}
+
+export function RetainerPeriodForm(props: RetainerPeriodFormProps) {
+  const billingCycleDay = props.billingCycleDay ?? 1
+  return (
+    <RetainerPeriodFormFields
+      key={`${props.clientId}-${billingCycleDay}`}
+      {...props}
+      billingCycleDay={billingCycleDay}
+    />
+  )
+}
+
+function RetainerPeriodFormFields({
+  clientId,
+  billingCycleDay,
+  submitLabel = 'Save retainer',
+  showCustomDates = false,
+  successRedirect,
+  cancelHref,
+}: RetainerPeriodFormProps & { billingCycleDay: number }) {
   const router = useRouter()
   const [packageName, setPackageName] = useState<RetainerPackage>('care')
-  const [customDates, setCustomDates] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
-  const [periodStart, setPeriodStart] = useState(() => defaultPeriodDates().start)
-  const [periodEnd, setPeriodEnd] = useState(() => defaultPeriodDates().end)
+  const cyclePeriod = useMemo(
+    () => currentBillingPeriod(billingCycleDay),
+    [billingCycleDay]
+  )
+
+  const [periodStart, setPeriodStart] = useState(cyclePeriod.period_start)
+  const [periodEnd, setPeriodEnd] = useState(cyclePeriod.period_end)
+
+  function resetToBillingCycle() {
+    setPeriodStart(cyclePeriod.period_start)
+    setPeriodEnd(cyclePeriod.period_end)
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -52,10 +65,12 @@ export function RetainerPeriodForm({
     formData.set('client_id', clientId)
     formData.set('package_name', packageName)
     formData.set('billing_cycle_day', String(billingCycleDay))
-    formData.set('use_custom_dates', customDates ? 'true' : 'false')
-    if (customDates) {
+    if (showCustomDates) {
+      formData.set('use_custom_dates', 'true')
       formData.set('period_start', periodStart)
       formData.set('period_end', periodEnd)
+    } else {
+      formData.set('use_custom_dates', 'false')
     }
 
     const ok = await runWithToast(() => createRetainerPeriod(formData), {
@@ -74,10 +89,7 @@ export function RetainerPeriodForm({
       return
     }
     setPackageName('care')
-    setCustomDates(false)
-    const defaults = defaultPeriodDates()
-    setPeriodStart(defaults.start)
-    setPeriodEnd(defaults.end)
+    resetToBillingCycle()
     form.reset()
     router.refresh()
   }
@@ -93,6 +105,7 @@ export function RetainerPeriodForm({
               type="button"
               className={`retainer-package-option ${packageName === pkg ? 'is-active' : ''}`}
               data-package={pkg}
+              aria-pressed={packageName === pkg}
               onClick={() => setPackageName(pkg)}
               disabled={pending}
             >
@@ -149,46 +162,48 @@ export function RetainerPeriodForm({
 
       {showCustomDates ? (
         <>
-          <label className="retainer-custom-dates flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={customDates}
-              onChange={e => setCustomDates(e.target.checked)}
-              disabled={pending}
-            />
-            <span className="text-sm" style={{ color: 'var(--text-2)' }}>
-              Custom period dates (otherwise uses billing cycle)
-            </span>
-          </label>
-          {customDates ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div>
-                <label className="dash-label" htmlFor={`period-start-${clientId}`}>
-                  Start
-                </label>
-                <DateInput
-                  id={`period-start-${clientId}`}
-                  value={periodStart}
-                  onChange={setPeriodStart}
-                  disabled={pending}
-                  required
-                />
-              </div>
-              <div>
-                <label className="dash-label" htmlFor={`period-end-${clientId}`}>
-                  End
-                </label>
-                <DateInput
-                  id={`period-end-${clientId}`}
-                  value={periodEnd}
-                  onChange={setPeriodEnd}
-                  min={periodStart}
-                  disabled={pending}
-                  required
-                />
-              </div>
+          <div>
+            <p className="dash-label">Billing period</p>
+            <p className="dash-meta mt-1 leading-relaxed">
+              Pre-filled from this client&apos;s monthly billing cycle (day {billingCycleDay}). Adjust
+              the dates if you need a different period.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div>
+              <label className="dash-label" htmlFor={`period-start-${clientId}`}>
+                Start
+              </label>
+              <DateInput
+                id={`period-start-${clientId}`}
+                value={periodStart}
+                onChange={setPeriodStart}
+                disabled={pending}
+                required
+              />
             </div>
-          ) : null}
+            <div>
+              <label className="dash-label" htmlFor={`period-end-${clientId}`}>
+                End
+              </label>
+              <DateInput
+                id={`period-end-${clientId}`}
+                value={periodEnd}
+                onChange={setPeriodEnd}
+                min={periodStart}
+                disabled={pending}
+                required
+              />
+            </div>
+          </div>
+          <button
+            type="button"
+            className="dash-link-accent text-sm"
+            onClick={resetToBillingCycle}
+            disabled={pending}
+          >
+            Reset to billing cycle dates
+          </button>
         </>
       ) : (
         <p className="dash-meta">

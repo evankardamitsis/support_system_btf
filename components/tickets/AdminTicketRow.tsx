@@ -194,6 +194,7 @@ export function AdminTicketRow({
                 value={ticket.assignedTo ?? null}
                 options={staff}
                 disabled={pending}
+                compact
                 ariaLabel={`Assignee for ${ticket.title}`}
                 onChange={onAssigneeChange}
               />
