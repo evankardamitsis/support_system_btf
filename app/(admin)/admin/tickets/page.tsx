@@ -4,6 +4,7 @@ import { DashButton } from '@/components/dashboard/DashButton'
 import { TicketAnalyticsStrip } from '@/components/tickets/TicketAnalyticsStrip'
 import { TicketsTable } from '@/components/tickets/TicketsTable'
 import { TicketsTableToolbar } from '@/components/tickets/TicketsTableToolbar'
+import { TicketsExportButton } from '@/components/tickets/TicketsExportButton'
 import { computeTicketAnalytics } from '@/lib/tickets/analytics'
 import { Plus } from 'lucide-react'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
@@ -169,16 +170,19 @@ export default async function AdminTicketsPage({
                 : 'Status and priority first — click any row to open. Sorted by last activity.'
         }
         action={
-          <DashButton
-            href={
-              activeClient
-                ? `/admin/tickets/new?client=${activeClient}`
-                : '/admin/tickets/new'
-            }
-          >
-            <Plus size={14} />
-            New ticket
-          </DashButton>
+          <div className="flex items-center gap-2">
+            <TicketsExportButton clients={clients} />
+            <DashButton
+              href={
+                activeClient
+                  ? `/admin/tickets/new?client=${activeClient}`
+                  : '/admin/tickets/new'
+              }
+            >
+              <Plus size={14} />
+              New ticket
+            </DashButton>
+          </div>
         }
       />
 
