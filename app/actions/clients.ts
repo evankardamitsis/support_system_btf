@@ -9,8 +9,13 @@ import { insertRetainerPeriod } from '@/lib/retainers/insert-period'
 import { currentBillingPeriod } from '@/lib/retainers/period'
 import { isHoursBasedPackage, packageLabel } from '@/lib/retainers/billing-model'
 import { parseRetainerPackage, type RetainerPackage } from '@/lib/retainers/packages'
+import { sendClientPrimaryInviteEmail } from '@/lib/email/client-primary-invite'
 
 export type DeleteClientResult = { ok: true } | { ok: false; error: string }
+
+export type GenerateInviteLinkResult =
+  | { ok: true; url: string; emailSent: boolean; emailError: string | null }
+  | { ok: false; error: string }
 
 function parsePackage(raw: string | null): RetainerPackage {
   return parseRetainerPackage(raw)
@@ -147,8 +152,23 @@ export async function updateClientAction(clientId: string, formData: FormData): 
   revalidateClientPickers()
 }
 
-export async function generateInviteLink(clientId: string): Promise<string> {
+export async function generateInviteLink(clientId: string): Promise<GenerateInviteLinkResult> {
+  const { isAdmin } = await requireAdmin()
+  if (!isAdmin) {
+    return { ok: false, error: 'Only admins can generate portal invites' }
+  }
+
   const supabase = await createClient()
+
+  const { data: client, error: clientError } = await supabase
+    .from('clients')
+    .select('name, email, contact_name')
+    .eq('id', clientId)
+    .single()
+
+  if (clientError || !client?.email) {
+    return { ok: false, error: clientError?.message ?? 'Client not found or missing email' }
+  }
 
   const { data: token, error } = await supabase
     .from('invite_tokens')
@@ -156,10 +176,28 @@ export async function generateInviteLink(clientId: string): Promise<string> {
     .select('token')
     .single()
 
-  if (error || !token) throw new Error(error?.message ?? 'Failed to create invite token')
+  if (error || !token) {
+    return { ok: false, error: error?.message ?? 'Failed to create invite token' }
+  }
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-  return `${baseUrl}/auth/register?token=${token.token}`
+  const url = `${baseUrl}/auth/register?token=${token.token}`
+
+  const emailResult = await sendClientPrimaryInviteEmail({
+    to: client.email,
+    contactName: client.contact_name,
+    clientName: client.name,
+    inviteUrl: url,
+  })
+
+  revalidatePath(`/admin/clients/${clientId}`)
+
+  return {
+    ok: true,
+    url,
+    emailSent: emailResult.sent,
+    emailError: emailResult.sent ? null : emailResult.error,
+  }
 }
 
 export async function updateClientApprovalReminders(

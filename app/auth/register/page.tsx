@@ -7,7 +7,7 @@ import { PasswordField } from '@/components/auth/PasswordField'
 import { AuthError } from '@/components/auth/AuthMessage'
 import { EmailConfirmationMessage } from '@/components/auth/EmailConfirmationMessage'
 import { finalizeRegistration } from '@/lib/auth/finalize-registration'
-import { getSignupEmailRedirectTo } from '@/lib/auth/redirect-url'
+import { registerInvitedPortalUser } from '@/lib/auth/register-invited-user'
 
 export default async function RegisterPage({
   searchParams,
@@ -56,27 +56,25 @@ export default async function RegisterPage({
       .single()
     if (!clientData) redirect(`/auth/register?token=${token}&error=Client+not+found`)
 
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    const admin = createAdminClient()
+    const authResult = await registerInvitedPortalUser({
+      supabase,
+      admin,
       email: clientData.email,
       password,
-      options: {
-        data: { full_name: fullName },
-        emailRedirectTo: getSignupEmailRedirectTo(),
-      },
+      fullName,
     })
 
-    if (authError || !authData.user) {
-      const msg = authError?.message ?? 'Signup failed'
-      if (/already (registered|exists)/i.test(msg)) {
-        redirect(`/auth/register?token=${token}&check_email=1`)
+    if (!authResult.ok) {
+      if (authResult.alreadyConfirmed) {
+        redirect(`/auth/login?email=${encodeURIComponent(clientData.email)}`)
       }
-      redirect(`/auth/register?token=${token}&error=${encodeURIComponent(msg)}`)
+      redirect(`/auth/register?token=${token}&error=${encodeURIComponent(authResult.error)}`)
     }
 
-    const admin = createAdminClient()
     const { error: profileError } = await admin.from('users').upsert(
       {
-        id: authData.user.id,
+        id: authResult.userId,
         role: 'client',
         client_id: inv.client_id,
         full_name: fullName,
@@ -90,12 +88,8 @@ export default async function RegisterPage({
       )
     }
 
-    if (authData.session) {
-      await finalizeRegistration(supabase)
-      redirect('/portal/tickets')
-    }
-
-    redirect(`/auth/register?token=${token}&check_email=1`)
+    await finalizeRegistration(supabase)
+    redirect('/portal/tickets')
   }
 
   const inputStyle = {

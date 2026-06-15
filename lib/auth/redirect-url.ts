@@ -18,6 +18,18 @@ export function getPasswordRecoveryRedirectTo(): string {
   return `${getAuthRedirectOrigin()}/auth/callback?next=${encodeURIComponent('/auth/update-password')}`
 }
 
+/** Email confirmation / magic link → /auth/callback → portal */
+export function buildEmailAuthCallbackUrl(
+  tokenHash: string,
+  type: 'signup' | 'magiclink'
+): string {
+  const params = new URLSearchParams({
+    token_hash: tokenHash,
+    type,
+  })
+  return `${getAuthRedirectOrigin()}/auth/callback?${params.toString()}`
+}
+
 /** Client signup confirmation email → session → portal */
 export function getSignupEmailRedirectTo(): string {
   return `${getAuthRedirectOrigin()}/auth/callback`

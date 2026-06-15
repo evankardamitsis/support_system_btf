@@ -86,17 +86,13 @@ export default async function RegisterClientPage({
       redirect(`/auth/register-client?token=${token}&error=${encodeURIComponent(profileError.message)}`)
     }
 
-    if (authResult.session) {
-      try {
-        await clearPendingClientTeamInvites(admin, inv.client_id, inv.email)
-      } catch {
-        // finalizeRegistration also clears on confirmed login.
-      }
-      await finalizeRegistration(supabase)
-      redirect('/portal/tickets')
+    try {
+      await clearPendingClientTeamInvites(admin, inv.client_id, inv.email)
+    } catch {
+      // finalizeRegistration also clears on confirmed login.
     }
-
-    redirect(`/auth/register-client?token=${token}&check_email=1`)
+    await finalizeRegistration(supabase)
+    redirect('/portal/tickets')
   }
 
   const inputStyle = {

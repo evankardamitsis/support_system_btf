@@ -17,6 +17,7 @@ import type {
   RevokeStaffInviteResult,
   TeamDirectoryResult,
 } from '@/lib/team/action-results'
+import { sendStaffInviteEmail } from '@/lib/email/staff-invite'
 
 function getAppOrigin(): string {
   return process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
@@ -40,6 +41,28 @@ function staffInvitesSetupError(error: { message: string; code?: string }): stri
 
 function failInvite(error: string): InviteTeamMemberResult {
   return { ok: false, error }
+}
+
+async function deliverStaffInvite(input: {
+  email: string
+  fullName: string
+  role: StaffRole
+  token: string
+}): Promise<InviteTeamMemberResult> {
+  const url = staffInviteUrl(input.token)
+  const emailResult = await sendStaffInviteEmail({
+    to: input.email,
+    inviteeName: input.fullName,
+    role: input.role,
+    inviteUrl: url,
+  })
+
+  return {
+    ok: true,
+    url,
+    emailSent: emailResult.sent,
+    emailError: emailResult.sent ? null : emailResult.error,
+  }
 }
 
 async function reusePendingInvite(
@@ -73,7 +96,12 @@ async function reusePendingInvite(
     }
   }
 
-  return { ok: true, url: staffInviteUrl(pending.token) }
+  return deliverStaffInvite({
+    email,
+    fullName,
+    role,
+    token: pending.token,
+  })
 }
 
 export async function inviteTeamMember(formData: FormData): Promise<InviteTeamMemberResult> {
@@ -149,7 +177,12 @@ export async function inviteTeamMember(formData: FormData): Promise<InviteTeamMe
     )
   }
 
-  return { ok: true, url: staffInviteUrl(token.token) }
+  return deliverStaffInvite({
+    email,
+    fullName,
+    role,
+    token: token.token,
+  })
 }
 
 export async function getTeamDirectory(): Promise<TeamDirectoryResult> {

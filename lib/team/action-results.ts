@@ -1,7 +1,7 @@
 import type { StaffRole } from '@/lib/team/roles'
 
 export type InviteTeamMemberResult =
-  | { ok: true; url: string }
+  | { ok: true; url: string; emailSent: boolean; emailError?: string | null }
   | { ok: false; error: string }
 
 export type RevokeStaffInviteResult =

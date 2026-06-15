@@ -12,9 +12,20 @@ export function GenerateInviteSection({ clientId }: { clientId: string }) {
   async function handleGenerate() {
     setLoading(true)
     try {
-      const url = await generateInviteLink(clientId)
-      setLink(url)
-      notifySuccess('Portal invite link generated')
+      const result = await generateInviteLink(clientId)
+      if (!result.ok) {
+        notifyError(result.error)
+        return
+      }
+      setLink(result.url)
+      if (result.emailSent) {
+        notifySuccess('Portal invite emailed to the client contact')
+      } else {
+        notifySuccess('Invite link generated')
+        if (result.emailError) {
+          notifyError(result.emailError)
+        }
+      }
     } catch (err) {
       notifyError(err instanceof Error ? err.message : 'Could not generate invite link')
     } finally {
@@ -36,14 +47,14 @@ export function GenerateInviteSection({ clientId }: { clientId: string }) {
           background: 'transparent',
         }}
       >
-        {loading ? '...' : 'GENERATE INVITE LINK'}
+        {loading ? 'Generating…' : 'Generate invite link'}
       </button>
       {link ? (
         <div className="w-full max-w-sm space-y-2 text-right">
           <CopyInput value={link} />
           <p className="dash-meta leading-relaxed">
-            Open in a private window to register a real portal user. Login uses this client&apos;s
-            account email. Link expires in 7 days, one use.
+            We email this link to the client&apos;s contact address. You can also copy it. Login uses
+            this client&apos;s account email. Link expires in 7 days, one use.
           </p>
         </div>
       ) : null}

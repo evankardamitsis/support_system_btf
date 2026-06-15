@@ -33,7 +33,14 @@ export function InviteTeamForm() {
       return
     }
 
-    notifySuccess('Invite link ready — copy and send it privately')
+    if (result.emailSent) {
+      notifySuccess('Invite email sent')
+    } else {
+      notifySuccess('Invite link ready — copy and send it privately')
+      if (result.emailError) {
+        notifyError(result.emailError)
+      }
+    }
     setLink(result.url)
     setRole('agent')
     form.reset()
@@ -102,15 +109,15 @@ export function InviteTeamForm() {
           className="dash-btn-primary btn-primary cursor-pointer"
           disabled={pending}
         >
-          {pending ? 'Creating invite…' : 'Generate invite link'}
+          {pending ? 'Sending invite…' : 'Send invite email'}
         </button>
 
         {link ? (
           <div className="space-y-2 pt-2 border-t border-border">
             <CopyInput value={link} />
             <p className="dash-meta leading-relaxed">
-              Send this link privately. They set a password once; link expires in 7 days. If you
-              already invited this email, submitting again reuses the same link.
+              We email the invite link automatically. You can also copy it here. They set a password
+              once; link expires in 7 days.
             </p>
           </div>
         ) : null}

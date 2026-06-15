@@ -1,8 +1,8 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { sendSignupConfirmationEmail } from '@/lib/auth/signup-confirmation'
+import { tryCreateAdminClient } from '@/lib/supabase/admin'
+import { sendSignupConfirmationEmailViaZepto } from '@/lib/email/signup-confirmation-email'
 
 export type ResendClientTeamConfirmationResult =
   | { ok: true }
@@ -31,9 +31,14 @@ export async function resendClientTeamSignupConfirmation(
     return { ok: false, error: 'Invite link is invalid or expired' }
   }
 
-  const confirmError = await sendSignupConfirmationEmail(supabase, invite.email)
-  if (confirmError) {
-    return { ok: false, error: confirmError }
+  const adminResult = tryCreateAdminClient()
+  if ('error' in adminResult) {
+    return { ok: false, error: adminResult.error }
+  }
+
+  const emailResult = await sendSignupConfirmationEmailViaZepto(adminResult.client, invite.email)
+  if (!emailResult.sent) {
+    return { ok: false, error: emailResult.error }
   }
 
   return { ok: true }

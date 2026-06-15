@@ -102,13 +102,23 @@ After saving, **request a new reset email** — links from before the change sti
 
 ## Password reset (app-owned)
 
-Forgot-password emails are sent by the **app** (ZeptoMail API), not Supabase Auth SMTP. The link goes directly to:
+Forgot-password emails are sent by the **app** (ZeptoMail API), not Supabase Auth SMTP.
 
-`https://support.belowthefold.gr/auth/callback?token_hash=…&type=recovery&next=…`
+## Portal invite emails (app-owned)
 
-That works from **any browser** (Gmail, phone, etc.). Requires `SUPABASE_SECRET_KEY`, `ZEPTOMAIL_API_KEY`, and `EMAIL_FROM` in production.
+All invite emails use **ZeptoMail API** (`ZEPTOMAIL_API_KEY`, `EMAIL_FROM`):
 
-Supabase’s **Reset password** email template is unused for this flow. You can leave it as-is or update it for consistency — it does not affect `/auth/forgot-password`.
+| Flow | When it sends |
+|------|----------------|
+| Client team invite | Admin/portal user invites a colleague |
+| Primary client portal setup | Admin clicks generate invite on client page |
+| Staff invite | Admin invites team member |
+
+After they accept an invite and set a password, the account is **auto-confirmed** (no second Supabase confirmation email).
+
+Legacy “resend confirmation” on the register page uses ZeptoMail with a direct `token_hash` link.
+
+Requires `SUPABASE_SECRET_KEY` for admin user creation on signup.
 
 ## Env vars (reference)
 

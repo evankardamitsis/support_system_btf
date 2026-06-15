@@ -7,7 +7,7 @@ import { PasswordField } from '@/components/auth/PasswordField'
 import { AuthError } from '@/components/auth/AuthMessage'
 import { EmailConfirmationMessage } from '@/components/auth/EmailConfirmationMessage'
 import { finalizeStaffInvite } from '@/lib/auth/finalize-staff-invite'
-import { getSignupEmailRedirectTo } from '@/lib/auth/redirect-url'
+import { registerInvitedPortalUser } from '@/lib/auth/register-invited-user'
 import { formatStaffRole } from '@/lib/team/roles'
 
 export default async function RegisterStaffPage({
@@ -46,28 +46,27 @@ export default async function RegisterStaffPage({
       redirect(`/auth/register-staff?token=${token}&error=Token+invalid+or+expired`)
     }
 
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: inv.email,
-      password,
-      options: {
-        data: { full_name: inv.full_name },
-        emailRedirectTo: getSignupEmailRedirectTo(),
-      },
-    })
-
-    if (authError || !authData.user) {
-      const msg = authError?.message ?? 'Signup failed'
-      if (/already (registered|exists)/i.test(msg)) {
-        redirect(`/auth/register-staff?token=${token}&check_email=1`)
-      }
-      redirect(`/auth/register-staff?token=${token}&error=${encodeURIComponent(msg)}`)
-    }
-
     const role = inv.role === 'admin' ? 'admin' : 'agent'
     const admin = createAdminClient()
+
+    const authResult = await registerInvitedPortalUser({
+      supabase,
+      admin,
+      email: inv.email,
+      password,
+      fullName: inv.full_name,
+    })
+
+    if (!authResult.ok) {
+      if (authResult.alreadyConfirmed) {
+        redirect(`/auth/login?email=${encodeURIComponent(inv.email)}`)
+      }
+      redirect(`/auth/register-staff?token=${token}&error=${encodeURIComponent(authResult.error)}`)
+    }
+
     const { error: profileError } = await admin.from('users').upsert(
       {
-        id: authData.user.id,
+        id: authResult.userId,
         role,
         full_name: inv.full_name,
         client_id: null,
@@ -79,12 +78,8 @@ export default async function RegisterStaffPage({
       redirect(`/auth/register-staff?token=${token}&error=${encodeURIComponent(profileError.message)}`)
     }
 
-    if (authData.session) {
-      await finalizeStaffInvite(supabase)
-      redirect('/admin/tickets')
-    }
-
-    redirect(`/auth/register-staff?token=${token}&check_email=1`)
+    await finalizeStaffInvite(supabase)
+    redirect('/admin/tickets')
   }
 
   const inputStyle = {

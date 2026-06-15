@@ -9,12 +9,23 @@ export function InviteLinkButton({ clientId }: { clientId: string }) {
   const [link, setLink] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [emailNote, setEmailNote] = useState<string | null>(null)
 
   async function handleGenerate() {
     setLoading(true)
+    setEmailNote(null)
     try {
-      const url = await generateInviteLink(clientId)
-      setLink(url)
+      const result = await generateInviteLink(clientId)
+      if (!result.ok) {
+        console.error(result.error)
+        return
+      }
+      setLink(result.url)
+      if (result.emailSent) {
+        setEmailNote('Invite emailed to the client contact.')
+      } else if (result.emailError) {
+        setEmailNote(`Link created but email failed: ${result.emailError}`)
+      }
     } catch (e) {
       console.error(e)
     } finally {
@@ -39,6 +50,7 @@ export function InviteLinkButton({ clientId }: { clientId: string }) {
       >
         {loading ? 'Generating…' : 'Generate invite link'}
       </Button>
+      {emailNote ? <p className="text-xs text-zinc-500">{emailNote}</p> : null}
       {link && (
         <div className="flex gap-2">
           <Input
