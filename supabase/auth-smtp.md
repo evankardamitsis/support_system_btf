@@ -100,6 +100,16 @@ node scripts/configure-supabase-email-templates.mjs
 
 After saving, **request a new reset email** — links from before the change still use the old format.
 
+## Password reset (app-owned)
+
+Forgot-password emails are sent by the **app** (ZeptoMail API), not Supabase Auth SMTP. The link goes directly to:
+
+`https://support.belowthefold.gr/auth/callback?token_hash=…&type=recovery&next=…`
+
+That works from **any browser** (Gmail, phone, etc.). Requires `SUPABASE_SECRET_KEY`, `ZEPTOMAIL_API_KEY`, and `EMAIL_FROM` in production.
+
+Supabase’s **Reset password** email template is unused for this flow. You can leave it as-is or update it for consistency — it does not affect `/auth/forgot-password`.
+
 ## Env vars (reference)
 
 | Variable | Used for |

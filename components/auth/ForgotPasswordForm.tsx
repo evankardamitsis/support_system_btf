@@ -2,8 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
-import { getPasswordRecoveryRedirectTo } from '@/lib/auth/redirect-url'
+import { requestPasswordReset } from '@/app/actions/auth'
 import { AuthError, AuthSuccess } from '@/components/auth/AuthMessage'
 
 const inputStyle = {
@@ -41,13 +40,10 @@ export function ForgotPasswordForm({
 
     setError(null)
     startTransition(async () => {
-      const supabase = createClient()
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: getPasswordRecoveryRedirectTo(),
-      })
+      const result = await requestPasswordReset(email)
 
-      if (resetError) {
-        setError(resetError.message)
+      if (!result.ok) {
+        setError(result.error)
         return
       }
 
@@ -59,12 +55,6 @@ export function ForgotPasswordForm({
     return (
       <>
         <AuthSuccess message="Check your inbox (and spam folder) for the reset link. It expires after a short time." />
-        <p
-          className="text-sm leading-relaxed"
-          style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-2)' }}
-        >
-          Open the link in the same browser where you requested the reset when possible.
-        </p>
         <Link
           href="/auth/login"
           className="text-center text-sm hover:opacity-70 transition-opacity"
