@@ -9,7 +9,13 @@ import { EmailConfirmationMessage } from '@/components/auth/EmailConfirmationMes
 import { resendClientTeamSignupConfirmation } from '@/app/actions/register-client'
 import { finalizeRegistration } from '@/lib/auth/finalize-registration'
 import { registerInvitedAuthUser } from '@/lib/auth/signup-confirmation'
+import { clearPendingClientTeamInvites } from '@/lib/client-team/invite-cleanup'
 import { ResendConfirmationButton } from '@/components/auth/ResendConfirmationButton'
+import {
+  loadClientTeamInviteByToken,
+  resolveClientTeamInviteLanding,
+} from '@/lib/auth/client-team-invite-status'
+import { findAuthUserByEmail } from '@/lib/team/auth-users'
 
 export default async function RegisterClientPage({
   searchParams,
@@ -23,17 +29,11 @@ export default async function RegisterClientPage({
   const showCheckEmail = params.check_email === '1' || params.check_email === 'true'
 
   const supabase = await createClient()
-  const { data: invite } = await supabase
-    .from('client_invite_tokens')
-    .select('id, client_id, email, full_name, used, expires_at')
-    .eq('token', token)
-    .single()
-
-  const expired = !invite || new Date(invite.expires_at) < new Date()
-  const invalid = expired || (!showCheckEmail && (!invite || invite.used))
+  const invite = await loadClientTeamInviteByToken(supabase, token)
+  const landing = await resolveClientTeamInviteLanding(invite, showCheckEmail)
 
   const { data: client } =
-    !invalid && invite
+    invite && landing.kind !== 'invalid'
       ? await supabase.from('clients').select('name').eq('id', invite.client_id).single()
       : { data: null }
   const clientName = client?.name ?? null
@@ -43,17 +43,20 @@ export default async function RegisterClientPage({
     const supabase = await createClient()
     const password = formData.get('password') as string
 
-    const { data: inv } = await supabase
-      .from('client_invite_tokens')
-      .select('id, client_id, email, full_name, used, expires_at')
-      .eq('token', token as string)
-      .single()
+    const inv = await loadClientTeamInviteByToken(supabase, token as string)
 
-    if (!inv || inv.used || new Date(inv.expires_at) < new Date()) {
+    if (!inv || new Date(inv.expires_at) < new Date()) {
       redirect(`/auth/register-client?token=${token}&error=Token+invalid+or+expired`)
     }
 
     const admin = createAdminClient()
+    if (inv.used) {
+      const existing = await findAuthUserByEmail(admin, inv.email)
+      if (existing?.email_confirmed_at) {
+        redirect(`/auth/login?email=${encodeURIComponent(inv.email)}`)
+      }
+    }
+
     const authResult = await registerInvitedAuthUser({
       supabase,
       admin,
@@ -64,7 +67,7 @@ export default async function RegisterClientPage({
 
     if (!authResult.ok) {
       if (authResult.alreadyConfirmed) {
-        redirect(`/auth/register-client?token=${token}&error=${encodeURIComponent(authResult.error)}`)
+        redirect(`/auth/login?email=${encodeURIComponent(inv.email)}`)
       }
       redirect(`/auth/register-client?token=${token}&error=${encodeURIComponent(authResult.error)}`)
     }
@@ -84,6 +87,11 @@ export default async function RegisterClientPage({
     }
 
     if (authResult.session) {
+      try {
+        await clearPendingClientTeamInvites(admin, inv.client_id, inv.email)
+      } catch {
+        // finalizeRegistration also clears on confirmed login.
+      }
       await finalizeRegistration(supabase)
       redirect('/portal/tickets')
     }
@@ -103,6 +111,28 @@ export default async function RegisterClientPage({
     width: '100%',
     transition: 'border-color 150ms ease',
   } as const
+
+  const title =
+    landing.kind === 'sign_in'
+      ? 'Account ready'
+      : landing.kind === 'invalid'
+        ? 'Invalid invite'
+        : landing.kind === 'check_email'
+          ? 'Confirm your email'
+          : 'Join your team'
+
+  const subtitle =
+    landing.kind === 'sign_in'
+      ? landing.reason === 'invite_expired'
+        ? 'This invite link has expired, but your account is already set up.'
+        : 'You already joined the team — sign in to access the portal.'
+      : landing.kind === 'invalid'
+        ? 'This link has expired or is no longer valid.'
+        : landing.kind === 'check_email'
+          ? 'One more step before you can access the portal.'
+          : clientName
+            ? null
+            : null
 
   return (
     <div className="auth-shell-content grid-bg grid-bg-fade flex flex-1 flex-col items-center justify-center px-4 py-8 w-full">
@@ -129,21 +159,14 @@ export default async function RegisterClientPage({
                 letterSpacing: '0.01em',
               }}
             >
-              {invalid ? 'Invalid invite' : showCheckEmail ? 'Confirm your email' : 'Join your team'}
+              {title}
             </h1>
-            {invalid ? (
+            {subtitle ? (
               <p
                 className="text-base mt-1.5"
                 style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-2)' }}
               >
-                This link has expired or already been used.
-              </p>
-            ) : showCheckEmail ? (
-              <p
-                className="text-base mt-1.5"
-                style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-2)' }}
-              >
-                One more step before you can access the portal.
+                {subtitle}
               </p>
             ) : clientName ? (
               <p
@@ -157,14 +180,59 @@ export default async function RegisterClientPage({
           </div>
 
           <div className="px-8 py-8">
-            {invalid ? (
+            {landing.kind === 'sign_in' ? (
               <div className="flex flex-col gap-5">
                 <p
                   className="text-base"
                   style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-2)' }}
                 >
-                  Ask your team admin to send a new invite link.
+                  Use <strong>{landing.email}</strong> at the sign-in page.
+                  {!landing.confirmed
+                    ? ' If you have not confirmed your email yet, check your inbox or use resend below.'
+                    : null}
                 </p>
+                <Link
+                  href={`/auth/login?email=${encodeURIComponent(landing.email)}`}
+                  className="btn-primary w-full py-4 text-sm tracking-[0.12em] uppercase cursor-pointer font-medium text-center"
+                  style={{
+                    fontFamily: 'var(--font-dm-mono)',
+                    background: 'var(--accent)',
+                    color: 'var(--primary-foreground)',
+                    border: 'none',
+                    borderRadius: 0,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Go to sign in →
+                </Link>
+                <Link
+                  href={`/auth/forgot-password?email=${encodeURIComponent(landing.email)}`}
+                  className="text-center text-sm hover:opacity-70 transition-opacity"
+                  style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-2)' }}
+                >
+                  Forgot password?
+                </Link>
+                {!landing.confirmed ? (
+                  <ResendConfirmationButton
+                    action={() => resendClientTeamSignupConfirmation(token as string)}
+                  />
+                ) : null}
+              </div>
+            ) : landing.kind === 'invalid' ? (
+              <div className="flex flex-col gap-5">
+                <p
+                  className="text-base"
+                  style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-2)' }}
+                >
+                  Ask your team admin to send a new invite link, or sign in if you already registered.
+                </p>
+                <Link
+                  href="/auth/login"
+                  className="text-sm hover:opacity-70 transition-opacity"
+                  style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-2)' }}
+                >
+                  Go to sign in →
+                </Link>
                 <Link
                   href="/"
                   className="text-sm hover:opacity-70 transition-opacity"
@@ -173,12 +241,19 @@ export default async function RegisterClientPage({
                   ← Return home
                 </Link>
               </div>
-            ) : showCheckEmail && invite?.email ? (
+            ) : landing.kind === 'check_email' ? (
               <>
-                <EmailConfirmationMessage email={invite.email} clientName={clientName} />
+                <EmailConfirmationMessage email={landing.email} clientName={clientName} />
                 <ResendConfirmationButton
                   action={() => resendClientTeamSignupConfirmation(token as string)}
                 />
+                <Link
+                  href={`/auth/login?email=${encodeURIComponent(landing.email)}`}
+                  className="mt-4 block text-center text-sm hover:opacity-70 transition-opacity"
+                  style={{ fontFamily: 'var(--font-dm-mono)', color: 'var(--text-2)' }}
+                >
+                  Already confirmed? Sign in →
+                </Link>
               </>
             ) : (
               <form action={register} className="flex flex-col gap-6">

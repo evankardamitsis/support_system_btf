@@ -23,7 +23,11 @@ export async function resendClientTeamSignupConfirmation(
     return { ok: false, error: inviteError.message }
   }
 
-  if (!invite || invite.used || new Date(invite.expires_at) < new Date()) {
+  if (!invite) {
+    return { ok: false, error: 'Invite link is invalid or expired' }
+  }
+
+  if (new Date(invite.expires_at) < new Date()) {
     return { ok: false, error: 'Invite link is invalid or expired' }
   }
 

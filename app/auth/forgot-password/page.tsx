@@ -21,10 +21,11 @@ const inputStyle = {
 export default async function ForgotPasswordPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sent?: string; error?: string }>
+  searchParams: Promise<{ sent?: string; error?: string; email?: string }>
 }) {
   const params = await searchParams
   const sent = params.sent === '1'
+  const prefilledEmail = params.email?.trim() ?? ''
 
   async function requestReset(formData: FormData) {
     'use server'
@@ -111,6 +112,7 @@ export default async function ForgotPasswordPage({
                     required
                     autoComplete="email"
                     placeholder="you@example.com"
+                    defaultValue={prefilledEmail}
                     style={inputStyle}
                     className="focus:[border-color:var(--accent)]"
                   />

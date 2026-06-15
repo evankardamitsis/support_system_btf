@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { tryCreateAdminClient } from "@/lib/supabase/admin";
 import { requireClient } from "@/lib/auth/require-client";
 import { requireStaff } from "@/lib/auth/require-staff";
+import { requireAdmin } from "@/lib/auth/require-admin";
 import {
   clearIncompleteClientTeamSignup,
   findAuthUserByEmail,
@@ -11,12 +12,15 @@ import {
 } from "@/lib/team/auth-users";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
-import { createClient } from "@/lib/supabase/server";
 import { sendClientTeamInviteEmail } from "@/lib/email/client-team-invite";
-import { sendSignupConfirmationEmail } from "@/lib/auth/signup-confirmation";
+import {
+  clearPendingClientTeamInvites,
+  clearPendingInvitesForRegisteredMembers,
+} from "@/lib/client-team/invite-cleanup";
 import type {
   ClientTeamDirectoryResult,
   InviteClientTeamMemberResult,
+  RemoveClientTeamMemberResult,
   RevokeClientInviteResult,
 } from "@/lib/client-team/action-results";
 
@@ -52,48 +56,46 @@ function failInvite(error: string): InviteClientTeamMemberResult {
   return { ok: false, error };
 }
 
-type ReusePendingInviteResult =
-  | { ok: true; token: string }
-  | { ok: false; error: string }
-  | null;
-
-async function reusePendingClientInvite(
+async function createClientTeamInvite(
   admin: SupabaseClient<Database>,
   clientId: string,
   email: string,
   fullName: string,
-): Promise<ReusePendingInviteResult> {
-  const { data: pending, error: pendingError } = await admin
-    .from("client_invite_tokens")
-    .select("id, token, full_name")
-    .eq("client_id", clientId)
-    .eq("email", email)
-    .eq("used", false)
-    .gt("expires_at", new Date().toISOString())
-    .maybeSingle();
-
-  if (pendingError) {
+  invitedBy: string,
+): Promise<{ ok: true; token: string } | { ok: false; error: string }> {
+  try {
+    await clearPendingClientTeamInvites(admin, clientId, email);
+  } catch (err) {
     return {
       ok: false,
-      error:
-        clientInvitesSetupError(pendingError) ?? pendingError.message,
+      error: err instanceof Error ? err.message : "Could not clear pending invites",
     };
   }
 
-  if (!pending?.token) return null;
+  const { data: token, error } = await admin
+    .from("client_invite_tokens")
+    .insert({
+      client_id: clientId,
+      email,
+      full_name: fullName,
+      invited_by: invitedBy,
+    })
+    .select("token")
+    .single();
 
-  if (pending.full_name !== fullName) {
-    const { error: updateError } = await admin
-      .from("client_invite_tokens")
-      .update({ full_name: fullName })
-      .eq("id", pending.id);
-
-    if (updateError) {
-      return { ok: false, error: updateError.message };
-    }
+  if (error || !token?.token) {
+    return {
+      ok: false,
+      error:
+        clientInvitesSetupError(
+          error ?? { message: "Failed to create invite" },
+        ) ??
+        error?.message ??
+        "Failed to create invite",
+    };
   }
 
-  return { ok: true, token: pending.token };
+  return { ok: true, token: token.token };
 }
 
 async function deliverClientTeamInvite(
@@ -174,6 +176,12 @@ async function inviteClientTeamMemberForClient(
       .maybeSingle();
 
     if (profile?.role === "client" && profile.client_id === clientId) {
+      try {
+        await clearPendingClientTeamInvites(admin, clientId, email);
+        revalidateClientTeamPaths(clientId);
+      } catch {
+        // Best-effort — they already have access.
+      }
       const name = profile.full_name?.trim() || "This user";
       return failInvite(
         `${name} already has portal access. They can sign in at /auth/login.`,
@@ -192,85 +200,38 @@ async function inviteClientTeamMemberForClient(
       return failInvite("This email belongs to a BTF staff account.");
     }
 
-    const reusedAfterSignup = await reusePendingClientInvite(
+    const created = await createClientTeamInvite(
       admin,
       clientId,
       email,
       fullName,
+      invitedBy,
     );
-    if (reusedAfterSignup) {
-      if (!reusedAfterSignup.ok) return failInvite(reusedAfterSignup.error);
-      return deliverClientTeamInvite(admin, {
-        clientId,
-        email,
-        fullName,
-        token: reusedAfterSignup.token,
-        invitedByName,
-      });
-    }
+    if (!created.ok) return failInvite(created.error);
 
-    if (authUser.email_confirmed_at) {
-      return failInvite(
-        "An account already exists for this email. Ask them to sign in at /auth/login.",
-      );
-    }
-
-    const supabase = await createClient();
-    const confirmError = await sendSignupConfirmationEmail(supabase, email);
-    if (confirmError) {
-      return failInvite(
-        `Signup was started but the confirmation email could not be resent (${confirmError}). Use their invite link and choose “Resend confirmation email”.`,
-      );
-    }
-
-    return failInvite(
-      "Signup was started for this email. We've resent the Supabase confirmation email — ask them to check their inbox (and spam).",
-    );
-  }
-
-  const reused = await reusePendingClientInvite(
-    admin,
-    clientId,
-    email,
-    fullName,
-  );
-  if (reused) {
-    if (!reused.ok) return failInvite(reused.error);
     return deliverClientTeamInvite(admin, {
       clientId,
       email,
       fullName,
-      token: reused.token,
+      token: created.token,
       invitedByName,
     });
   }
 
-  const { data: token, error } = await admin
-    .from("client_invite_tokens")
-    .insert({
-      client_id: clientId,
-      email,
-      full_name: fullName,
-      invited_by: invitedBy,
-    })
-    .select("token")
-    .single();
-
-  if (error || !token?.token) {
-    return failInvite(
-      clientInvitesSetupError(
-        error ?? { message: "Failed to create invite" },
-      ) ??
-        error?.message ??
-        "Failed to create invite",
-    );
-  }
+  const created = await createClientTeamInvite(
+    admin,
+    clientId,
+    email,
+    fullName,
+    invitedBy,
+  );
+  if (!created.ok) return failInvite(created.error);
 
   return deliverClientTeamInvite(admin, {
     clientId,
     email,
     fullName,
-    token: token.token,
+    token: created.token,
     invitedByName,
   });
 }
@@ -378,7 +339,6 @@ async function loadClientTeamDirectory(
   const [
     { data: clientRow },
     { data: profiles, error: profilesError },
-    { data: invites, error: invitesError },
   ] = await Promise.all([
     admin.from("clients").select("name, email").eq("id", clientId).single(),
     admin
@@ -387,24 +347,10 @@ async function loadClientTeamDirectory(
       .eq("client_id", clientId)
       .eq("role", "client")
       .order("created_at", { ascending: true }),
-    admin
-      .from("client_invite_tokens")
-      .select("id, email, full_name, expires_at, created_at, token")
-      .eq("client_id", clientId)
-      .eq("used", false)
-      .gt("expires_at", new Date().toISOString())
-      .order("created_at", { ascending: false }),
   ]);
 
   if (profilesError) {
     return { ...empty, error: profilesError.message };
-  }
-
-  if (invitesError) {
-    return {
-      ...empty,
-      error: clientInvitesSetupError(invitesError) ?? invitesError.message,
-    };
   }
 
   const primaryContactEmail = clientRow?.email?.trim().toLowerCase() ?? "";
@@ -421,6 +367,34 @@ async function loadClientTeamDirectory(
       };
     }),
   );
+
+  try {
+    await clearPendingInvitesForRegisteredMembers(
+      admin,
+      clientId,
+      members.map((member) => member.email),
+    );
+  } catch (err) {
+    return {
+      ...empty,
+      error: err instanceof Error ? err.message : "Could not sync pending invites",
+    };
+  }
+
+  const { data: invites, error: invitesError } = await admin
+    .from("client_invite_tokens")
+    .select("id, email, full_name, expires_at, created_at, token")
+    .eq("client_id", clientId)
+    .eq("used", false)
+    .gt("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false });
+
+  if (invitesError) {
+    return {
+      ...empty,
+      error: clientInvitesSetupError(invitesError) ?? invitesError.message,
+    };
+  }
 
   const pendingInvites =
     invites?.map((i) => ({
@@ -546,4 +520,91 @@ export async function revokeClientInviteAsAdmin(
 ): Promise<RevokeClientInviteResult> {
   await requireStaff();
   return revokeClientInviteForClient(clientId, inviteId);
+}
+
+async function removeClientTeamMemberForClient(
+  clientId: string,
+  userId: string,
+): Promise<RemoveClientTeamMemberResult> {
+  const adminResult = tryCreateAdminClient();
+  if ("error" in adminResult) {
+    return { ok: false, error: adminResult.error };
+  }
+  const admin = adminResult.client;
+
+  const [{ data: clientRow }, { data: member }] = await Promise.all([
+    admin.from("clients").select("email").eq("id", clientId).maybeSingle(),
+    admin
+      .from("users")
+      .select("id, role, client_id, full_name")
+      .eq("id", userId)
+      .maybeSingle(),
+  ]);
+
+  if (
+    !member ||
+    member.role !== "client" ||
+    member.client_id !== clientId
+  ) {
+    return { ok: false, error: "Team member not found on this client" };
+  }
+
+  const email = await getAuthEmailById(admin, userId);
+  const primaryEmail = clientRow?.email?.trim().toLowerCase() ?? "";
+  if (email && primaryEmail && email.trim().toLowerCase() === primaryEmail) {
+    return {
+      ok: false,
+      error:
+        "Cannot remove the main contact. Change the client email on the client record first.",
+    };
+  }
+
+  if (email) {
+    try {
+      await clearPendingClientTeamInvites(admin, clientId, email);
+    } catch (err) {
+      return {
+        ok: false,
+        error:
+          err instanceof Error
+            ? err.message
+            : "Could not clear pending invites for this teammate",
+      };
+    }
+  }
+
+  const { error: profileError } = await admin
+    .from("users")
+    .delete()
+    .eq("id", userId)
+    .eq("client_id", clientId)
+    .eq("role", "client");
+
+  if (profileError) {
+    return { ok: false, error: profileError.message };
+  }
+
+  const { error: authDeleteError } = await admin.auth.admin.deleteUser(userId);
+  if (authDeleteError) {
+    console.warn(
+      `[client-team] Removed portal profile for ${userId}; auth delete: ${authDeleteError.message}`,
+    );
+  }
+
+  revalidateClientTeamPaths(clientId);
+  return { ok: true };
+}
+
+export async function removeClientTeamMemberAsAdmin(
+  clientId: string,
+  userId: string,
+): Promise<RemoveClientTeamMemberResult> {
+  const { isAdmin } = await requireAdmin();
+  if (!isAdmin) {
+    return { ok: false, error: "Only admins can remove portal teammates" };
+  }
+  if (!clientId || !userId) {
+    return { ok: false, error: "Client and team member are required" };
+  }
+  return removeClientTeamMemberForClient(clientId, userId);
 }

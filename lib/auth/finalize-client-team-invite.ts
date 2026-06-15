@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/lib/database.types'
 import { notifyAdminsClientRegistered } from '@/lib/auth/notify-admins-client-registered'
+import { clearPendingClientTeamInvites } from '@/lib/client-team/invite-cleanup'
+import { tryCreateAdminClient } from '@/lib/supabase/admin'
 
 export type FinalizeClientTeamInviteResult =
   | { consumed: false }
@@ -35,13 +37,31 @@ export async function finalizeClientTeamInvite(
 
   if (!pendingInvite) return { consumed: false }
 
-  const { error } = await supabase
-    .from('client_invite_tokens')
-    .update({ used: true })
-    .eq('email', email)
-    .eq('used', false)
+  const adminResult = tryCreateAdminClient()
+  if (!('error' in adminResult)) {
+    try {
+      await clearPendingClientTeamInvites(
+        adminResult.client,
+        pendingInvite.client_id,
+        email
+      )
+    } catch {
+      // Fall back to marking consumed when admin cleanup is unavailable.
+      await supabase
+        .from('client_invite_tokens')
+        .update({ used: true })
+        .eq('email', email)
+        .eq('used', false)
+    }
+  } else {
+    const { error } = await supabase
+      .from('client_invite_tokens')
+      .update({ used: true })
+      .eq('email', email)
+      .eq('used', false)
 
-  if (error) return { consumed: false }
+    if (error) return { consumed: false }
+  }
 
   const { data: client } = await supabase
     .from('clients')

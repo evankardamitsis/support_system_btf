@@ -89,12 +89,10 @@ await api('/rest/v1/users?on_conflict=id', {
 })
 console.log('Profile upserted')
 
-if (!invite.used) {
-  await api(`/rest/v1/client_invite_tokens?id=eq.${invite.id}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ used: true }),
-  })
-  console.log('Invite marked used')
-}
+await api(
+  `/rest/v1/client_invite_tokens?client_id=eq.${invite.client_id}&email=eq.${encodeURIComponent(email)}&used=eq.false`,
+  { method: 'DELETE' }
+)
+console.log('Pending invites cleared')
 
 console.log('Done — user can sign in at /auth/login')

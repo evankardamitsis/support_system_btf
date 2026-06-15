@@ -4,6 +4,8 @@ export type InviteClientTeamMemberResult =
 
 export type RevokeClientInviteResult = { ok: true } | { ok: false; error: string }
 
+export type RemoveClientTeamMemberResult = { ok: true } | { ok: false; error: string }
+
 export type ClientTeamMember = {
   id: string
   email: string

@@ -2,10 +2,12 @@ import type {
   ClientPendingInvite,
   ClientTeamMember,
   InviteClientTeamMemberResult,
+  RemoveClientTeamMemberResult,
   RevokeClientInviteResult,
 } from '@/lib/client-team/action-results'
 import { formatDate } from '@/lib/dates'
 import { PendingClientInviteActions } from '@/components/client-team/PendingClientInviteActions'
+import { ClientTeamMemberActions } from '@/components/client-team/ClientTeamMemberActions'
 
 function initials(name: string) {
   const p = name.trim().split(' ')
@@ -18,12 +20,14 @@ export function ClientTeamList({
   primaryContactEmail,
   resendInviteAction,
   revokeInviteAction,
+  removeMemberAction,
 }: {
   members: ClientTeamMember[]
   pendingInvites: ClientPendingInvite[]
   primaryContactEmail: string
   resendInviteAction?: (inviteId: string) => Promise<InviteClientTeamMemberResult>
   revokeInviteAction?: (inviteId: string) => Promise<RevokeClientInviteResult>
+  removeMemberAction?: (userId: string) => Promise<RemoveClientTeamMemberResult>
 }) {
   if (members.length === 0 && pendingInvites.length === 0) {
     return (
@@ -52,7 +56,9 @@ export function ClientTeamList({
                   <p className="entity-card-sub">{m.email}</p>
                 </div>
               </div>
-              <div className="entity-card-aside">
+              <div
+                className={`entity-card-aside${removeMemberAction && !m.is_primary_contact ? ' team-pending-aside' : ''}`}
+              >
                 {m.is_primary_contact ? (
                   <span className="team-role-badge team-role-badge--admin">Main contact</span>
                 ) : (
@@ -64,6 +70,13 @@ export function ClientTeamList({
                     {formatDate(m.created_at)}
                   </span>
                 </span>
+                {!m.is_primary_contact && removeMemberAction ? (
+                  <ClientTeamMemberActions
+                    memberName={m.full_name ?? m.email}
+                    memberEmail={m.email}
+                    removeAction={() => removeMemberAction(m.id)}
+                  />
+                ) : null}
               </div>
             </div>
           ))}

@@ -2,6 +2,7 @@
 
 import {
   inviteClientTeamMemberAsAdmin,
+  removeClientTeamMemberAsAdmin,
   resendClientTeamInviteAsAdmin,
   revokeClientInviteAsAdmin,
 } from '@/app/actions/client-team'
@@ -61,6 +62,7 @@ export function AdminClientTeamPanel({
         primaryContactEmail={primaryContactEmail}
         resendInviteAction={inviteId => resendClientTeamInviteAsAdmin(clientId, inviteId)}
         revokeInviteAction={inviteId => revokeClientInviteAsAdmin(clientId, inviteId)}
+        removeMemberAction={userId => removeClientTeamMemberAsAdmin(clientId, userId)}
       />
     </section>
   )

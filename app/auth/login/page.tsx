@@ -23,9 +23,10 @@ const inputStyle = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>
+  searchParams: Promise<{ error?: string; email?: string }>
 }) {
   const params = await searchParams
+  const prefilledEmail = params.email?.trim() ?? ''
   const supabase = await createClient()
   const {
     data: { user },
@@ -98,6 +99,7 @@ export default async function LoginPage({
                 required
                 autoComplete="email"
                 placeholder="you@example.com"
+                defaultValue={prefilledEmail}
                 style={inputStyle}
                 className="focus:border-(--accent)"
               />
