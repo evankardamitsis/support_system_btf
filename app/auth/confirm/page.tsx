@@ -1,14 +1,25 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { completeAuthRedirect } from '@/app/actions/auth'
 
 export default function AuthConfirmPage() {
   const router = useRouter()
+  const [timedOut, setTimedOut] = useState(false)
 
   useEffect(() => {
+    const search = new URLSearchParams(window.location.search)
+    const tokenHash = search.get('token_hash')
+    const searchType = search.get('type')
+
+    if (tokenHash && searchType) {
+      router.replace(`/auth/callback?${search.toString()}`)
+      return
+    }
+
     const hash = window.location.hash.substring(1)
     const params = new URLSearchParams(hash)
 
@@ -35,7 +46,11 @@ export default function AuthConfirmPage() {
           const path = await completeAuthRedirect()
           router.replace(path)
         })
+      return
     }
+
+    const timer = window.setTimeout(() => setTimedOut(true), 8000)
+    return () => window.clearTimeout(timer)
   }, [router])
 
   return (
@@ -52,15 +67,31 @@ export default function AuthConfirmPage() {
           Support
         </span>
       </div>
-      <div className="flex items-center gap-3">
-        <span
-          className="inline-block w-4 h-4 border-2 rounded-full animate-spin"
-          style={{ borderColor: 'var(--border-2)', borderTopColor: 'var(--text-2)' }}
-        />
-        <span className="text-sm" style={{ color: 'var(--text-2)' }}>
-          Signing you in…
-        </span>
-      </div>
+      {timedOut ? (
+        <div className="flex flex-col items-center gap-4 text-center max-w-sm">
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-2)' }}>
+            This link is invalid or has expired. Request a new password reset or sign-in link.
+          </p>
+          <div className="flex flex-col gap-2 text-sm">
+            <Link href="/auth/forgot-password" style={{ color: 'var(--accent)' }}>
+              Forgot password
+            </Link>
+            <Link href="/auth/login" style={{ color: 'var(--text-2)' }}>
+              Back to sign in
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center gap-3">
+          <span
+            className="inline-block w-4 h-4 border-2 rounded-full animate-spin"
+            style={{ borderColor: 'var(--border-2)', borderTopColor: 'var(--text-2)' }}
+          />
+          <span className="text-sm" style={{ color: 'var(--text-2)' }}>
+            Signing you in…
+          </span>
+        </div>
+      )}
     </div>
   )
 }

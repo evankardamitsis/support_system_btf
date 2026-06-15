@@ -9,7 +9,11 @@ export function isAlreadyRegisteredAuthError(message: string): boolean {
 
 /** Supabase Auth throttles signup confirmation resends (~1 per minute). */
 export function isAuthEmailRateLimitError(message: string): boolean {
-  return /only request this after/i.test(message) || /rate limit/i.test(message)
+  return (
+    /only request this after/i.test(message) ||
+    /rate limit/i.test(message) ||
+    /email rate limit exceeded/i.test(message)
+  )
 }
 
 /** Ask Supabase Auth to send (or resend) the signup confirmation email. */

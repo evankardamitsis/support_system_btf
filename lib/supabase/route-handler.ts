@@ -17,8 +17,11 @@ export function createRouteHandlerClient(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookieJar.length = 0
-          cookieJar.push(...cookiesToSet)
+          for (const cookie of cookiesToSet) {
+            const index = cookieJar.findIndex(entry => entry.name === cookie.name)
+            if (index >= 0) cookieJar[index] = cookie
+            else cookieJar.push(cookie)
+          }
         },
       },
     }
