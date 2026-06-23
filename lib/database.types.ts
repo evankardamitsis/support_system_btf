@@ -504,6 +504,7 @@ export interface Database {
           period_end: string
           status: 'active' | 'expired' | 'canceled'
           renewal_notified_at: string | null
+          admin_renewal_notified_at: string | null
           notes: string | null
           created_by: string
           created_at: string
@@ -520,6 +521,7 @@ export interface Database {
           period_end: string
           status?: 'active' | 'expired' | 'canceled'
           renewal_notified_at?: string | null
+          admin_renewal_notified_at?: string | null
           notes?: string | null
           created_by: string
           created_at?: string
@@ -536,6 +538,7 @@ export interface Database {
           period_end?: string
           status?: 'active' | 'expired' | 'canceled'
           renewal_notified_at?: string | null
+          admin_renewal_notified_at?: string | null
           notes?: string | null
           created_by?: string
           created_at?: string

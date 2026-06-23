@@ -25,6 +25,7 @@ export function mapHostingContractRow(
     periodEnd: row.period_end,
     status: row.status as HostingContractStatus,
     renewalNotifiedAt: row.renewal_notified_at,
+    adminRenewalNotifiedAt: row.admin_renewal_notified_at,
     notes: row.notes,
     createdBy: row.created_by,
     createdAt: row.created_at,

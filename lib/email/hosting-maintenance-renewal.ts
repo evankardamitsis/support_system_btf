@@ -2,6 +2,7 @@ import { getCompanyProfile } from '@/lib/ops/company-profile'
 import { formatHostingContractCost, formatHostingDate } from '@/lib/ops/hosting-maintenance/display'
 import { renewalDateFromPeriodEnd } from '@/lib/ops/hosting-maintenance/period'
 import type { HostingContractRecord } from '@/lib/ops/hosting-maintenance/types'
+import { HOSTING_ADMIN_ALERT_EMAIL } from '@/lib/ops/hosting-maintenance/types'
 import { getClientNotificationEmails, type NotifyResult } from '@/lib/email/ticket-notifications'
 import { sendEmail } from '@/lib/email/send'
 import { createClient } from '@/lib/supabase/server'
@@ -56,6 +57,39 @@ export async function sendHostingRenewalReminder(
       body,
       'Open support portal',
       `${appOrigin()}/portal/tickets`
+    ),
+  })
+
+  if (!result.ok) return { sent: false, error: result.error }
+  return { sent: true }
+}
+
+export async function sendHostingRenewalAdminAlert(
+  contract: HostingContractRecord
+): Promise<NotifyResult> {
+  const costLabel = formatHostingContractCost(
+    contract.costAmount,
+    contract.periodType,
+    contract.customPeriod
+  )
+
+  const adminUrl = `${appOrigin()}/admin/ops/hosting`
+
+  const body = [
+    `<strong>${contract.name}</strong> (${contract.clientName}) renews <strong>tomorrow</strong>.`,
+    `Period ends: <strong>${formatHostingDate(contract.periodEnd)}</strong>.`,
+    `Fee: <strong>${costLabel}</strong>.`,
+    `Action needed: confirm payment has been received or follow up with the client.`,
+  ].join(' ')
+
+  const result = await sendEmail({
+    to: HOSTING_ADMIN_ALERT_EMAIL,
+    subject: `[Action needed] Hosting renewal tomorrow — ${contract.name}`,
+    html: emailShell(
+      'Hosting renewal — 1 day away',
+      body,
+      'Open hosting contracts',
+      adminUrl
     ),
   })
 

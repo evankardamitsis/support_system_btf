@@ -15,6 +15,7 @@ export type HostingContractRecord = {
   periodEnd: string
   status: HostingContractStatus
   renewalNotifiedAt: string | null
+  adminRenewalNotifiedAt: string | null
   notes: string | null
   createdBy: string
   createdAt: string
@@ -30,3 +31,5 @@ export const HOSTING_CONTRACT_STATUS_LABELS: Record<HostingContractStatus, strin
 }
 
 export const HOSTING_RENEWAL_REMINDER_DAYS = 14
+export const HOSTING_ADMIN_REMINDER_DAYS = 1
+export const HOSTING_ADMIN_ALERT_EMAIL = 'kardamitsis.e@gmail.com'
