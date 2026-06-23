@@ -44,8 +44,9 @@ export async function processHostingRenewalReminders(): Promise<{
 
     const days = daysUntilExpiry(row.period_end)
 
-    // Client reminder at 14 days
-    if (days <= HOSTING_RENEWAL_REMINDER_DAYS && !row.renewal_notified_at) {
+    // Client reminder at 14 days — opt-in via HOSTING_CLIENT_REMINDERS=true
+    const clientRemindersEnabled = process.env.HOSTING_CLIENT_REMINDERS === 'true'
+    if (clientRemindersEnabled && days <= HOSTING_RENEWAL_REMINDER_DAYS && !row.renewal_notified_at) {
       const contract = await getHostingContract(supabase, row.id)
       if (!contract) continue
 
