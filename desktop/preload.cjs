@@ -13,8 +13,11 @@ contextBridge.exposeInMainWorld('btfDesktop', {
   setBadge(count) {
     ipcRenderer.send('btf-desktop:set-badge', count)
   },
-  bounce() {
-    ipcRenderer.send('btf-desktop:bounce')
+  bounce(mode) {
+    ipcRenderer.send('btf-desktop:bounce', mode)
+  },
+  cancelBounce() {
+    ipcRenderer.send('btf-desktop:cancel-bounce')
   },
   onFocusChange(callback) {
     if (typeof callback !== 'function') return () => {}

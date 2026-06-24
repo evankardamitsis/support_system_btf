@@ -9,7 +9,8 @@ type BtfDesktopBridge = {
   isDesktop: boolean
   notify: (input: DesktopNotifyInput) => void
   setBadge: (count: number) => void
-  bounce: () => void
+  bounce: (mode?: 'informational' | 'critical') => void
+  cancelBounce: () => void
   onFocusChange: (callback: (focused: boolean) => void) => () => void
 }
 
@@ -38,7 +39,12 @@ export function setDockBadge(count: number) {
   window.btfDesktop.setBadge(Math.max(0, Math.floor(count)))
 }
 
-export function bounceDock() {
+export function bounceDock(mode: 'informational' | 'critical' = 'informational') {
   if (!isDesktopApp() || !window.btfDesktop?.bounce) return
-  window.btfDesktop.bounce()
+  window.btfDesktop.bounce(mode)
+}
+
+export function cancelDockBounce() {
+  if (!isDesktopApp()) return
+  window.btfDesktop?.cancelBounce?.()
 }

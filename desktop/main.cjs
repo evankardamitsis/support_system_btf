@@ -11,6 +11,7 @@ const APP_URL =
 const PROTOCOL = 'btf-support'
 
 let mainWindow = null
+let activeBounceId = null
 
 function appIcon() {
   const iconPath = path.join(__dirname, 'assets', 'icon.png')
@@ -69,12 +70,21 @@ function createWindow() {
   })
 }
 
+function cancelActiveBounce() {
+  if (process.platform === 'darwin' && app.dock && activeBounceId !== null) {
+    app.dock.cancelBounce(activeBounceId)
+    activeBounceId = null
+  }
+}
+
 function wireWindowFocusEvents() {
   if (!mainWindow) return
 
   const sendFocusState = () => {
     if (!mainWindow || mainWindow.isDestroyed()) return
-    mainWindow.webContents.send('btf-desktop:focus-change', mainWindow.isFocused())
+    const focused = mainWindow.isFocused()
+    mainWindow.webContents.send('btf-desktop:focus-change', focused)
+    if (focused) cancelActiveBounce()
   }
 
   mainWindow.on('focus', sendFocusState)
@@ -246,10 +256,20 @@ ipcMain.on('btf-desktop:set-badge', (_event, count) => {
   app.dock.setBadge(value > 0 ? (value > 99 ? '99+' : String(value)) : '')
 })
 
-ipcMain.on('btf-desktop:bounce', () => {
-  if (process.platform === 'darwin' && app.dock) {
+ipcMain.on('btf-desktop:bounce', (_event, mode) => {
+  if (process.platform !== 'darwin' || !app.dock) return
+  const bounceMode = mode === 'critical' ? 'critical' : 'informational'
+  if (bounceMode === 'critical') {
+    // Cancel any existing critical bounce before starting a new one
+    cancelActiveBounce()
+    activeBounceId = app.dock.bounce('critical')
+  } else {
     app.dock.bounce('informational')
   }
+})
+
+ipcMain.on('btf-desktop:cancel-bounce', () => {
+  cancelActiveBounce()
 })
 
 ipcMain.on('btf-desktop:notify', (_event, payload) => {
