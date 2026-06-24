@@ -42,7 +42,7 @@ export async function getStaffForMentions(): Promise<StaffMentionOption[]> {
     .sort((a, b) => a.name.localeCompare(b.name))
 }
 
-export async function addComment(ticketId: string, body: string, isInternal: boolean) {
+export async function addComment(ticketId: string, body: string, isInternal: boolean): Promise<string> {
   const supabase = await createClient()
   const {
     data: { user },
@@ -71,6 +71,7 @@ export async function addComment(ticketId: string, body: string, isInternal: boo
     .single()
 
   if (error) throw new Error(error.message)
+  const commentId = inserted.id
 
   if (isInternal) {
     const [{ data: author }, staff] = await Promise.all([
@@ -110,4 +111,5 @@ export async function addComment(ticketId: string, body: string, isInternal: boo
 
   revalidatePath(`/admin/tickets/${ticketId}`)
   revalidatePath(`/portal/tickets/${ticketId}`)
+  return commentId
 }

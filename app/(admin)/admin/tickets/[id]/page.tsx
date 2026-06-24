@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getStaffForMentions } from '@/app/actions/comments'
 import { enrichCommentsWithAuthors } from '@/lib/comments/authors'
+import { getTicketAttachments } from '@/app/actions/ticket-attachments'
 import { CommentThread } from '@/components/tickets/CommentThread'
 import { TicketCommentForm } from '@/components/tickets/TicketCommentForm'
 import { TicketDetailLayout } from '@/components/tickets/TicketDetailLayout'
@@ -61,11 +62,20 @@ export default async function AdminTicketDetailPage({
     console.error('[extra-hours] load failed:', extraHoursError.message)
   }
 
-  const [activeRetainer, enrichedComments, staffForMentions] = await Promise.all([
+  const [activeRetainer, enrichedComments, staffForMentions, attachmentGroups] = await Promise.all([
     getRetainerForClient(supabase, ticket.client_id, { includePackage: true }),
     enrichCommentsWithAuthors(supabase, comments ?? []),
     getStaffForMentions(),
+    getTicketAttachments(supabase, id),
   ])
+
+  const attachmentsByComment = new Map(
+    attachmentGroups.filter(g => g.commentId !== null).map(g => [g.commentId!, g.items])
+  )
+  const commentsWithAttachments = enrichedComments.map(c => ({
+    ...c,
+    attachments: attachmentsByComment.get(c.id) ?? [],
+  }))
 
   const hoursLogged = Boolean(hourLog)
   const clientRetainerTracksHours = retainerTracksHours(activeRetainer)
@@ -142,7 +152,7 @@ export default async function AdminTicketDetailPage({
 
           <div className="ticket-detail-activity-thread">
             <CommentThread
-              comments={enrichedComments}
+              comments={commentsWithAttachments}
               showInternal
               staffNames={staffNames}
             />

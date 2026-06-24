@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, type ReactNode } from 'react'
+import { useState, useTransition, useCallback, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -115,6 +115,12 @@ export function TicketDetailLayout({
   const [resolveOfflineOpen, setResolveOfflineOpen] = useState(false)
   const [pending, startTransition] = useTransition()
 
+  const titleTextareaRef = useCallback((el: HTMLTextAreaElement | null) => {
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = el.scrollHeight + 'px'
+  }, [title])
+
   function refresh() {
     router.refresh()
   }
@@ -187,83 +193,78 @@ export function TicketDetailLayout({
         className="ticket-detail-head anim-fade-up anim-fade-up-1"
         data-ticket-closed={closed ? 'true' : undefined}
       >
-        <div className="ticket-detail-head-grid">
-          <div className="ticket-detail-head-copy min-w-0">
-            <p className="ticket-detail-eyebrow">
-              <span className="dash-ticket-id">{formatTicketId(ticketId)}</span>
-              {clientName ? (
-                <>
-                  <span className="ticket-detail-sep" aria-hidden>
-                    ·
-                  </span>
-                  <Link href={`/admin/clients/${clientId}`} className="ticket-detail-client-link">
-                    {clientName}
-                  </Link>
-                </>
-              ) : null}
-              <span className="ticket-detail-sep" aria-hidden>
-                ·
-              </span>
-              <span className="capitalize">{type}</span>
-              {noHours ? (
-                <>
-                  <span className="ticket-detail-sep" aria-hidden>
-                    ·
-                  </span>
-                  <span className="ticket-no-hours-badge">No hours</span>
-                </>
-              ) : null}
-            </p>
-            <div className="ticket-detail-title-row">
-              {canEditTicketDetails ? (
-                <input
-                  key={title}
-                  type="text"
-                  className="ticket-detail-title ticket-detail-title-input"
-                  defaultValue={title}
-                  disabled={pending}
-                  aria-label="Ticket title"
-                  onBlur={event => {
-                    const next = event.target.value.trim()
-                    if (!next || next === title) return
-                    startTransition(async () => {
-                      const ok = await runWithToast(() => updateTicketTitle(ticketId, next), {
-                        success: 'Title updated',
-                      })
-                      if (ok !== null) refresh()
-                    })
-                  }}
-                  onKeyDown={event => {
-                    if (event.key === 'Enter') {
-                      event.currentTarget.blur()
-                    }
-                  }}
-                />
-              ) : (
-                <h1 className="ticket-detail-title">{title}</h1>
-              )}
-              <TicketCommsButton ticketId={ticketId} />
-            </div>
-            <p className="ticket-detail-dates">
-              Opened {opened}
-              <span className="ticket-detail-sep" aria-hidden>
-                {' '}
-                ·{' '}
-              </span>
-              Updated {updated}
-              {resolvedAt && (status === 'resolved' || status === 'closed') ? (
-                <>
-                  <span className="ticket-detail-sep" aria-hidden>
-                    {' '}
-                    ·{' '}
-                  </span>
-                  <span className="ticket-detail-resolved-at">
-                    Resolved {formatDateTimeHuman(resolvedAt)}
-                  </span>
-                </>
-              ) : null}
-            </p>
-          </div>
+        <p className="ticket-detail-eyebrow">
+          <span className="dash-ticket-id">{formatTicketId(ticketId)}</span>
+          {clientName ? (
+            <>
+              <span className="ticket-detail-sep" aria-hidden>·</span>
+              <Link href={`/admin/clients/${clientId}`} className="ticket-detail-client-link">
+                {clientName}
+              </Link>
+            </>
+          ) : null}
+          <span className="ticket-detail-sep" aria-hidden>·</span>
+          <span className="capitalize">{type}</span>
+          {noHours ? (
+            <>
+              <span className="ticket-detail-sep" aria-hidden>·</span>
+              <span className="ticket-no-hours-badge">No hours</span>
+            </>
+          ) : null}
+        </p>
+
+        <div className="ticket-detail-title-row">
+          {canEditTicketDetails ? (
+            <textarea
+              key={title}
+              ref={titleTextareaRef}
+              className="ticket-detail-title ticket-detail-title-input"
+              defaultValue={title}
+              disabled={pending}
+              rows={1}
+              aria-label="Ticket title"
+              onInput={event => {
+                const el = event.currentTarget
+                el.style.height = 'auto'
+                el.style.height = el.scrollHeight + 'px'
+              }}
+              onBlur={event => {
+                const next = event.target.value.trim()
+                if (!next || next === title) return
+                startTransition(async () => {
+                  const ok = await runWithToast(() => updateTicketTitle(ticketId, next), {
+                    success: 'Title updated',
+                  })
+                  if (ok !== null) refresh()
+                })
+              }}
+              onKeyDown={event => {
+                if (event.key === 'Enter') {
+                  event.preventDefault()
+                  event.currentTarget.blur()
+                }
+              }}
+            />
+          ) : (
+            <h1 className="ticket-detail-title">{title}</h1>
+          )}
+          <TicketCommsButton ticketId={ticketId} />
+        </div>
+
+        <div className="ticket-detail-head-footer">
+          <p className="ticket-detail-dates">
+            Opened {opened}
+            <span className="ticket-detail-sep" aria-hidden> · </span>
+            Updated {updated}
+            {resolvedAt && (status === 'resolved' || status === 'closed') ? (
+              <>
+                <span className="ticket-detail-sep" aria-hidden> · </span>
+                <span className="ticket-detail-resolved-at">
+                  Resolved {formatDateTimeHuman(resolvedAt)}
+                </span>
+              </>
+            ) : null}
+          </p>
 
           {closed ? (
             <div className="ticket-detail-controls ticket-detail-controls--readonly">

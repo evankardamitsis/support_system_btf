@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { getTicketAttachments } from '@/app/actions/ticket-attachments'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { PriorityBadge } from '@/components/ui/PriorityBadge'
 import { enrichCommentsWithAuthors } from '@/lib/comments/authors'
@@ -55,7 +56,7 @@ export default async function PortalTicketDetailPage({
   const pendingWorkApproval = ticket.completion_status === 'pending_approval'
   const closed = isTicketClosed(ticket.status as TicketStatus)
 
-  const [{ data: comments }, { data: pendingExtraHours }, { data: approvedExtraHours }] =
+  const [{ data: comments }, { data: pendingExtraHours }, { data: approvedExtraHours }, attachmentGroups] =
     await Promise.all([
     supabase
     .from('ticket_comments')
@@ -74,9 +75,18 @@ export default async function PortalTicketDetailPage({
       .select('minutes')
       .eq('ticket_id', id)
       .eq('status', 'approved'),
+    getTicketAttachments(supabase, id),
   ])
 
   const enrichedComments = await enrichCommentsWithAuthors(supabase, comments ?? [])
+  const attachmentsByComment = new Map(
+    attachmentGroups.filter(g => g.commentId !== null).map(g => [g.commentId!, g.items])
+  )
+  const commentsWithAttachments = enrichedComments.map(c => ({
+    ...c,
+    attachments: attachmentsByComment.get(c.id) ?? [],
+  }))
+  const ticketLevelAttachments = attachmentGroups.find(g => g.commentId === null)?.items ?? []
   const approvedExtraMinutes = (approvedExtraHours ?? []).reduce(
     (sum, row) => sum + row.minutes,
     0
@@ -152,6 +162,30 @@ export default async function PortalTicketDetailPage({
                 />
               </section>
             ) : null}
+            {ticketLevelAttachments.length > 0 ? (
+              <section className="portal-ticket-request">
+                <h2 className="portal-ticket-request-label">Attachments</h2>
+                <div className="ticket-comment-images" style={{ padding: '0 1.25rem 1rem' }}>
+                  {ticketLevelAttachments.map(a => (
+                    <a
+                      key={a.id}
+                      href={`/api/tickets/attachments/${a.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ticket-comment-image-link"
+                      title={a.fileName}
+                    >
+                      <img
+                        src={`/api/tickets/attachments/${a.id}`}
+                        alt={a.fileName}
+                        className="ticket-comment-image"
+                        loading="lazy"
+                      />
+                    </a>
+                  ))}
+                </div>
+              </section>
+            ) : null}
           </div>
 
           <div className="dash-panel">
@@ -159,7 +193,7 @@ export default async function PortalTicketDetailPage({
               <h2 className="dash-section-title">Activity</h2>
             </div>
             <div className="px-5 py-4">
-              <CommentThread comments={enrichedComments} showInternal={false} />
+              <CommentThread comments={commentsWithAttachments} showInternal={false} />
             </div>
             {!closed ? (
               <div className="px-5 pb-5 pt-0" style={{ borderTop: '1px solid var(--border)' }}>

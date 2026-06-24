@@ -1,6 +1,12 @@
 import { authorInitials, authorRoleLabel } from '@/lib/comments/authors'
 import { splitCommentBody } from '@/lib/comments/mentions'
 
+export type AttachmentItem = {
+  id: string
+  fileName: string
+  mimeType: string | null
+}
+
 export type CommentItem = {
   id: string
   body: string
@@ -9,6 +15,7 @@ export type CommentItem = {
   authorRole: string | null
   is_internal: boolean
   created_at: string
+  attachments?: AttachmentItem[]
 }
 
 function relativeTime(dateStr: string): string {
@@ -41,6 +48,32 @@ function CommentBody({
         )
       )}
     </p>
+  )
+}
+
+function CommentImages({ attachments }: { attachments: AttachmentItem[] }) {
+  const images = attachments.filter(a => a.mimeType?.startsWith('image/'))
+  if (images.length === 0) return null
+  return (
+    <div className="ticket-comment-images">
+      {images.map(a => (
+        <a
+          key={a.id}
+          href={`/api/tickets/attachments/${a.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ticket-comment-image-link"
+          title={a.fileName}
+        >
+          <img
+            src={`/api/tickets/attachments/${a.id}`}
+            alt={a.fileName}
+            className="ticket-comment-image"
+            loading="lazy"
+          />
+        </a>
+      ))}
+    </div>
   )
 }
 
@@ -90,6 +123,9 @@ export function CommentThread({
                 <time className="dash-meta">{relativeTime(c.created_at)}</time>
               </div>
               <CommentBody body={c.body} staffNames={staffNames} />
+              {c.attachments && c.attachments.length > 0 ? (
+                <CommentImages attachments={c.attachments} />
+              ) : null}
             </div>
           </article>
         )

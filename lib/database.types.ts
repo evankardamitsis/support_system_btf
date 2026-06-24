@@ -219,6 +219,42 @@ export interface Database {
         }
         Relationships: []
       }
+      ticket_attachments: {
+        Row: {
+          id: string
+          ticket_id: string
+          comment_id: string | null
+          storage_path: string
+          file_name: string
+          mime_type: string | null
+          size_bytes: number
+          uploaded_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          ticket_id: string
+          comment_id?: string | null
+          storage_path: string
+          file_name: string
+          mime_type?: string | null
+          size_bytes?: number
+          uploaded_by: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          ticket_id?: string
+          comment_id?: string | null
+          storage_path?: string
+          file_name?: string
+          mime_type?: string | null
+          size_bytes?: number
+          uploaded_by?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       ticket_comments: {
         Row: {
           id: string
