@@ -12678,6 +12678,33 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   border-bottom: none;
 }
 
+[data-theme="dashboard"] .ticket-detail-no-hours-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5625rem 0.875rem 0.625rem;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+}
+
+[data-theme="dashboard"] .ticket-detail-no-hours-checkbox {
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+[data-theme="dashboard"] .ticket-detail-no-hours-text {
+  font-size: 0.75rem;
+  color: var(--text-2);
+  line-height: 1.4;
+}
+
+[data-theme="dashboard"] .ticket-detail-no-hours-title {
+  color: var(--text-1);
+  font-weight: 500;
+}
+
 [data-theme="dashboard"] .ticket-detail-hours-row--logged[data-filled='true'] {
   background: color-mix(in srgb, var(--accent) 8%, transparent);
 }

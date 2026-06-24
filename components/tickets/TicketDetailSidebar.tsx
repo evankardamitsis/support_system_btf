@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import {
   adminSetTicketLoggedHours,
+  setTicketNoHours,
   submitEstimateForApproval,
   submitWorkForClientCheck,
   updateTicketEstimatedHours,
@@ -257,7 +258,11 @@ export function TicketDetailSidebar({
                       () => updateTicketEstimatedHours(ticketId, value),
                       {
                         success:
-                          value != null ? `Estimate set to ${value}h` : 'Estimate cleared',
+                          value === 0
+                            ? 'Marked as no-hours (pre-existing bug)'
+                            : value != null
+                              ? `Estimate set to ${value}h`
+                              : 'Estimate cleared',
                       }
                     )
                     if (ok !== null) refresh()
@@ -265,6 +270,30 @@ export function TicketDetailSidebar({
                 }}
               />
             </div>
+
+            {isAdmin && !estimateLocked && (
+              <label className="ticket-detail-no-hours-label">
+                <input
+                  type="checkbox"
+                  className="ticket-detail-no-hours-checkbox"
+                  checked={false}
+                  disabled={pending}
+                  onChange={() => {
+                    startTransition(async () => {
+                      const ok = await runWithToast(
+                        () => setTicketNoHours(ticketId),
+                        { success: 'Marked as no-hours — pre-existing bug' }
+                      )
+                      if (ok !== null) refresh()
+                    })
+                  }}
+                />
+                <span className="ticket-detail-no-hours-text">
+                  <span className="ticket-detail-no-hours-title">No hours</span>
+                  {' '}— pre-existing bug
+                </span>
+              </label>
+            )}
 
             <div
               className="ticket-detail-hours-row ticket-detail-hours-row--logged"

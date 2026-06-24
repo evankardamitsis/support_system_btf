@@ -292,11 +292,45 @@ export async function updateTicketEstimatedHours(ticketId: string, hours: number
   if (isEstimateLocked(ticket.estimate_status ?? null)) {
     throw new Error('Estimate is locked after submission or client approval')
   }
+  // Entering 0 marks the ticket as a no-hours bug (same as the checkbox)
+  if (hours === 0) {
+    if (!isAdmin) throw new Error('Only admins can mark a ticket as no hours')
+    const { error } = await supabase
+      .from('tickets')
+      .update({ no_hours: true, estimated_hours: null })
+      .eq('id', ticketId)
+    if (error) throw new Error(error.message)
+    revalidateTicketPaths(ticketId)
+    return
+  }
   const value =
-    hours != null && !Number.isNaN(hours) && hours >= 0 ? Math.round(hours * 100) / 100 : null
+    hours != null && !Number.isNaN(hours) && hours > 0 ? Math.round(hours * 100) / 100 : null
   const { error } = await supabase
     .from('tickets')
     .update({ estimated_hours: value })
+    .eq('id', ticketId)
+  if (error) throw new Error(error.message)
+  revalidateTicketPaths(ticketId)
+}
+
+export async function setTicketNoHours(ticketId: string) {
+  const { supabase } = await requireStaff()
+  const { isAdmin } = await requireAdmin()
+  if (!isAdmin) throw new Error('Admin only')
+  await assertTicketOpen(supabase, ticketId)
+  const { data: ticket } = await supabase
+    .from('tickets')
+    .select('estimate_status, no_hours')
+    .eq('id', ticketId)
+    .single()
+  if (!ticket) throw new Error('Ticket not found')
+  if (ticket.no_hours) return
+  if (isEstimateLocked(ticket.estimate_status ?? null)) {
+    throw new Error('Estimate is locked — cannot change billing type')
+  }
+  const { error } = await supabase
+    .from('tickets')
+    .update({ no_hours: true, estimated_hours: null })
     .eq('id', ticketId)
   if (error) throw new Error(error.message)
   revalidateTicketPaths(ticketId)
