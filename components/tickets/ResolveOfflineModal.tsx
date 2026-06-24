@@ -7,16 +7,19 @@ import { useResolveCelebration } from '@/components/admin/ResolveCelebrationProv
 import { runWithToast } from '@/lib/notify'
 import { requiresHoursOverageNote } from '@/lib/tickets/hours-overage'
 import { ResolveOverageNoteField } from './ResolveOverageNoteField'
+import { ResolveRetainerCard, type RetainerOption } from './ResolveRetainerCard'
 
 function ResolveOfflineForm({
   ticketId,
   ticketTitle,
   estimatedHours,
+  activeRetainer,
   onClose,
 }: {
   ticketId: string
   ticketTitle: string
   estimatedHours: number | null
+  activeRetainer: RetainerOption | null
   onClose: () => void
 }) {
   const [hours, setHours] = useState(
@@ -64,6 +67,11 @@ function ResolveOfflineForm({
         <span className="text-(--text-1)">{ticketTitle}</span>, then resolves and logs hours to
         the retainer. Use when sign-off happened outside the portal.
       </p>
+
+      {activeRetainer && (
+        <ResolveRetainerCard retainer={activeRetainer} actualHours={hours} />
+      )}
+
       <label className="dash-label" htmlFor={`resolve-offline-hours-${ticketId}`}>
         Actual hours spent
       </label>
@@ -111,12 +119,14 @@ export function ResolveOfflineModal({
   ticketId,
   ticketTitle,
   estimatedHours,
+  activeRetainer = null,
   open,
   onClose,
 }: {
   ticketId: string
   ticketTitle: string
   estimatedHours: number | null
+  activeRetainer?: RetainerOption | null
   open: boolean
   onClose: () => void
 }) {
@@ -130,6 +140,7 @@ export function ResolveOfflineModal({
           ticketId={ticketId}
           ticketTitle={ticketTitle}
           estimatedHours={estimatedHours}
+          activeRetainer={activeRetainer}
           onClose={onClose}
         />
       ) : null}

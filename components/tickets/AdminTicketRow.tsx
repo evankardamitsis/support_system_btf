@@ -13,6 +13,7 @@ import {
 import {
   formatDateTimeHuman,
   formatResolvedAtTable,
+  formatResolvedPeriod,
   formatTicketId,
   formatRelativeTime,
   priorityAccent,
@@ -263,13 +264,18 @@ export function AdminTicketRow({
           <div className="tickets-cell-value">
           {ticket.resolved_at &&
           (ticket.status === 'resolved' || ticket.status === 'closed') ? (
-            <time
-              dateTime={ticket.resolved_at}
-              className="tickets-updated tickets-resolved-at"
-              title={formatDateTimeHuman(ticket.resolved_at)}
-            >
-              {formatResolvedAtTable(ticket.resolved_at)}
-            </time>
+            <div className="tickets-cell-value--stack">
+              <span className="tickets-resolved-period">
+                {formatResolvedPeriod(ticket.resolved_at)}
+              </span>
+              <time
+                dateTime={ticket.resolved_at}
+                className="tickets-updated tickets-resolved-at"
+                title={formatDateTimeHuman(ticket.resolved_at)}
+              >
+                {formatResolvedAtTable(ticket.resolved_at)}
+              </time>
+            </div>
           ) : (
             <time
               dateTime={ticket.updated_at}
@@ -292,6 +298,12 @@ export function AdminTicketRow({
         ticketId={ticket.id}
         ticketTitle={ticket.title}
         estimatedHours={ticket.estimated_hours ?? null}
+        activeRetainer={retainerDetail ? {
+          period_start: retainerDetail.periodStart,
+          period_end: retainerDetail.periodEnd,
+          hours_total: retainerDetail.hoursTotal,
+          hours_used: retainerDetail.hoursUsed,
+        } : null}
         open={resolveOpen}
         onClose={() => {
           setResolveOpen(false)

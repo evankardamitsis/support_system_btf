@@ -40,7 +40,7 @@ import { formatTicketPriority, formatTicketStatus, notifyError, runWithToast } f
 import type { TicketPriority, TicketStatus } from '@/lib/types'
 
 type RetainerOption = {
-  id: string
+  id?: string
   period_start: string
   period_end: string
   hours_total: number
@@ -394,6 +394,7 @@ export function TicketDetailLayout({
         ticketId={ticketId}
         ticketTitle={title}
         estimatedHours={estimatedHours}
+        activeRetainer={activeRetainer}
         open={resolveOpen}
         onClose={() => {
           setResolveOpen(false)
@@ -405,6 +406,7 @@ export function TicketDetailLayout({
         ticketId={ticketId}
         ticketTitle={title}
         estimatedHours={estimatedHours}
+        activeRetainer={activeRetainer}
         open={resolveOfflineOpen}
         onClose={() => {
           setResolveOfflineOpen(false)

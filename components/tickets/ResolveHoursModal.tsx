@@ -7,16 +7,19 @@ import { useResolveCelebration } from '@/components/admin/ResolveCelebrationProv
 import { runWithToast } from '@/lib/notify'
 import { requiresHoursOverageNote } from '@/lib/tickets/hours-overage'
 import { ResolveOverageNoteField } from './ResolveOverageNoteField'
+import { ResolveRetainerCard, type RetainerOption } from './ResolveRetainerCard'
 
 function ResolveHoursForm({
   ticketId,
   ticketTitle,
   estimatedHours,
+  activeRetainer,
   onClose,
 }: {
   ticketId: string
   ticketTitle: string
   estimatedHours: number | null
+  activeRetainer: RetainerOption | null
   onClose: () => void
 }) {
   const [hours, setHours] = useState(
@@ -63,6 +66,11 @@ function ResolveHoursForm({
         Log actual hours for <span className="text-(--text-1)">{ticketTitle}</span> — they
         count toward the client&apos;s retainer.
       </p>
+
+      {activeRetainer && (
+        <ResolveRetainerCard retainer={activeRetainer} actualHours={hours} />
+      )}
+
       <label className="dash-label" htmlFor={`resolve-hours-${ticketId}`}>
         Actual hours spent
       </label>
@@ -110,12 +118,14 @@ export function ResolveHoursModal({
   ticketId,
   ticketTitle,
   estimatedHours,
+  activeRetainer = null,
   open,
   onClose,
 }: {
   ticketId: string
   ticketTitle: string
   estimatedHours: number | null
+  activeRetainer?: RetainerOption | null
   open: boolean
   onClose: () => void
 }) {
@@ -129,6 +139,7 @@ export function ResolveHoursModal({
           ticketId={ticketId}
           ticketTitle={ticketTitle}
           estimatedHours={estimatedHours}
+          activeRetainer={activeRetainer}
           onClose={onClose}
         />
       ) : null}

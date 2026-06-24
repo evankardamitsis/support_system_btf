@@ -18,6 +18,11 @@ export function formatResolvedAtTable(dateStr: string): string {
   return formatDateTimeCompact(dateStr)
 }
 
+/** Billing period label for resolved tickets, e.g. "June 2026" */
+export function formatResolvedPeriod(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+}
+
 export function formatRelativeTime(dateStr: string) {
   const m = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000)
   if (m < 1) return 'just now'
