@@ -26,7 +26,8 @@ import { EditableAssigneeSelect, type AssigneeOption } from './EditableAssigneeS
 import { EditableStatusPill } from './EditableStatusPill'
 import { EditablePriorityPill } from './EditablePriorityPill'
 import { ResolveHoursModal } from './ResolveHoursModal'
-import type { TicketTableRow } from './TicketsTable'
+import type { TicketTableRow, RetainerDetail } from './TicketsTable'
+import { ClientRetainerPopover } from './ClientRetainerPopover'
 import { canEditTicketPriority, isTicketClosed } from '@/lib/tickets/closed'
 import { canResolveTicket } from '@/lib/tickets/completion'
 import { formatTicketPriority, formatTicketStatus, notifyError, runWithToast } from '@/lib/notify'
@@ -38,12 +39,14 @@ export function AdminTicketRow({
   hoursLogged,
   hoursBilling = true,
   staff = [],
+  retainerDetail = null,
 }: {
   ticket: TicketTableRow
   hrefPrefix: string
   hoursLogged: boolean
   hoursBilling?: boolean
   staff?: AssigneeOption[]
+  retainerDetail?: RetainerDetail | null
 }) {
   const router = useRouter()
   const [resolveOpen, setResolveOpen] = useState(false)
@@ -183,7 +186,14 @@ export function AdminTicketRow({
 
         <div className="tickets-cell tickets-cell-client min-w-0" data-label="Client">
           <div className="tickets-cell-value">
-            <span className="tickets-client-name">{ticket.clientName ?? '—'}</span>
+            {retainerDetail ? (
+              <ClientRetainerPopover
+                clientName={ticket.clientName ?? '—'}
+                detail={retainerDetail}
+              />
+            ) : (
+              <span className="tickets-client-name">{ticket.clientName ?? '—'}</span>
+            )}
           </div>
         </div>
 

@@ -10,6 +10,8 @@ import { Plus } from 'lucide-react'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 import { hourBillingByClientFromRetainers } from '@/lib/retainers/billing-model'
 import { ticketUsesHourBilling } from '@/lib/tickets/hours-billing'
+import { isActivePeriod } from '@/lib/retainers/packages'
+import type { RetainerDetail } from '@/components/tickets/TicketsTable'
 import { getStaffForMentions } from '@/app/actions/comments'
 import { isResolvedQueueStatus } from '@/lib/tickets/query'
 
@@ -61,7 +63,7 @@ export default async function AdminTicketsPage({
     supabase.from('hours_log').select('ticket_id'),
     supabase
       .from('retainers')
-      .select('client_id, package_name, hours_limited, period_start, period_end'),
+      .select('client_id, package_name, hours_limited, period_start, period_end, hours_total, hours_used'),
     getStaffForMentions(),
   ])
 
@@ -135,6 +137,39 @@ export default async function AdminTicketsPage({
   const clientIds = [...new Set(scoped.map(t => t.client_id))]
   const hoursBillingByClient = hourBillingByClientFromRetainers(retainerRows ?? [], clientIds)
 
+  // Build per-client retainer detail for all active hourly-billing retainers.
+  const retainerDetailByClientId = new Map<string, RetainerDetail>()
+  for (const r of retainerRows ?? []) {
+    if (!r.hours_limited || r.hours_total == null) continue
+    if (!isActivePeriod(r.period_start, r.period_end)) continue
+    if (retainerDetailByClientId.has(r.client_id)) continue
+
+    const periodTickets = (all ?? []).filter(t => {
+      if (t.client_id !== r.client_id) return false
+      const d = t.created_at.slice(0, 10)
+      return d >= r.period_start && d <= r.period_end
+    })
+    const committedHours = periodTickets.reduce(
+      (sum, t) => sum + (t.estimated_hours != null ? Number(t.estimated_hours) : 0),
+      0
+    )
+    const total = Number(r.hours_total)
+    const ratio = total > 0 ? committedHours / total : 0
+    const level: RetainerDetail['level'] =
+      ratio >= 1 ? 'over' : ratio >= 0.9 ? 'critical' : ratio >= 0.7 ? 'warning' : 'ok'
+
+    retainerDetailByClientId.set(r.client_id, {
+      packageName: r.package_name ?? '',
+      periodStart: r.period_start,
+      periodEnd: r.period_end,
+      hoursTotal: total,
+      hoursUsed: Number(r.hours_used ?? 0),
+      committedHours,
+      ticketCount: periodTickets.length,
+      level,
+    })
+  }
+
   const rows = tickets.map(t => ({
     id: t.id,
     title: t.title,
@@ -154,6 +189,7 @@ export default async function AdminTicketsPage({
     ),
     assignedTo: t.assigned_to ?? null,
     assigneeName: t.assigned_to ? (staffNameById.get(t.assigned_to) ?? null) : null,
+    retainerDetail: retainerDetailByClientId.get(t.client_id) ?? null,
   }))
 
   return (

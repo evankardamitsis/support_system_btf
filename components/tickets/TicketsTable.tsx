@@ -14,6 +14,17 @@ import {
 } from '@/lib/tickets/display'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
+export type RetainerDetail = {
+  packageName: string
+  periodStart: string
+  periodEnd: string
+  hoursTotal: number
+  hoursUsed: number
+  committedHours: number  // sum of estimated_hours for all tickets in period (any status)
+  ticketCount: number     // count of tickets registered in period
+  level: 'ok' | 'warning' | 'critical' | 'over'
+}
+
 export type TicketTableRow = {
   id: string
   title: string
@@ -30,6 +41,7 @@ export type TicketTableRow = {
   hoursBilling?: boolean
   assignedTo?: string | null
   assigneeName?: string | null
+  retainerDetail?: RetainerDetail | null
 }
 
 export function TicketsTable({
@@ -83,6 +95,7 @@ export function TicketsTable({
                 hoursLogged={hoursLoggedByTicketId[t.id] ?? (t.actual_hours != null && t.actual_hours > 0)}
                 hoursBilling={t.hoursBilling ?? true}
                 staff={staff}
+                retainerDetail={t.retainerDetail ?? null}
               />
             )
           }
