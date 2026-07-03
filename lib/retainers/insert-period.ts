@@ -3,6 +3,7 @@ import type { Database } from '@/lib/database.types'
 import { notifyClientNewRetainer } from '@/lib/email/ticket-notifications'
 import { renewalDateFromPeriodEnd } from '@/lib/retainers/period'
 import { isHoursBasedPackage, packageLabel } from '@/lib/retainers/billing-model'
+import { applyPendingDeferredHours } from '@/lib/retainers/deferred'
 import type { RetainerPackage } from '@/lib/retainers/packages'
 
 type Db = SupabaseClient<Database>
@@ -40,6 +41,12 @@ export async function insertRetainerPeriod(
 
   if (error || !retainer) {
     throw new Error(error?.message ?? 'Failed to create retainer period')
+  }
+
+  try {
+    await applyPendingDeferredHours(supabase, input.clientId, retainer.id)
+  } catch (err) {
+    console.error('[retainers] failed to apply deferred hours:', err)
   }
 
   await supabase

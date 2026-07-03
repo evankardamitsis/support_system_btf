@@ -7,7 +7,8 @@ import { tryCreateAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth/require-admin'
 import { requireClient } from '@/lib/auth/require-client'
 import { getRetainerForClient } from '@/lib/retainers/active'
-import { clientUsesHourBilling } from '@/lib/retainers/billing-model'
+import { clientUsesHourBilling, retainerTracksHours } from '@/lib/retainers/billing-model'
+import { deferOverageHours, splitOverageMinutes } from '@/lib/retainers/deferred'
 import { normalizeTicketDescription } from '@/lib/tickets/description-format'
 import {
   autoApproveTicketEstimate,
@@ -944,7 +945,8 @@ export async function resolveTicketSimple(ticketId: string) {
 export async function resolveTicketWithHours(
   ticketId: string,
   actualHours: number,
-  overageNote?: string
+  overageNote?: string,
+  deferOverage?: boolean
 ) {
   const { supabase, user } = await requireStaff()
 
@@ -983,7 +985,7 @@ export async function resolveTicketWithHours(
 
   await assertClientCanUseRetainer(supabase, ticket.client_id)
 
-  const retainer = await getRetainerForClient(supabase, ticket.client_id)
+  const retainer = await getRetainerForClient(supabase, ticket.client_id, { includePackage: true })
   if (!retainer) {
     throw new Error('No retainer period for this client — add a retainer before logging hours')
   }
@@ -994,15 +996,32 @@ export async function resolveTicketWithHours(
     ticket.estimated_hours != null ? Number(ticket.estimated_hours) : null
   const hoursOverageNote = resolveHoursOverageNote(estimatedHours, actualHours, overageNote)
 
+  const shouldDefer = deferOverage === true && retainerTracksHours(retainer)
+  const { loggedMinutes, deferredMinutes } = shouldDefer
+    ? splitOverageMinutes(minutes, retainer)
+    : { loggedMinutes: minutes, deferredMinutes: 0 }
+
   if (!existingLog) {
-    const { error: logErr } = await supabase.from('hours_log').insert({
-      ticket_id: ticketId,
-      retainer_id: retainer.id,
-      agent_id: user.id,
-      minutes,
-      note: 'Logged on resolve',
-    })
-    if (logErr) throw new Error(logErr.message)
+    if (loggedMinutes > 0) {
+      const { error: logErr } = await supabase.from('hours_log').insert({
+        ticket_id: ticketId,
+        retainer_id: retainer.id,
+        agent_id: user.id,
+        minutes: loggedMinutes,
+        note: 'Logged on resolve',
+      })
+      if (logErr) throw new Error(logErr.message)
+    }
+    if (deferredMinutes > 0) {
+      await deferOverageHours(supabase, {
+        ticketId,
+        clientId: ticket.client_id,
+        agentId: user.id,
+        sourceRetainerId: retainer.id,
+        minutes: deferredMinutes,
+        note: 'Logged on resolve',
+      })
+    }
   }
 
   await staffPatchTicket(ticketId, {
@@ -1026,12 +1045,14 @@ export async function resolveTicketWithHours(
   }
 
   revalidateTicketPaths(ticketId)
+  return { loggedHours: loggedMinutes / 60, deferredHours: deferredMinutes / 60 }
 }
 
 export async function resolveTicketOffline(
   ticketId: string,
   actualHours: number,
-  overageNote?: string
+  overageNote?: string,
+  deferOverage?: boolean
 ) {
   const { isAdmin, user } = await requireAdmin()
   if (!isAdmin || !user) {
@@ -1075,7 +1096,7 @@ export async function resolveTicketOffline(
     .limit(1)
     .maybeSingle()
 
-  const retainer = await getRetainerForClient(supabase, ticket.client_id)
+  const retainer = await getRetainerForClient(supabase, ticket.client_id, { includePackage: true })
   if (!retainer) {
     throw new Error('No retainer period for this client — add a retainer before logging hours')
   }
@@ -1088,16 +1109,33 @@ export async function resolveTicketOffline(
   const hasEstimate = estimatedHours != null && estimatedHours > 0
   const hoursOverageNote = resolveHoursOverageNote(estimatedHours, actualHours, overageNote)
 
+  const shouldDefer = deferOverage === true && retainerTracksHours(retainer)
+  const { loggedMinutes, deferredMinutes } = shouldDefer
+    ? splitOverageMinutes(minutes, retainer)
+    : { loggedMinutes: minutes, deferredMinutes: 0 }
+
   if (!existingLog) {
-    const { error: logErr } = await admin.from('hours_log').insert({
-      ticket_id: ticketId,
-      retainer_id: retainer.id,
-      agent_id: user.id,
-      minutes,
-      note: 'Logged on offline resolve',
-      is_extra: false,
-    })
-    if (logErr) throw new Error(logErr.message)
+    if (loggedMinutes > 0) {
+      const { error: logErr } = await admin.from('hours_log').insert({
+        ticket_id: ticketId,
+        retainer_id: retainer.id,
+        agent_id: user.id,
+        minutes: loggedMinutes,
+        note: 'Logged on offline resolve',
+        is_extra: false,
+      })
+      if (logErr) throw new Error(logErr.message)
+    }
+    if (deferredMinutes > 0) {
+      await deferOverageHours(admin, {
+        ticketId,
+        clientId: ticket.client_id,
+        agentId: user.id,
+        sourceRetainerId: retainer.id,
+        minutes: deferredMinutes,
+        note: 'Logged on offline resolve',
+      })
+    }
   }
 
   await billApprovedExtraHoursForTicket(admin, ticketId)
@@ -1139,6 +1177,7 @@ export async function resolveTicketOffline(
   revalidateTicketPaths(ticketId)
   revalidatePath(`/portal/tickets/${ticketId}`)
   revalidatePath('/portal/tickets')
+  return { loggedHours: loggedMinutes / 60, deferredHours: deferredMinutes / 60 }
 }
 
 export async function updateTicketAssignee(ticketId: string, agentId: string | null) {

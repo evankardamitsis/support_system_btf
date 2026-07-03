@@ -6,8 +6,18 @@ import { resolveTicketWithHours } from '@/app/actions/tickets'
 import { useResolveCelebration } from '@/components/admin/ResolveCelebrationProvider'
 import { runWithToast } from '@/lib/notify'
 import { requiresHoursOverageNote } from '@/lib/tickets/hours-overage'
+import { isHoursBasedPackage } from '@/lib/retainers/billing-model'
 import { ResolveOverageNoteField } from './ResolveOverageNoteField'
 import { ResolveRetainerCard, type RetainerOption } from './ResolveRetainerCard'
+
+function retainerOverageMinutes(retainer: RetainerOption | null, hours: string): number {
+  if (!retainer || !isHoursBasedPackage(retainer.package_name)) return 0
+  const parsed = parseFloat(hours)
+  if (Number.isNaN(parsed) || parsed <= 0) return 0
+  const afterResolve = Number(retainer.hours_used) + parsed
+  const overBy = afterResolve - Number(retainer.hours_total)
+  return overBy > 0 ? overBy : 0
+}
 
 function ResolveHoursForm({
   ticketId,
@@ -26,9 +36,12 @@ function ResolveHoursForm({
     () => (estimatedHours != null ? String(estimatedHours) : '')
   )
   const [overageNote, setOverageNote] = useState('')
+  const [deferOverage, setDeferOverage] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const celebrate = useResolveCelebration()
+
+  const overageHours = retainerOverageMinutes(activeRetainer, hours) / 60
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -41,12 +54,17 @@ function ResolveHoursForm({
       setError('Explain why more hours were needed — the client will see this note')
       return
     }
+    const deferring = deferOverage && overageHours > 0
     startTransition(async () => {
       const ok = await runWithToast(
-        () => resolveTicketWithHours(ticketId, value, overageNote.trim() || undefined),
+        () =>
+          resolveTicketWithHours(ticketId, value, overageNote.trim() || undefined, deferring),
         {
           loading: 'Resolving ticket…',
-          success: `Ticket resolved — ${value}h logged to retainer`,
+          success: result =>
+            result.deferredHours > 0
+              ? `Ticket resolved — ${result.loggedHours.toFixed(2)}h logged, ${result.deferredHours.toFixed(2)}h deferred to next period`
+              : `Ticket resolved — ${result.loggedHours.toFixed(2)}h logged to retainer`,
         }
       )
       if (ok === null) {
@@ -69,6 +87,20 @@ function ResolveHoursForm({
 
       {activeRetainer && (
         <ResolveRetainerCard retainer={activeRetainer} actualHours={hours} />
+      )}
+
+      {overageHours > 0 && (
+        <label className="flex items-start gap-2 cursor-pointer mt-2">
+          <input
+            type="checkbox"
+            checked={deferOverage}
+            onChange={e => setDeferOverage(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span className="text-sm leading-relaxed" style={{ color: 'var(--text-2)' }}>
+            Defer {overageHours.toFixed(2)}h over cap to next period
+          </span>
+        </label>
       )}
 
       <label className="dash-label" htmlFor={`resolve-hours-${ticketId}`}>

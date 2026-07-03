@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "support_system_btf",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "/Users/VKardamitsis/Projects/support_system_btf",
+      "port": 3000
+    }
+  ]
+}

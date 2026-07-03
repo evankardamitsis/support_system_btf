@@ -360,6 +360,45 @@ export interface Database {
         }
         Relationships: []
       }
+      deferred_hours: {
+        Row: {
+          id: string
+          ticket_id: string
+          client_id: string
+          agent_id: string
+          source_retainer_id: string
+          minutes: number
+          note: string | null
+          created_at: string
+          applied_at: string | null
+          hours_log_id: string | null
+        }
+        Insert: {
+          id?: string
+          ticket_id: string
+          client_id: string
+          agent_id: string
+          source_retainer_id: string
+          minutes: number
+          note?: string | null
+          created_at?: string
+          applied_at?: string | null
+          hours_log_id?: string | null
+        }
+        Update: {
+          id?: string
+          ticket_id?: string
+          client_id?: string
+          agent_id?: string
+          source_retainer_id?: string
+          minutes?: number
+          note?: string | null
+          created_at?: string
+          applied_at?: string | null
+          hours_log_id?: string | null
+        }
+        Relationships: []
+      }
       invite_tokens: {
         Row: {
           id: string
