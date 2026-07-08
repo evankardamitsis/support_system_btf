@@ -12,18 +12,13 @@ export function TicketsExportButton({ clients }: { clients: ClientOption[] }) {
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [monthlyResolvedOnly, setMonthlyResolvedOnly] = useState(false)
-  const [month, setMonth] = useState('')
 
   function exportHref() {
     const params = new URLSearchParams()
     if (clientId) params.set('client', clientId)
-    if (monthlyResolvedOnly) {
-      params.set('report', 'monthly_resolved')
-      if (month) params.set('month', month)
-    } else {
-      if (from) params.set('from', from)
-      if (to) params.set('to', to)
-    }
+    if (monthlyResolvedOnly) params.set('report', 'monthly_resolved')
+    if (from) params.set('from', from)
+    if (to) params.set('to', to)
     const q = params.toString()
     return q ? `/api/tickets/export?${q}` : '/api/tickets/export'
   }
@@ -44,8 +39,7 @@ export function TicketsExportButton({ clients }: { clients: ClientOption[] }) {
           <div className="ticket-modal-inner">
             <h2 className="ticket-modal-title">Export tickets</h2>
             <p className="ticket-modal-sub">
-              Download a CSV of tickets, optionally filtered by client and date range, or export a
-              monthly resolved-tickets report for clients.
+              Download a CSV of tickets, optionally filtered by client and date range.
             </p>
 
             <div className="ops-add-task-modal-form">
@@ -76,53 +70,37 @@ export function TicketsExportButton({ clients }: { clients: ClientOption[] }) {
                     checked={monthlyResolvedOnly}
                     onChange={e => setMonthlyResolvedOnly(e.target.checked)}
                   />
-                  Monthly report (resolved tickets only)
+                  Resolved tickets only (client report)
                 </label>
-
-                {monthlyResolvedOnly ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="dash-label" htmlFor="export-month">
-                      Month
+                    <label className="dash-label" htmlFor="export-from">
+                      From
                     </label>
                     <input
-                      id="export-month"
-                      type="month"
+                      id="export-from"
+                      type="date"
                       className="btf-input w-full"
-                      value={month}
-                      onChange={e => setMonth(e.target.value)}
+                      value={from}
+                      max={to || undefined}
+                      onChange={e => setFrom(e.target.value)}
                     />
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="dash-label" htmlFor="export-from">
-                        From
-                      </label>
-                      <input
-                        id="export-from"
-                        type="date"
-                        className="btf-input w-full"
-                        value={from}
-                        max={to || undefined}
-                        onChange={e => setFrom(e.target.value)}
-                      />
-                    </div>
 
-                    <div>
-                      <label className="dash-label" htmlFor="export-to">
-                        To
-                      </label>
-                      <input
-                        id="export-to"
-                        type="date"
-                        className="btf-input w-full"
-                        value={to}
-                        min={from || undefined}
-                        onChange={e => setTo(e.target.value)}
-                      />
-                    </div>
+                  <div>
+                    <label className="dash-label" htmlFor="export-to">
+                      To
+                    </label>
+                    <input
+                      id="export-to"
+                      type="date"
+                      className="btf-input w-full"
+                      value={to}
+                      min={from || undefined}
+                      onChange={e => setTo(e.target.value)}
+                    />
                   </div>
-                )}
+                </div>
               </div>
 
               <div className="ticket-modal-actions">

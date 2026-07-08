@@ -39,7 +39,6 @@ export async function GET(request: Request) {
   const from = searchParams.get('from') || undefined
   const to = searchParams.get('to') || undefined
   const report = searchParams.get('report') || undefined
-  const month = searchParams.get('month') || undefined
   const status = searchParams.get('status') || undefined
   const priority = searchParams.get('priority') || undefined
   const monthlyResolvedReport = report === 'monthly_resolved'
@@ -58,16 +57,9 @@ export async function GET(request: Request) {
     query = query.eq('status', status as TicketStatus)
   }
   if (priority) query = query.eq('priority', priority as TicketPriority)
-  if (monthlyResolvedReport && month) {
-    const [yearPart, monthPart] = month.split('-')
-    const year = Number(yearPart)
-    const monthIndex = Number(monthPart) - 1
-    if (Number.isFinite(year) && Number.isFinite(monthIndex) && monthIndex >= 0 && monthIndex <= 11) {
-      const monthStart = new Date(Date.UTC(year, monthIndex, 1))
-      const monthEnd = new Date(Date.UTC(year, monthIndex + 1, 1))
-      query = query.gte('resolved_at', monthStart.toISOString())
-      query = query.lt('resolved_at', monthEnd.toISOString())
-    }
+  if (monthlyResolvedReport) {
+    if (from) query = query.gte('resolved_at', `${from}T00:00:00.000Z`)
+    if (to) query = query.lte('resolved_at', `${to}T23:59:59.999Z`)
   } else {
     if (from) query = query.gte('created_at', `${from}T00:00:00.000Z`)
     if (to) query = query.lte('created_at', `${to}T23:59:59.999Z`)
@@ -152,7 +144,7 @@ export async function GET(request: Request) {
 
   const today = new Date().toISOString().slice(0, 10)
   const filename = monthlyResolvedReport
-    ? `tickets-resolved-monthly-${month || today.slice(0, 7)}.csv`
+    ? `tickets-resolved-report-${today}.csv`
     : `tickets-export-${today}.csv`
 
   return new Response(csv, {
