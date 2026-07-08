@@ -38,21 +38,40 @@ export async function GET(request: Request) {
   const clientId = searchParams.get('client') || undefined
   const from = searchParams.get('from') || undefined
   const to = searchParams.get('to') || undefined
+  const report = searchParams.get('report') || undefined
+  const month = searchParams.get('month') || undefined
   const status = searchParams.get('status') || undefined
   const priority = searchParams.get('priority') || undefined
+  const monthlyResolvedReport = report === 'monthly_resolved'
 
   let query = supabase
     .from('tickets')
     .select(
-      'id, title, status, priority, type, created_at, updated_at, resolved_at, estimated_hours, actual_hours, assigned_to, clients(name)'
+      'id, title, status, priority, type, no_hours, created_at, updated_at, resolved_at, estimated_hours, actual_hours, assigned_to, clients(name)'
     )
     .order('created_at', { ascending: false })
 
   if (clientId) query = query.eq('client_id', clientId)
-  if (status) query = query.eq('status', status as TicketStatus)
+  if (monthlyResolvedReport) {
+    query = query.eq('status', 'resolved')
+  } else if (status) {
+    query = query.eq('status', status as TicketStatus)
+  }
   if (priority) query = query.eq('priority', priority as TicketPriority)
-  if (from) query = query.gte('created_at', `${from}T00:00:00.000Z`)
-  if (to) query = query.lte('created_at', `${to}T23:59:59.999Z`)
+  if (monthlyResolvedReport && month) {
+    const [yearPart, monthPart] = month.split('-')
+    const year = Number(yearPart)
+    const monthIndex = Number(monthPart) - 1
+    if (Number.isFinite(year) && Number.isFinite(monthIndex) && monthIndex >= 0 && monthIndex <= 11) {
+      const monthStart = new Date(Date.UTC(year, monthIndex, 1))
+      const monthEnd = new Date(Date.UTC(year, monthIndex + 1, 1))
+      query = query.gte('resolved_at', monthStart.toISOString())
+      query = query.lt('resolved_at', monthEnd.toISOString())
+    }
+  } else {
+    if (from) query = query.gte('created_at', `${from}T00:00:00.000Z`)
+    if (to) query = query.lte('created_at', `${to}T23:59:59.999Z`)
+  }
 
   const { data: tickets, error } = await query
 
@@ -82,6 +101,7 @@ export async function GET(request: Request) {
     'Status',
     'Priority',
     'Type',
+    'Billing Mode',
     'Assigned To',
     'Created',
     'Updated',
@@ -98,6 +118,7 @@ export async function GET(request: Request) {
       t.status,
       t.priority,
       t.type,
+      t.no_hours ? 'No-hours ticket' : 'Tracked hours',
       t.assigned_to ? staffNameById.get(t.assigned_to) ?? '' : '',
       formatDateTime(t.created_at),
       formatDateTime(t.updated_at),
@@ -130,12 +151,15 @@ export async function GET(request: Request) {
   const csv = '﻿' + header + rows.join('') + summary
 
   const today = new Date().toISOString().slice(0, 10)
+  const filename = monthlyResolvedReport
+    ? `tickets-resolved-monthly-${month || today.slice(0, 7)}.csv`
+    : `tickets-export-${today}.csv`
 
   return new Response(csv, {
     status: 200,
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="tickets-export-${today}.csv"`,
+      'Content-Disposition': `attachment; filename="${filename}"`,
     },
   })
 }
