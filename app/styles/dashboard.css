@@ -3175,6 +3175,13 @@
   color: var(--text-3);
 }
 
+[data-theme="dashboard"] .ops-task-drawer-description-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+}
+
 [data-theme="dashboard"] .ops-task-drawer-stack {
   display: flex;
   flex-direction: column;

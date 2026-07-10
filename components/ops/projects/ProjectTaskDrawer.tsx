@@ -156,6 +156,8 @@ export function ProjectTaskDrawer({
   const [subtaskTitle, setSubtaskTitle] = useState('')
   const [addingSubtask, setAddingSubtask] = useState(false)
   const [descriptionOpen, setDescriptionOpen] = useState(false)
+  const [descriptionDirty, setDescriptionDirty] = useState(false)
+  const [descriptionSaving, setDescriptionSaving] = useState(false)
   const [subtasksOpen, setSubtasksOpen] = useState(false)
   const [filesOpen, setFilesOpen] = useState(false)
   const [fileCount, setFileCount] = useState(0)
@@ -198,11 +200,13 @@ export function ProjectTaskDrawer({
   if (task && taskRevision !== syncedRevision) {
     setSyncedRevision(taskRevision)
     setTitle(task.title)
-    setDescription(task.description ?? '')
+    if (!descriptionDirty) {
+      setDescription(task.description ?? '')
+      setDescriptionOpen(taskHasDescription(task))
+    }
     setDueDate(task.dueDate ?? '')
     setSubtaskTitle('')
     setAddingSubtask(false)
-    setDescriptionOpen(taskHasDescription(task))
     setSubtasksOpen(task.subtasks.length > 0)
     setFilesOpen(false)
     setFileCount(0)
@@ -269,11 +273,35 @@ export function ProjectTaskDrawer({
     persist({ title: next }, { loading: 'Saving title…', success: 'Title updated' })
   }
 
-  function handleDescriptionBlur() {
+  function handleDescriptionCancel() {
+    setDescription(activeTask.description ?? '')
+    setDescriptionDirty(false)
+    setDescriptionOpen(taskHasDescription(activeTask))
+  }
+
+  function handleDescriptionSave() {
     const next = normalizeTicketDescription(description)
     const current = normalizeTicketDescription(activeTask.description)
-    if (next === current) return
-    persist({ description: next }, { loading: 'Saving description…', success: 'Description updated' })
+    if (next === current) {
+      setDescriptionDirty(false)
+      setDescriptionOpen(taskHasDescription({ description: next }))
+      return
+    }
+
+    setDescriptionSaving(true)
+    startTransition(async () => {
+      try {
+        const ok = await runWithToast(() => updateTask(activeTask.id, { description: next }), {
+          loading: 'Saving description…',
+          success: 'Description updated',
+        })
+        if (ok === null) return
+        setDescriptionDirty(false)
+        onRefresh()
+      } finally {
+        setDescriptionSaving(false)
+      }
+    })
   }
 
   function handleDueDateChange(value: string) {
@@ -466,7 +494,7 @@ export function ProjectTaskDrawer({
               <>
                 <div className="ops-task-drawer-description-head">
                   <span className="ops-task-drawer-description-label">Description</span>
-                  {hasDescription ? (
+                  {hasDescription && !descriptionDirty ? (
                     <button
                       type="button"
                       className="ops-task-drawer-text-action"
@@ -478,19 +506,43 @@ export function ProjectTaskDrawer({
                 </div>
                 <RichTextEditor
                   value={description}
-                  disabled={pending}
+                  disabled={descriptionSaving}
                   placeholder="Context, links, acceptance criteria…"
                   minHeight={120}
                   className="ops-task-drawer-rich-editor"
-                  onChange={setDescription}
-                  onBlur={handleDescriptionBlur}
+                  onChange={html => {
+                    setDescription(html)
+                    setDescriptionDirty(true)
+                  }}
                 />
+                <div className="ops-task-drawer-description-actions">
+                  <button
+                    type="button"
+                    className="dash-btn-primary btn-primary"
+                    disabled={descriptionSaving}
+                    onClick={handleDescriptionSave}
+                  >
+                    {descriptionSaving ? 'Saving…' : 'Save description'}
+                  </button>
+                  <button
+                    type="button"
+                    className="dash-btn-ghost"
+                    disabled={descriptionSaving}
+                    onClick={handleDescriptionCancel}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </>
             ) : (
               <button
                 type="button"
                 className="ops-task-drawer-description-preview"
-                onClick={() => setDescriptionOpen(true)}
+                onClick={() => {
+                  setDescription(activeTask.description ?? '')
+                  setDescriptionDirty(false)
+                  setDescriptionOpen(true)
+                }}
               >
                 {hasDescription ? (
                   <FormattedTicketDescription
