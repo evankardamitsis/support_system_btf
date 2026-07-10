@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { DashboardShell } from '@/components/admin/DashboardShell'
 import { isBtfStaffRole } from '@/lib/auth/staff'
 import { isMacosDesktopReleasePublished } from '@/lib/desktop/release-server'
+import '../styles/admin-theme.css'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()

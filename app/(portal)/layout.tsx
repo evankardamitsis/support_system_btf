@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { ensureClientProfile } from '@/lib/auth/ensure-client-profile'
 import { PortalDashboardShell } from '@/components/portal/DashboardShell'
 import { clientUsesHourBilling } from '@/lib/retainers/billing-model'
+import '../styles/dashboard-theme.css'
 
 export default async function PortalLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()

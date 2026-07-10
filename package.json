@@ -5,7 +5,7 @@
   "main": "desktop/main.cjs",
   "scripts": {
     "dev": "next dev",
-    "build": "next build --webpack",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "desktop:dev": "env -u ELECTRON_RUN_AS_NODE NODE_ENV=development electron .",
