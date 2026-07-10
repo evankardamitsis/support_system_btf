@@ -6,8 +6,10 @@ import { ChevronDown, Plus, X } from 'lucide-react'
 import { listProjectFiles } from '@/app/actions/project-attachments'
 import { createTask, deleteTask, updateTask } from '@/app/actions/projects'
 import { ConfirmDeleteModal } from '@/components/ui/ConfirmDeleteModal'
+import { RichTextEditor } from '@/components/ui/RichTextEditor'
 import { ProjectFilePanel } from '@/components/ops/projects/ProjectFilePanel'
 import { ProjectTaskComments } from '@/components/ops/projects/ProjectTaskComments'
+import { FormattedTicketDescription } from '@/components/tickets/FormattedTicketDescription'
 import {
   TaskPrioritySelect,
   TaskStatusSelect,
@@ -18,6 +20,7 @@ import {
 } from '@/components/tickets/EditableAssigneeSelect'
 import { findParentProjectTask } from '@/lib/ops/projects/find-task'
 import { phaseToneIndexFromPhaseId, phaseToneLabelClass } from '@/lib/ops/projects/phase-tone'
+import { taskHasDescription } from '@/lib/ops/projects/task-content'
 import type {
   OpsProjectDetail,
   OpsProjectTask,
@@ -25,6 +28,7 @@ import type {
   TaskStatus,
 } from '@/lib/ops/projects/types'
 import { runWithToast } from '@/lib/notify'
+import { isEmptyTicketDescription, normalizeTicketDescription } from '@/lib/tickets/description-format'
 
 const DRAWER_ANIM_MS = 180
 
@@ -155,6 +159,7 @@ export function ProjectTaskDrawer({
   const [subtasksOpen, setSubtasksOpen] = useState(false)
   const [filesOpen, setFilesOpen] = useState(false)
   const [fileCount, setFileCount] = useState(0)
+  const [commentCount, setCommentCount] = useState(0)
   const [syncedRevision, setSyncedRevision] = useState('')
   const [mounted, setMounted] = useState(open)
   const [portalReady, setPortalReady] = useState(false)
@@ -187,7 +192,7 @@ export function ProjectTaskDrawer({
   const drawerTask = task ?? cachedTask
 
   const taskRevision = task
-    ? `${task.id}:${project.updatedAt}:${task.title}:${task.description ?? ''}:${task.dueDate ?? ''}:${task.subtasks.length}`
+    ? `${task.id}:${project.updatedAt}:${task.title}:${task.description ?? ''}:${task.dueDate ?? ''}:${task.subtasks.length}:${task.commentCount}`
     : ''
 
   if (task && taskRevision !== syncedRevision) {
@@ -197,10 +202,11 @@ export function ProjectTaskDrawer({
     setDueDate(task.dueDate ?? '')
     setSubtaskTitle('')
     setAddingSubtask(false)
-    setDescriptionOpen(Boolean(task.description?.trim()))
+    setDescriptionOpen(taskHasDescription(task))
     setSubtasksOpen(task.subtasks.length > 0)
     setFilesOpen(false)
     setFileCount(0)
+    setCommentCount(task.commentCount)
   }
 
   useEffect(() => {
@@ -242,7 +248,7 @@ export function ProjectTaskDrawer({
   const canManageSubtasks = !isSubtask
   const doneSubtasks = activeTask.subtasks.filter(sub => sub.status === 'done').length
   const subtaskCount = activeTask.subtasks.length
-  const hasDescription = Boolean(description.trim())
+  const hasDescription = taskHasDescription({ description })
   const hasSubtasks = subtaskCount > 0
   const hasFiles = fileCount > 0
 
@@ -264,8 +270,9 @@ export function ProjectTaskDrawer({
   }
 
   function handleDescriptionBlur() {
-    const next = description.trim() || null
-    if (next === (activeTask.description?.trim() || null)) return
+    const next = normalizeTicketDescription(description)
+    const current = normalizeTicketDescription(activeTask.description)
+    if (next === current) return
     persist({ description: next }, { loading: 'Saving description…', success: 'Description updated' })
   }
 
@@ -469,13 +476,13 @@ export function ProjectTaskDrawer({
                     </button>
                   ) : null}
                 </div>
-                <textarea
-                  className="btf-input ops-task-drawer-notes"
+                <RichTextEditor
                   value={description}
                   disabled={pending}
                   placeholder="Context, links, acceptance criteria…"
-                  rows={3}
-                  onChange={e => setDescription(e.target.value)}
+                  minHeight={120}
+                  className="ops-task-drawer-rich-editor"
+                  onChange={setDescription}
                   onBlur={handleDescriptionBlur}
                 />
               </>
@@ -486,7 +493,10 @@ export function ProjectTaskDrawer({
                 onClick={() => setDescriptionOpen(true)}
               >
                 {hasDescription ? (
-                  <span className="ops-task-drawer-description-snippet">{description}</span>
+                  <FormattedTicketDescription
+                    content={description}
+                    className="ops-task-drawer-description-snippet"
+                  />
                 ) : (
                   <span className="ops-task-drawer-description-placeholder">Add description…</span>
                 )}
@@ -600,7 +610,17 @@ export function ProjectTaskDrawer({
             )}
           </div>
 
-          <ProjectTaskComments taskId={activeTask.id} staff={staff} embedded concise hideEmpty />
+          <ProjectTaskComments
+            taskId={activeTask.id}
+            staff={staff}
+            embedded
+            concise
+            hideEmpty
+            onCountChange={count => {
+              setCommentCount(count)
+              if (count > 0) onRefresh()
+            }}
+          />
 
           <footer className="ops-task-drawer-footer">
             <button

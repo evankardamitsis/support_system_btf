@@ -58,6 +58,7 @@ export type OpsProjectTask = {
   parentId: string | null
   title: string
   description: string | null
+  commentCount: number
   status: TaskStatus
   assigneeId: string | null
   assigneeName: string | null

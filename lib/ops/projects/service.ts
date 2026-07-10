@@ -84,7 +84,8 @@ function nestTasks(
       phase: { name: string } | null
     }
   >,
-  staffNames: Map<string, string>
+  staffNames: Map<string, string>,
+  commentCountByTask: Map<string, number>
 ): OpsProjectTask[] {
   const mapped = rows.map(row => ({
     id: row.id,
@@ -94,6 +95,7 @@ function nestTasks(
     parentId: row.parent_id,
     title: row.title,
     description: row.description,
+    commentCount: commentCountByTask.get(row.id) ?? 0,
     status: row.status as TaskStatus,
     assigneeId: row.assignee_id,
     assigneeName: row.assignee_id ? staffNames.get(row.assignee_id) ?? null : null,
@@ -119,6 +121,22 @@ function nestTasks(
   }
 
   return roots
+}
+
+async function loadTaskCommentCounts(supabase: Db, taskIds: string[]) {
+  const counts = new Map<string, number>()
+  if (!taskIds.length) return counts
+
+  const { data } = await supabase
+    .from('ops_project_task_comments')
+    .select('task_id')
+    .in('task_id', taskIds)
+
+  for (const row of data ?? []) {
+    counts.set(row.task_id, (counts.get(row.task_id) ?? 0) + 1)
+  }
+
+  return counts
 }
 
 export async function applyProjectTemplate(
@@ -252,7 +270,10 @@ export async function getOpsProjectDetail(
     ...assigneeIds,
   ])
 
-  const taskList = nestTasks(tasks ?? [], staffNames)
+  const taskIds = (tasks ?? []).map(t => t.id)
+  const commentCountByTask = await loadTaskCommentCounts(supabase, taskIds)
+
+  const taskList = nestTasks(tasks ?? [], staffNames, commentCountByTask)
   const flatCount = tasks?.length ?? 0
   const doneCount = tasks?.filter(t => t.status === 'done').length ?? 0
 

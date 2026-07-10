@@ -16,6 +16,7 @@ import {
   type AgentPlanGroup,
   type AgentPlanItem,
 } from '@/components/ui/agent-plan'
+import { TaskContentIndicators } from '@/components/ops/projects/TaskContentIndicators'
 import { PhaseStatusSelect } from '@/components/ops/projects/StatusSelect'
 import {
   EditableAssigneeSelect,
@@ -116,6 +117,7 @@ function mapTaskToPlanItem(
     status: task.status,
     statusLabel: TASK_STATUS_LABELS[task.status],
     badges: taskDueBadge(task),
+    titleExtra: <TaskContentIndicators task={task} />,
     trailing: taskRowTrailing(task, staff, pending, onAssignee, onPriority),
     actions: (
       <button
@@ -135,6 +137,7 @@ function mapTaskToPlanItem(
       status: sub.status,
       statusLabel: TASK_STATUS_LABELS[sub.status],
       badges: taskDueBadge(sub),
+      titleExtra: <TaskContentIndicators task={sub} />,
       trailing: taskRowTrailing(sub, staff, pending, onAssignee, onPriority),
       actions: (
         <button

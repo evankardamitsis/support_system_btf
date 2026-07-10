@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronDown, GripVertical } from 'lucide-react'
 import { updateTask } from '@/app/actions/projects'
+import { TaskContentIndicators } from '@/components/ops/projects/TaskContentIndicators'
 import { TaskPrioritySelect, TaskStatusSelect } from '@/components/ops/projects/StatusSelect'
 import {
   EditableAssigneeSelect,
@@ -78,7 +79,8 @@ function KanbanCard({
           className="ops-kanban-card-title"
           onClick={() => onOpenTask(task.id)}
         >
-          {task.title}
+          <span className="ops-kanban-card-title-text">{task.title}</span>
+          <TaskContentIndicators task={task} className="ops-kanban-card-indicators" />
         </button>
       </div>
       {task.phaseName ? (

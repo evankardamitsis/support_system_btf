@@ -9,6 +9,8 @@ import {
   CircleDotDashed,
   CircleX,
 } from 'lucide-react'
+import { FormattedTicketDescription } from '@/components/tickets/FormattedTicketDescription'
+import { isEmptyTicketDescription } from '@/lib/tickets/description-format'
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'framer-motion'
 
 export type AgentPlanStatus =
@@ -35,6 +37,7 @@ export type AgentPlanChildItem = {
   status: AgentPlanStatus
   statusLabel: string
   badges?: AgentPlanBadge[]
+  titleExtra?: React.ReactNode
   trailing?: React.ReactNode
   details?: React.ReactNode
   actions?: React.ReactNode
@@ -47,6 +50,7 @@ export type AgentPlanItem = {
   status: AgentPlanStatus
   statusLabel: string
   badges?: AgentPlanBadge[]
+  titleExtra?: React.ReactNode
   trailing?: React.ReactNode
   details?: React.ReactNode
   actions?: React.ReactNode
@@ -87,7 +91,7 @@ function itemKey(groupId: string, itemId: string) {
 
 function itemHasExpandableBody(item: AgentPlanItem) {
   return Boolean(
-    item.description ||
+    (item.description && !isEmptyTicketDescription(item.description)) ||
       item.details ||
       item.footer ||
       (item.children && item.children.length > 0)
@@ -319,6 +323,11 @@ export function AgentPlan({
                                           >
                                             {item.title}
                                           </span>
+                                          {item.titleExtra ? (
+                                            <span className="ops-agent-plan-item-title-extra">
+                                              {item.titleExtra}
+                                            </span>
+                                          ) : null}
                                         </button>
                                         {item.trailing ? (
                                           <div
@@ -360,8 +369,11 @@ export function AgentPlan({
                                     <div className="ops-agent-plan-collapse-inner">
                                       {item.description || item.details ? (
                                         <div className="ops-agent-plan-item-details">
-                                          {item.description ? (
-                                            <p className="ops-agent-plan-description">{item.description}</p>
+                                          {item.description && !isEmptyTicketDescription(item.description) ? (
+                                            <FormattedTicketDescription
+                                              content={item.description}
+                                              className="ops-agent-plan-description"
+                                            />
                                           ) : null}
                                           {item.details}
                                         </div>
@@ -376,7 +388,9 @@ export function AgentPlan({
                                                 itemKey(group.id, `${item.id}:${child.id}`)
                                               ] ?? false
                                             const childCanExpand = Boolean(
-                                              child.description || child.details
+                                              (child.description &&
+                                                !isEmptyTicketDescription(child.description)) ||
+                                                child.details
                                             )
 
                                             return (
@@ -437,6 +451,11 @@ export function AgentPlan({
                                                     >
                                                       {child.title}
                                                     </span>
+                                                    {child.titleExtra ? (
+                                                      <span className="ops-agent-plan-item-title-extra">
+                                                        {child.titleExtra}
+                                                      </span>
+                                                    ) : null}
                                                   </button>
                                                   {child.trailing ? (
                                                     <div
@@ -470,10 +489,12 @@ export function AgentPlan({
                                               <div className="ops-agent-plan-collapse-inner">
                                                 {child.description || child.details ? (
                                                   <div className="ops-agent-plan-child-details">
-                                                    {child.description ? (
-                                                      <p className="ops-agent-plan-description">
-                                                        {child.description}
-                                                      </p>
+                                                    {child.description &&
+                                                    !isEmptyTicketDescription(child.description) ? (
+                                                      <FormattedTicketDescription
+                                                        content={child.description}
+                                                        className="ops-agent-plan-description"
+                                                      />
                                                     ) : null}
                                                     {child.details}
                                                   </div>

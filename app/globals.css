@@ -3985,7 +3985,14 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   font-size: 0.8125rem;
   line-height: 1.45;
   color: var(--text-2);
-  white-space: pre-wrap;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-description-snippet.formatted-ticket-description p {
+  margin: 0;
+}
+
+[data-theme="dashboard"] .ops-task-drawer-rich-editor {
+  width: 100%;
 }
 
 [data-theme="dashboard"] .ops-task-drawer-description-placeholder {
@@ -4969,6 +4976,10 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 }
 
 [data-theme="dashboard"] .ops-kanban-card-title {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  flex-wrap: wrap;
   font-size: 0.875rem;
   font-weight: 500;
   line-height: 1.4;
@@ -4980,6 +4991,15 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
   text-align: left;
   cursor: pointer;
   transition: color 120ms ease;
+}
+
+[data-theme="dashboard"] .ops-kanban-card-title-text {
+  flex: 1;
+  min-width: 0;
+}
+
+[data-theme="dashboard"] .ops-kanban-card-indicators {
+  margin-top: 0.1rem;
 }
 
 [data-theme="dashboard"] .ops-kanban-card-title:hover {
@@ -6028,6 +6048,39 @@ input[type='week']:disabled::-webkit-calendar-picker-indicator {
 [data-theme="dashboard"] .ops-agent-plan-item-title--done {
   color: var(--text-3);
   text-decoration: line-through;
+}
+
+[data-theme="dashboard"] .ops-agent-plan-item-title-extra {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+[data-theme="dashboard"] .ops-task-content-indicators {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+[data-theme="dashboard"] .ops-task-content-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-3);
+}
+
+[data-theme="dashboard"] .ops-agent-plan-description.formatted-ticket-description {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+[data-theme="dashboard"] .ops-agent-plan-description.formatted-ticket-description p {
+  margin: 0 0 0.5rem;
+}
+
+[data-theme="dashboard"] .ops-agent-plan-description.formatted-ticket-description p:last-child {
+  margin-bottom: 0;
 }
 
 [data-theme="dashboard"] .ops-agent-plan-item-meta {
