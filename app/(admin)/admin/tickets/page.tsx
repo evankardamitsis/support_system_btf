@@ -9,9 +9,8 @@ import { computeTicketAnalytics } from '@/lib/tickets/analytics'
 import { Plus } from 'lucide-react'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 import { hourBillingByClientFromRetainers } from '@/lib/retainers/billing-model'
+import { buildRetainerDetailByClientId } from '@/lib/retainers/ticket-table-detail'
 import { ticketUsesHourBilling } from '@/lib/tickets/hours-billing'
-import { isActivePeriod } from '@/lib/retainers/packages'
-import type { RetainerDetail } from '@/components/tickets/TicketsTable'
 import { getStaffForMentions } from '@/app/actions/comments'
 import { isResolvedQueueStatus } from '@/lib/tickets/query'
 
@@ -136,39 +135,15 @@ export default async function AdminTicketsPage({
 
   const clientIds = [...new Set(scoped.map(t => t.client_id))]
   const hoursBillingByClient = hourBillingByClientFromRetainers(retainerRows ?? [], clientIds)
-
-  // Build per-client retainer detail for all active hourly-billing retainers.
-  const retainerDetailByClientId = new Map<string, RetainerDetail>()
-  for (const r of retainerRows ?? []) {
-    if (!r.hours_limited || r.hours_total == null) continue
-    if (!isActivePeriod(r.period_start, r.period_end)) continue
-    if (retainerDetailByClientId.has(r.client_id)) continue
-
-    const periodTickets = (all ?? []).filter(t => {
-      if (t.client_id !== r.client_id) return false
-      const d = t.created_at.slice(0, 10)
-      return d >= r.period_start && d <= r.period_end
-    })
-    const committedHours = periodTickets.reduce(
-      (sum, t) => sum + (t.estimated_hours != null ? Number(t.estimated_hours) : 0),
-      0
-    )
-    const total = Number(r.hours_total)
-    const ratio = total > 0 ? committedHours / total : 0
-    const level: RetainerDetail['level'] =
-      ratio >= 1 ? 'over' : ratio >= 0.9 ? 'critical' : ratio >= 0.7 ? 'warning' : 'ok'
-
-    retainerDetailByClientId.set(r.client_id, {
-      packageName: r.package_name ?? '',
-      periodStart: r.period_start,
-      periodEnd: r.period_end,
-      hoursTotal: total,
-      hoursUsed: Number(r.hours_used ?? 0),
-      committedHours,
-      ticketCount: periodTickets.length,
-      level,
-    })
-  }
+  const retainerDetailByClientId = buildRetainerDetailByClientId(
+    retainerRows ?? [],
+    (all ?? []).map(t => ({
+      client_id: t.client_id,
+      created_at: t.created_at,
+      estimated_hours: t.estimated_hours != null ? Number(t.estimated_hours) : null,
+    })),
+    clientIds
+  )
 
   const rows = tickets.map(t => ({
     id: t.id,

@@ -187,14 +187,11 @@ export function AdminTicketRow({
 
         <div className="tickets-cell tickets-cell-client min-w-0" data-label="Client">
           <div className="tickets-cell-value">
-            {retainerDetail ? (
-              <ClientRetainerPopover
-                clientName={ticket.clientName ?? '—'}
-                detail={retainerDetail}
-              />
-            ) : (
-              <span className="tickets-client-name">{ticket.clientName ?? '—'}</span>
-            )}
+            <ClientRetainerPopover
+              clientName={ticket.clientName ?? '—'}
+              detail={retainerDetail}
+              hoursBilling={hoursBilling}
+            />
           </div>
         </div>
 

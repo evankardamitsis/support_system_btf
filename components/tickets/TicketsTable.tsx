@@ -14,16 +14,9 @@ import {
 } from '@/lib/tickets/display'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
-export type RetainerDetail = {
-  packageName: string
-  periodStart: string
-  periodEnd: string
-  hoursTotal: number
-  hoursUsed: number
-  committedHours: number  // sum of estimated_hours for all tickets in period (any status)
-  ticketCount: number     // count of tickets registered in period
-  level: 'ok' | 'warning' | 'critical' | 'over'
-}
+import type { RetainerTableDetail } from '@/lib/retainers/ticket-table-detail'
+
+export type RetainerDetail = RetainerTableDetail
 
 export type TicketTableRow = {
   id: string

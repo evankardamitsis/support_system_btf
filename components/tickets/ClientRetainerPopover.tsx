@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import type { RetainerDetail } from './TicketsTable'
 import { formatPackageName } from '@/lib/retainers/packages'
@@ -18,7 +19,7 @@ function RetainerModal({
   onClose,
 }: {
   clientName: string
-  detail: RetainerDetail
+  detail: RetainerDetail | null
   onClose: () => void
 }) {
   useEffect(() => {
@@ -29,19 +30,52 @@ function RetainerModal({
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const billedPct = detail.hoursTotal > 0
-    ? Math.min(100, (detail.hoursUsed / detail.hoursTotal) * 100)
-    : 0
-  const committedPct = detail.hoursTotal > 0
-    ? Math.min(100, (detail.committedHours / detail.hoursTotal) * 100)
-    : 0
-  const available = detail.hoursTotal - detail.committedHours
-  const isOver = detail.level === 'over'
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
+    }
+  }, [])
+
+  if (!detail) {
+    return (
+      <div
+        className="rm-backdrop"
+        onMouseDown={e => {
+          if (e.target === e.currentTarget) onClose()
+        }}
+        role="presentation"
+      >
+        <div className="rm-card" role="dialog" aria-modal aria-label={`Retainer status for ${clientName}`}>
+          <div className="rm-head">
+            <div className="rm-head-text">
+              <span className="rm-client">{clientName}</span>
+              <span className="rm-meta">Hour-based retainer</span>
+            </div>
+            <button type="button" className="rm-close" onClick={onClose} aria-label="Close">
+              <X size={15} />
+            </button>
+          </div>
+          <p className="rm-empty">No retainer period is set up for this client yet.</p>
+        </div>
+      </div>
+    )
+  }
+
+  const billedPct =
+    detail.hoursTotal > 0 ? Math.min(100, (detail.hoursUsed / detail.hoursTotal) * 100) : 0
+  const isOver = detail.hoursRemaining < 0
+  const remainingLabel = isOver
+    ? `${Math.abs(detail.hoursRemaining).toFixed(1)}h over cap`
+    : `${detail.hoursRemaining.toFixed(1)}h remaining`
 
   return (
     <div
       className="rm-backdrop"
-      onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}
+      onMouseDown={e => {
+        if (e.target === e.currentTarget) onClose()
+      }}
       role="presentation"
     >
       <div
@@ -55,6 +89,7 @@ function RetainerModal({
             <span className="rm-client">{clientName}</span>
             <span className="rm-meta">
               {formatPackageName(detail.packageName)} · {formatPeriod(detail.periodStart, detail.periodEnd)}
+              {!detail.isCurrentPeriod ? ' · previous period' : ''}
             </span>
           </div>
           <button type="button" className="rm-close" onClick={onClose} aria-label="Close">
@@ -63,38 +98,38 @@ function RetainerModal({
         </div>
 
         <div className="rm-body">
-          <div className="rm-stat">
+          <div className="rm-stat rm-stat--primary">
             <div className="rm-stat-head">
-              <span className="rm-stat-label">Billed</span>
-              <span className="rm-stat-numbers">
-                <span className="rm-stat-current">{detail.hoursUsed.toFixed(1)}h</span>
-                <span className="rm-stat-sep">/</span>
-                <span className="rm-stat-total">{detail.hoursTotal}h</span>
-                <span className="rm-stat-pct">{Math.round(billedPct)}%</span>
-              </span>
-            </div>
-            <div className="rm-bar">
-              <div className="rm-bar-fill rm-bar-fill--billed" style={{ width: `${billedPct}%` }} />
-            </div>
-          </div>
-
-          <div className="rm-stat">
-            <div className="rm-stat-head">
-              <span className="rm-stat-label">Committed <span className="rm-stat-label-sub">(all period estimates)</span></span>
+              <span className="rm-stat-label">Billed this period</span>
               <span className="rm-stat-numbers">
                 <span className={`rm-stat-current rm-stat-current--${detail.level}`}>
-                  {detail.committedHours.toFixed(1)}h
+                  {detail.hoursUsed.toFixed(1)}h
                 </span>
                 <span className="rm-stat-sep">/</span>
                 <span className="rm-stat-total">{detail.hoursTotal}h</span>
-                <span className={`rm-stat-pct rm-stat-pct--${detail.level}`}>{Math.round(committedPct)}%</span>
+                <span className={`rm-stat-pct rm-stat-pct--${detail.level}`}>
+                  {Math.round(billedPct)}%
+                </span>
               </span>
             </div>
             <div className="rm-bar">
               <div
-                className={`rm-bar-fill rm-bar-fill--committed rm-bar-fill--${detail.level}`}
-                style={{ width: `${committedPct}%` }}
+                className={`rm-bar-fill rm-bar-fill--billed rm-bar-fill--${detail.level}`}
+                style={{ width: `${billedPct}%` }}
               />
+            </div>
+          </div>
+
+          <div className="rm-summary">
+            <div className="rm-summary-item">
+              <span className="rm-summary-label">Remaining</span>
+              <span className={`rm-summary-value rm-summary-value--${isOver ? 'over' : detail.level}`}>
+                {remainingLabel}
+              </span>
+            </div>
+            <div className="rm-summary-item">
+              <span className="rm-summary-label">Committed estimates</span>
+              <span className="rm-summary-value tabular-nums">{detail.committedHours.toFixed(1)}h</span>
             </div>
           </div>
         </div>
@@ -103,17 +138,11 @@ function RetainerModal({
           <span className="rm-footer-tickets">
             {detail.ticketCount} ticket{detail.ticketCount !== 1 ? 's' : ''} this period
           </span>
-          {isOver ? (
+          {detail.committedHours > detail.hoursTotal ? (
             <span className="rm-footer-status rm-footer-status--over">
-              {(detail.committedHours - detail.hoursTotal).toFixed(1)}h over cap
+              {(detail.committedHours - detail.hoursTotal).toFixed(1)}h over cap in estimates
             </span>
-          ) : available > 0 ? (
-            <span className="rm-footer-status">
-              {available.toFixed(1)}h remaining
-            </span>
-          ) : (
-            <span className="rm-footer-status rm-footer-status--over">Cap reached</span>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
@@ -123,27 +152,45 @@ function RetainerModal({
 export function ClientRetainerPopover({
   clientName,
   detail,
+  hoursBilling = true,
 }: {
   clientName: string
-  detail: RetainerDetail
+  detail: RetainerDetail | null
+  hoursBilling?: boolean
 }) {
   const [open, setOpen] = useState(false)
+  const [portalReady, setPortalReady] = useState(false)
   const close = useCallback(() => setOpen(false), [])
-  const hasAlert = detail.level !== 'ok'
+  const hasAlert = detail != null && detail.level !== 'ok'
+
+  useEffect(() => {
+    setPortalReady(true)
+  }, [])
+
+  if (!hoursBilling) {
+    return <span className="tickets-client-name">{clientName}</span>
+  }
 
   return (
     <>
       <button
         type="button"
-        className={`retainer-trigger${hasAlert ? ` retainer-trigger--${detail.level}` : ''}`}
+        className={`retainer-trigger${hasAlert ? ` retainer-trigger--${detail!.level}` : ''}`}
         onClick={() => setOpen(true)}
-        title="View retainer status"
+        title="View retainer progress"
       >
         <span className="retainer-trigger-name">{clientName}</span>
-        {hasAlert && <span className="retainer-trigger-dot" aria-hidden />}
+        {hasAlert ? <span className="retainer-trigger-dot" aria-hidden /> : null}
       </button>
 
-      {open && <RetainerModal clientName={clientName} detail={detail} onClose={close} />}
+      {open && portalReady
+        ? createPortal(
+            <div data-theme="dashboard">
+              <RetainerModal clientName={clientName} detail={detail} onClose={close} />
+            </div>,
+            document.body
+          )
+        : null}
     </>
   )
 }
