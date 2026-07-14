@@ -9,6 +9,11 @@ import { currentBillingPeriod } from '@/lib/retainers/period'
 import { isHoursBasedPackage } from '@/lib/retainers/billing-model'
 import { parseRetainerPackage, type RetainerPackage } from '@/lib/retainers/packages'
 import type { RetainerLifecycleStatus } from '@/lib/retainers/status'
+import {
+  fetchClientRetainerTableDetail,
+  type RetainerTableDetail,
+} from '@/lib/retainers/ticket-table-detail'
+import { renewClientRetainerIfDue } from '@/lib/retainers/renew'
 
 export type DeleteRetainerResult = { ok: true } | { ok: false; error: string }
 
@@ -20,6 +25,7 @@ function revalidateClientRetainerPaths(clientId: string) {
   revalidatePath(`/admin/clients/${clientId}`)
   revalidatePath('/admin/retainers')
   revalidatePath('/admin/clients')
+  revalidatePath('/admin/tickets')
   revalidatePath('/portal/retainer')
   revalidatePath('/portal/tickets/new')
 }
@@ -220,4 +226,36 @@ export async function deleteClientRetainer(clientId: string): Promise<DeleteReta
   revalidateClientRetainerPaths(clientId)
   revalidatePath('/admin/tickets')
   return { ok: true }
+}
+
+export async function getClientRetainerTableDetail(
+  clientId: string
+): Promise<RetainerTableDetail | null> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+
+  const { data: profile } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'admin' && profile?.role !== 'agent') {
+    throw new Error('Unauthorized')
+  }
+
+  return fetchClientRetainerTableDetail(supabase, clientId)
+}
+
+export async function renewClientRetainerNow(clientId: string) {
+  const { isAdmin } = await requireAdmin()
+  if (!isAdmin) throw new Error('Only admins can renew retainer periods')
+
+  const result = await renewClientRetainerIfDue(clientId)
+  if (!result.ok) throw new Error(result.error)
+  if (result.renewed) revalidateClientRetainerPaths(clientId)
+  return result
 }

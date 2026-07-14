@@ -24,7 +24,7 @@ async function fetchByDateRange(
     .from('retainers')
     .select('id, period_start, period_end, hours_total, hours_used')
     .eq('client_id', clientId)
-    .order('period_start', { ascending: false })
+    .order('period_end', { ascending: false })
     .limit(1)
 
   if (inRange) {
@@ -45,7 +45,7 @@ async function fetchByDateRangeWithPackage(
     .from('retainers')
     .select('id, period_start, period_end, hours_total, hours_used, package_name, hours_limited')
     .eq('client_id', clientId)
-    .order('period_start', { ascending: false })
+    .order('period_end', { ascending: false })
     .limit(1)
 
   if (inRange) {
@@ -66,7 +66,7 @@ async function fetchByDateRangeAdmin(
     .from('retainers')
     .select('id, period_start, period_end, hours_total, hours_used, package_name, period_cost, hours_limited')
     .eq('client_id', clientId)
-    .order('period_start', { ascending: false })
+    .order('period_end', { ascending: false })
     .limit(1)
 
   if (inRange) {

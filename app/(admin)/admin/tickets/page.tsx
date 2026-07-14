@@ -158,6 +158,7 @@ export default async function AdminTicketsPage({
     estimate_status: t.estimate_status ?? null,
     completion_status: t.completion_status ?? null,
     clientName: (t.clients as unknown as { name: string } | null)?.name ?? null,
+    clientId: t.client_id,
     hoursBilling: ticketUsesHourBilling(
       hoursBillingByClient[t.client_id] ?? true,
       t.no_hours

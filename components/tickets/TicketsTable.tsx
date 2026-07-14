@@ -27,6 +27,7 @@ export type TicketTableRow = {
   updated_at: string
   resolved_at?: string | null
   clientName?: string | null
+  clientId?: string | null
   estimated_hours?: number | null
   actual_hours?: number | null
   estimate_status?: 'pending_approval' | 'approved' | null

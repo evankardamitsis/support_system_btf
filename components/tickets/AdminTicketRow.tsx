@@ -188,6 +188,7 @@ export function AdminTicketRow({
         <div className="tickets-cell tickets-cell-client min-w-0" data-label="Client">
           <div className="tickets-cell-value">
             <ClientRetainerPopover
+              clientId={ticket.clientId ?? ''}
               clientName={ticket.clientName ?? '—'}
               detail={retainerDetail}
               hoursBilling={hoursBilling}

@@ -7,6 +7,7 @@ import { StatusFlag } from '@/components/dashboard/StatusFlag'
 import { FormPanel } from '@/components/dashboard/FormPanel'
 import { PackageChip } from '@/components/retainers/PackageChip'
 import { RetainerPeriodForm } from '@/components/retainers/RetainerPeriodForm'
+import { RetainerRenewBanner } from '@/components/retainers/RetainerRenewBanner'
 import { RetainerStatusControls } from '@/components/retainers/RetainerStatusControls'
 import type { RetainerLifecycleStatus } from '@/lib/retainers/status'
 import { retainerTracksHours } from '@/lib/retainers/billing-model'
@@ -61,7 +62,13 @@ export async function ClientRetainerSection({
       />
 
       {r ? (
-        <section className="retainer-panel" data-alert={isDanger ? 'true' : undefined}>
+        <>
+          <RetainerRenewBanner
+            clientId={clientId}
+            periodEnd={r.period_end}
+            canManage={canManageLifecycle}
+          />
+          <section className="retainer-panel" data-alert={isDanger ? 'true' : undefined}>
           <div className="retainer-panel-head">
             <div className="flex flex-wrap items-center gap-2">
               <p className="retainer-panel-title">Active retainer</p>
@@ -137,6 +144,7 @@ export async function ClientRetainerSection({
             </div>
           )}
         </section>
+        </>
       ) : (
         <div className="retainer-panel dash-empty">
           <p className="dash-empty-title">No retainer period</p>
