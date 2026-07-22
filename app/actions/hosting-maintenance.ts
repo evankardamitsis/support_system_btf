@@ -91,6 +91,9 @@ export async function renewHostingContract(id: string): Promise<void> {
   const { supabase } = await requireStaff()
   const contract = await getHostingContract(supabase, id)
   if (!contract) throw new Error('Contract not found')
+  if (contract.status === 'canceled') {
+    throw new Error('Canceled contracts cannot be renewed')
+  }
 
   const next = computeRenewedPeriod({
     periodStart: contract.periodStart,
@@ -105,6 +108,7 @@ export async function renewHostingContract(id: string): Promise<void> {
       period_end: next.periodEnd,
       status: 'active',
       renewal_notified_at: null,
+      admin_renewal_notified_at: null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)

@@ -177,22 +177,26 @@ export function HostingContractsList({ contracts }: { contracts: HostingContract
                     ) : null}
                   </div>
                   <div className="ops-hosting-cell ops-hosting-actions" data-label="Actions">
-                    {contract.status === 'active' ? (
+                    {contract.status !== 'canceled' ? (
                       <div className="ops-hosting-actions-main">
+                        {contract.status === 'active' ? (
+                          <button
+                            type="button"
+                            className={`ops-hosting-action${
+                              expiring ? ' ops-hosting-action--primary' : ' ops-hosting-action--secondary'
+                            }`}
+                            disabled={pending}
+                            onClick={() => handleReminder(contract.id)}
+                          >
+                            Remind
+                          </button>
+                        ) : null}
                         <button
                           type="button"
                           className={`ops-hosting-action${
-                            expiring ? ' ops-hosting-action--primary' : ' ops-hosting-action--secondary'
-                          }`}
-                          disabled={pending}
-                          onClick={() => handleReminder(contract.id)}
-                        >
-                          Remind
-                        </button>
-                        <button
-                          type="button"
-                          className={`ops-hosting-action${
-                            expiring ? ' ops-hosting-action--secondary' : ' ops-hosting-action--primary'
+                            contract.status === 'expired' || !expiring
+                              ? ' ops-hosting-action--primary'
+                              : ' ops-hosting-action--secondary'
                           }`}
                           disabled={pending}
                           onClick={() => handleRenew(contract.id)}
@@ -204,9 +208,7 @@ export function HostingContractsList({ contracts }: { contracts: HostingContract
                     {contract.status !== 'canceled' ? (
                       <button
                         type="button"
-                        className={`ops-hosting-action ops-hosting-action--danger${
-                          contract.status !== 'active' ? ' ops-hosting-action--solo' : ''
-                        }`}
+                        className="ops-hosting-action ops-hosting-action--danger"
                         disabled={pending}
                         onClick={() => setCancelContract(contract)}
                       >

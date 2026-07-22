@@ -64,20 +64,23 @@ export function HostingContractActions({
     <>
       <div className="flex flex-wrap gap-2 shrink-0">
         {status === 'active' ? (
-          <>
-            <button
-              type="button"
-              className="dash-btn-primary btn-primary"
-              disabled={pending}
-              onClick={handleReminder}
-            >
-              Send renewal reminder
-            </button>
-            <button type="button" className="dash-btn-ghost" disabled={pending} onClick={handleRenew}>
-              Renew period
-            </button>
-          </>
+          <button
+            type="button"
+            className="dash-btn-primary btn-primary"
+            disabled={pending}
+            onClick={handleReminder}
+          >
+            Send renewal reminder
+          </button>
         ) : null}
+        <button
+          type="button"
+          className={status === 'expired' ? 'dash-btn-primary btn-primary' : 'dash-btn-ghost'}
+          disabled={pending}
+          onClick={handleRenew}
+        >
+          Renew period
+        </button>
         <button
           type="button"
           className="dash-btn-ghost"
