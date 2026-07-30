@@ -5,6 +5,7 @@ import {
   formatOfferCurrency,
   formatOfferDocumentDate,
 } from './calculate'
+import { OFFER_BENEFICIARY } from './company'
 import type { CompanyProfileData, FinancialOfferInput } from './types'
 
 const styles = StyleSheet.create({
@@ -150,7 +151,7 @@ const styles = StyleSheet.create({
   },
   ibanTable: {
     marginTop: 4,
-    marginBottom: 10,
+    marginBottom: 2,
     borderWidth: 1,
     borderColor: '#bdbdbd',
   },
@@ -167,6 +168,14 @@ const styles = StyleSheet.create({
   },
   ibanRowLast: {
     flexDirection: 'row',
+  },
+  beneficiary: {
+    marginTop: 6,
+    marginBottom: 10,
+    fontSize: 9,
+  },
+  beneficiaryLabel: {
+    fontFamily: 'Helvetica-Bold',
   },
   colBank: { flex: 1.1, paddingVertical: 4, paddingHorizontal: 6 },
   colIban: { flex: 2, paddingVertical: 4, paddingHorizontal: 6, fontSize: 8 },
@@ -346,6 +355,10 @@ export function FinancialOfferDocument({
             </View>
           ))}
         </View>
+        <Text style={styles.beneficiary}>
+          <Text style={styles.beneficiaryLabel}>Beneficiary: </Text>
+          {OFFER_BENEFICIARY}
+        </Text>
 
         <View style={styles.acceptance}>
           <Text style={styles.acceptanceTitle}>Offer acceptance</Text>

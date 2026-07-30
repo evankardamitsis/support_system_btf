@@ -24,6 +24,7 @@ import type {
   SavedCompanyIban,
 } from '@/lib/ops/financial-offer/types'
 import { HOSTING_PERIOD_OPTIONS } from '@/lib/ops/financial-offer/types'
+import { OFFER_BENEFICIARY } from '@/lib/ops/financial-offer/company'
 import { isValidEmailAddress, normalizeEmailAddress } from '@/lib/email/addresses'
 import { notifyError, runWithToast } from '@/lib/notify'
 
@@ -475,6 +476,9 @@ export function FinancialOfferForm({
             </label>
           ))}
         </div>
+        <p className="financial-offer-beneficiary">
+          Beneficiary: {OFFER_BENEFICIARY}
+        </p>
       </section>
 
       <div className="flex flex-wrap gap-3">

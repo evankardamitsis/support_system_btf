@@ -11,3 +11,6 @@ export const DEFAULT_OFFER_IBAN = {
   iban: 'GR7802600530000780201115058',
   swiftBic: 'ERBKGRAA',
 } as const
+
+/** Account holder shown under bank details on financial offers. */
+export const OFFER_BENEFICIARY = 'Kardamitsis Evangelos' as const

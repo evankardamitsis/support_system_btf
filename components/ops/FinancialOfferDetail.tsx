@@ -16,6 +16,7 @@ import {
   getOfferProjectTotal,
   getOfferProjectUpfront,
 } from '@/lib/ops/financial-offer/calculate'
+import { OFFER_BENEFICIARY } from '@/lib/ops/financial-offer/company'
 import { formatDateTimeHuman, formatResolvedAtTable } from '@/lib/tickets/display'
 import type { FinancialOfferRecord } from '@/lib/ops/financial-offer/types'
 import { triggerOfferAcceptedCelebration } from '@/lib/celebration/offer-accepted'
@@ -290,6 +291,9 @@ export function FinancialOfferDetail({
                   </li>
                 ))}
               </ul>
+              <p className="financial-offer-detail-beneficiary">
+                Beneficiary: {OFFER_BENEFICIARY}
+              </p>
             </div>
           ) : null}
 
