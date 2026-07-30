@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { CheckCircle2, Download, FolderKanban, Mail, Trash2 } from 'lucide-react'
+import { CheckCircle2, Download, FolderKanban, Mail, Pencil, Trash2 } from 'lucide-react'
 import {
   acceptFinancialOffer,
   deleteFinancialOffer,
@@ -167,9 +167,20 @@ export function FinancialOffersList({
                     href={`/api/ops/financial-offers/${offer.id}/pdf`}
                     className="financial-offers-action"
                     aria-label={`Download PDF for ${offer.clientName}`}
+                    title="Download PDF"
                   >
                     <Download size={15} />
                   </a>
+                  {offer.status === 'open' ? (
+                    <Link
+                      href={`/admin/ops/financial-offers/${offer.id}/edit`}
+                      className="financial-offers-action"
+                      aria-label={`Edit offer for ${offer.clientName}`}
+                      title="Edit offer"
+                    >
+                      <Pencil size={15} />
+                    </Link>
+                  ) : null}
                   <button
                     type="button"
                     className={`financial-offers-action cursor-pointer${

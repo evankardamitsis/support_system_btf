@@ -88,6 +88,34 @@ export async function saveFinancialOfferRecord(
   return data.id as string
 }
 
+export async function updateFinancialOfferRecord(
+  supabase: Db,
+  offerId: string,
+  offer: FinancialOfferInput
+) {
+  const { total, upfrontAmount, upfrontPercent } = computeFinancialOffer(offer)
+
+  const { error } = await supabase
+    .from('financial_offers')
+    .update({
+      client_id: offer.clientId || null,
+      client_name: offer.clientName,
+      client_email: offer.clientEmail?.trim() || null,
+      line_items: offer.lineItems,
+      hosting_maintenance: offer.hostingMaintenance,
+      ibans: offer.ibans,
+      upfront_percent: upfrontPercent,
+      total_amount: total,
+      upfront_amount: upfrontAmount,
+      exclude_vat: offer.excludeVat === true,
+    })
+    .eq('id', offerId)
+    .eq('status', 'open')
+    .is('deleted_at', null)
+
+  if (error) throw new Error(error.message)
+}
+
 export async function loadOfferForPdf(supabase: Db, offerId: string) {
   const { data, error } = await supabase
     .from('financial_offers')

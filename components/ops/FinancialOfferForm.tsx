@@ -2,8 +2,9 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Plus, Trash2 } from 'lucide-react'
-import { submitFinancialOffer } from '@/app/actions/financial-offers'
+import { submitFinancialOffer, updateFinancialOffer } from '@/app/actions/financial-offers'
 import {
   ClientSelectWithCreate,
   type ClientOption,
@@ -13,9 +14,12 @@ import {
   formatHostingMaintenance,
   formatOfferCurrency,
   offerFilename,
+  parseHostingAmountFromMaintenance,
+  parseHostingPeriodFromMaintenance,
 } from '@/lib/ops/financial-offer/calculate'
 import type {
   FinancialOfferLineItem,
+  FinancialOfferRecord,
   HostingMaintenancePeriod,
   SavedCompanyIban,
 } from '@/lib/ops/financial-offer/types'
@@ -45,6 +49,7 @@ type FinancialOfferFormProps = {
   upfrontPercent: number
   clients: OfferClientOption[]
   initialClientId?: string
+  offer?: FinancialOfferRecord
 }
 
 function initialOfferClient(clients: OfferClientOption[], initialClientId?: string) {
@@ -56,25 +61,61 @@ function initialOfferClient(clients: OfferClientOption[], initialClientId?: stri
   }
 }
 
+function matchSavedIbanIds(savedIbans: SavedCompanyIban[], offerIbans: FinancialOfferRecord['ibans']) {
+  const matched = savedIbans
+    .filter(saved =>
+      offerIbans.some(
+        offerIban =>
+          offerIban.iban.replace(/\s+/g, '').toLowerCase() ===
+            saved.iban.replace(/\s+/g, '').toLowerCase() &&
+          offerIban.swiftBic.replace(/\s+/g, '').toLowerCase() ===
+            saved.swiftBic.replace(/\s+/g, '').toLowerCase()
+      )
+    )
+    .map(row => row.id)
+
+  if (matched.length > 0) return new Set(matched)
+  return new Set(savedIbans.map(row => row.id))
+}
+
 export function FinancialOfferForm({
   savedIbans,
   upfrontPercent,
   clients,
   initialClientId,
+  offer,
 }: FinancialOfferFormProps) {
-  const initialClient = initialOfferClient(clients, initialClientId)
+  const router = useRouter()
+  const isEditing = Boolean(offer)
+  const initialClient = offer
+    ? {
+        clientId: offer.clientId ?? '',
+        clientName: offer.clientName,
+        clientEmail: offer.clientEmail ?? '',
+      }
+    : initialOfferClient(clients, initialClientId)
+
   const [clientId, setClientId] = useState(initialClient.clientId)
   const [clientName, setClientName] = useState(initialClient.clientName)
   const [clientEmail, setClientEmail] = useState(initialClient.clientEmail)
-  const [lineItems, setLineItems] = useState<FinancialOfferLineItem[]>([
-    { work: '', cost: 0 },
-    { work: '', cost: 0 },
-  ])
-  const [hostingAmount, setHostingAmount] = useState<number | ''>('')
-  const [hostingPeriod, setHostingPeriod] = useState<HostingMaintenancePeriod>('year')
-  const [excludeVat, setExcludeVat] = useState(false)
-  const [selectedIbanIds, setSelectedIbanIds] = useState<Set<string>>(
-    () => new Set(savedIbans.map(row => row.id))
+  const [lineItems, setLineItems] = useState<FinancialOfferLineItem[]>(() =>
+    offer?.lineItems.length
+      ? offer.lineItems.map(row => ({ work: row.work, cost: row.cost }))
+      : [
+          { work: '', cost: 0 },
+          { work: '', cost: 0 },
+        ]
+  )
+  const [hostingAmount, setHostingAmount] = useState<number | ''>(() => {
+    if (!offer) return ''
+    return parseHostingAmountFromMaintenance(offer.hostingMaintenance) ?? ''
+  })
+  const [hostingPeriod, setHostingPeriod] = useState<HostingMaintenancePeriod>(() =>
+    offer ? parseHostingPeriodFromMaintenance(offer.hostingMaintenance) : 'year'
+  )
+  const [excludeVat, setExcludeVat] = useState(offer?.excludeVat ?? false)
+  const [selectedIbanIds, setSelectedIbanIds] = useState<Set<string>>(() =>
+    offer ? matchSavedIbanIds(savedIbans, offer.ibans) : new Set(savedIbans.map(row => row.id))
   )
   const [pending, startTransition] = useTransition()
 
@@ -176,12 +217,25 @@ export function FinancialOfferForm({
 
     startTransition(async () => {
       const result = await runWithToast(
-        () => submitFinancialOffer(payload, { sendEmail }),
+        () =>
+          isEditing && offer
+            ? updateFinancialOffer(offer.id, payload, { sendEmail })
+            : submitFinancialOffer(payload, { sendEmail }),
         {
-          loading: sendEmail ? 'Saving and emailing…' : 'Saving offer…',
+          loading: sendEmail
+            ? isEditing
+              ? 'Updating and emailing…'
+              : 'Saving and emailing…'
+            : isEditing
+              ? 'Updating offer…'
+              : 'Saving offer…',
           success: sendEmail
-            ? 'Offer saved and emailed'
-            : 'Offer saved — email it anytime from Financial offers',
+            ? isEditing
+              ? 'Offer updated and emailed'
+              : 'Offer saved and emailed'
+            : isEditing
+              ? 'Offer updated — download the latest PDF anytime'
+              : 'Offer saved — email it anytime from Financial offers',
         }
       )
       if (result === null) return
@@ -190,6 +244,11 @@ export function FinancialOfferForm({
         await downloadOfferPdf(result.id, offerFilename(payload.clientName))
       } catch (err) {
         notifyError(err instanceof Error ? err.message : 'Could not download the offer PDF')
+      }
+
+      if (isEditing) {
+        router.push(`/admin/ops/financial-offers/${result.id}`)
+        router.refresh()
       }
     })
   }
@@ -435,6 +494,11 @@ export function FinancialOfferForm({
         >
           {pending ? 'Sending…' : 'Save & email'}
         </button>
+        {isEditing && offer ? (
+          <Link href={`/admin/ops/financial-offers/${offer.id}`} className="dash-btn-ghost">
+            Cancel
+          </Link>
+        ) : null}
       </div>
     </div>
   )

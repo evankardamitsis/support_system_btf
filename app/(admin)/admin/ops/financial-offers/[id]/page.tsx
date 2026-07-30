@@ -48,6 +48,14 @@ export default async function FinancialOfferDetailPage({
               <span className="financial-offers-sent-badge">Sent</span>
             ) : null}
           </div>
+          {offer.status === 'open' ? (
+            <Link
+              href={`/admin/ops/financial-offers/${offer.id}/edit`}
+              className="financial-offer-detail-pdf-link dash-btn-secondary btn-secondary"
+            >
+              Edit
+            </Link>
+          ) : null}
           <a
             href={`/api/ops/financial-offers/${offer.id}/pdf`}
             className="financial-offer-detail-pdf-link dash-btn-secondary btn-secondary"

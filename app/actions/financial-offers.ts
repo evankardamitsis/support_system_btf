@@ -14,6 +14,7 @@ import {
   renderOffer,
   resolveOfferCompany,
   saveFinancialOfferRecord,
+  updateFinancialOfferRecord,
 } from '@/lib/ops/financial-offer/service'
 import { listStaffUserIds, notifyOfferAccepted } from '@/lib/ops/notifications/service'
 import type { FinancialOfferRecord } from '@/lib/ops/financial-offer/types'
@@ -68,6 +69,64 @@ export async function submitFinancialOffer(
   revalidateOfferPaths(id)
 
   return { id }
+}
+
+export async function updateFinancialOffer(
+  offerId: string,
+  raw: unknown,
+  options: { sendEmail?: boolean } = {}
+): Promise<{ id: string }> {
+  const { supabase } = await requireStaff()
+
+  const { data: existing, error: loadError } = await supabase
+    .from('financial_offers')
+    .select('id, status')
+    .eq('id', offerId)
+    .is('deleted_at', null)
+    .single()
+
+  if (loadError || !existing) throw new Error('Offer not found')
+  if (existing.status !== 'open') {
+    throw new Error('Only open offers can be edited')
+  }
+
+  const companyProfile = await getCompanyProfile(supabase)
+  const offer = parseOfferBody(raw, companyProfile.upfrontPercent)
+  const company = await resolveOfferCompany(supabase)
+
+  if (options.sendEmail) {
+    const clientEmail = offer.clientEmail ? normalizeEmailAddress(offer.clientEmail) : null
+    if (!clientEmail || !isValidEmailAddress(clientEmail)) {
+      throw new Error('Enter a valid client email address to send the offer')
+    }
+    offer.clientEmail = clientEmail
+  }
+
+  await updateFinancialOfferRecord(supabase, offerId, offer)
+
+  if (options.sendEmail && offer.clientEmail) {
+    const pdf = await renderOffer(offer, company)
+    const emailed = await sendFinancialOfferEmail({
+      to: offer.clientEmail,
+      clientName: offer.clientName,
+      company,
+      pdf,
+    })
+    if (!emailed.sent) throw new Error(emailed.error)
+
+    const { error } = await supabase
+      .from('financial_offers')
+      .update({
+        client_email: offer.clientEmail,
+        emailed_at: new Date().toISOString(),
+      })
+      .eq('id', offerId)
+
+    if (error) throw new Error(error.message)
+  }
+
+  revalidateOfferPaths(offerId)
+  return { id: offerId }
 }
 
 export async function resendFinancialOfferEmail(

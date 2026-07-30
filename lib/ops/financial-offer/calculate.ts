@@ -29,6 +29,18 @@ export function parseHostingAmountFromMaintenance(
   return Number.isFinite(amount) && amount > 0 ? amount : null
 }
 
+/** Parses the period from strings like `150 € / 3 months`. */
+export function parseHostingPeriodFromMaintenance(
+  hostingMaintenance: string | null | undefined
+): HostingMaintenancePeriod {
+  if (!hostingMaintenance?.trim()) return 'year'
+  const value = hostingMaintenance.toLowerCase()
+  if (value.includes('/ month') || value.includes('/month')) return 'month'
+  if (value.includes('3 month')) return '3month'
+  if (value.includes('6 month')) return '6month'
+  return 'year'
+}
+
 /**
  * Project/work total for display and upfront — excludes hosting & maintenance
  * (stored separately on the offer).
