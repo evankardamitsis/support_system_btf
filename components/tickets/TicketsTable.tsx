@@ -5,12 +5,8 @@ import { ArrowUpRight } from 'lucide-react'
 import { AdminTicketRow } from './AdminTicketRow'
 import type { AssigneeOption } from './EditableAssigneeSelect'
 import {
-  formatDateTimeHuman,
-  formatResolvedAtTable,
   formatTicketId,
-  formatRelativeTime,
   priorityAccent,
-  isRecentlyUpdated,
 } from '@/lib/tickets/display'
 import type { TicketStatus, TicketPriority } from '@/lib/types'
 
@@ -95,7 +91,6 @@ export function TicketsTable({
           }
 
           const accent = priorityAccent[t.priority] ?? priorityAccent.normal
-          const recent = isRecentlyUpdated(t.updated_at)
           const href = `${hrefPrefix}/${t.id}`
           const needsEstimateApproval = t.estimate_status === 'pending_approval'
           const needsWorkApproval = t.completion_status === 'pending_approval'
@@ -136,27 +131,6 @@ export function TicketsTable({
                 </span>
               </div>
 
-              <div className="tickets-cell tickets-cell-updated" data-label="Updated">
-                <div className="tickets-cell-value">
-                  {t.resolved_at && (t.status === 'resolved' || t.status === 'closed') ? (
-                    <time
-                      dateTime={t.resolved_at}
-                      className="tickets-updated tickets-resolved-at"
-                      title={formatDateTimeHuman(t.resolved_at)}
-                    >
-                      {formatResolvedAtTable(t.resolved_at)}
-                    </time>
-                  ) : (
-                    <time
-                      dateTime={t.updated_at}
-                      className={recent ? 'tickets-updated-recent' : 'tickets-updated'}
-                    >
-                      {formatRelativeTime(t.updated_at)}
-                    </time>
-                  )}
-                </div>
-              </div>
-
               <div className="tickets-cell tickets-cell-action" aria-hidden>
                 <ArrowUpRight size={15} className="tickets-row-chevron" />
               </div>
@@ -180,9 +154,9 @@ function HeaderCells({ variant }: { variant: 'admin' | 'portal' }) {
           <span>Assigned</span>
           <span>Est</span>
           <span>Actual</span>
+          <span>Updated</span>
         </>
       ) : null}
-      <span>Updated</span>
       <span className="tickets-header-action" aria-hidden />
     </>
   )

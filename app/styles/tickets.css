@@ -104,7 +104,6 @@
     minmax(108px, 0.8fr)
     minmax(76px, 0.55fr)
     minmax(260px, 1fr)
-    minmax(92px, 0.55fr)
     36px;
 }
 
@@ -1312,7 +1311,7 @@
   }
 
   [data-theme="dashboard"] .tickets-grid--portal.tickets-row {
-    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-columns: auto auto;
     grid-template-rows: auto auto;
   }
 
@@ -1398,7 +1397,7 @@
     height: 0.9375rem;
   }
 
-  /* Line 2: status · priority · hours · updated */
+  /* Line 2: status · priority · hours · updated (admin) */
   [data-theme="dashboard"] .tickets-cell-status {
     grid-row: 2;
     grid-column: 1;
@@ -1422,11 +1421,6 @@
   [data-theme="dashboard"] .tickets-cell-hours[data-label='Actual'] {
     grid-row: 2;
     grid-column: 4;
-  }
-
-  [data-theme="dashboard"] .tickets-grid--portal .tickets-cell-updated {
-    grid-row: 2;
-    grid-column: 3;
   }
 
   [data-theme="dashboard"] .tickets-grid--admin .tickets-cell-updated {
