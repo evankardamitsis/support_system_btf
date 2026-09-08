@@ -92,7 +92,9 @@ export async function getOpsDashboard(
   const openOffersCount = openOfferRows?.length ?? 0
   const openOffersValue = openOffersValueFromRows(openOfferRows ?? [])
 
-  const activeProjects = projects.filter(p => p.status === 'active' || p.status === 'on_hold')
+  const activeProjects = projects.filter(
+    p => p.status === 'active' || p.status === 'on_hold' || p.status === 'pending_payment'
+  )
   const activeProjectIds = activeProjects.map(p => p.id)
 
   let overdueTasksCount = 0

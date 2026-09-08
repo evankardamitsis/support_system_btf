@@ -4,16 +4,14 @@ import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { formatProjectCost, formatProjectDate } from '@/lib/ops/projects/display'
-import type { OpsProjectRecord, ProjectStatus } from '@/lib/ops/projects/types'
+import {
+  PROJECT_STATUSES,
+  PROJECT_STATUS_LABELS,
+  type OpsProjectRecord,
+  type ProjectStatus,
+} from '@/lib/ops/projects/types'
 
-const STATUS_LABELS: Record<ProjectStatus, string> = {
-  active: 'Active',
-  on_hold: 'On hold',
-  completed: 'Completed',
-  archived: 'Archived',
-}
-
-const FILTERS: Array<ProjectStatus | 'all'> = ['all', 'active', 'on_hold', 'completed', 'archived']
+const FILTERS: Array<ProjectStatus | 'all'> = ['all', ...PROJECT_STATUSES]
 
 export function ProjectsList({ projects }: { projects: OpsProjectRecord[] }) {
   const [filter, setFilter] = useState<ProjectStatus | 'all'>('all')
@@ -46,14 +44,14 @@ export function ProjectsList({ projects }: { projects: OpsProjectRecord[] }) {
             className={`ops-projects-filter${filter === value ? ' ops-projects-filter--active' : ''}`}
             onClick={() => setFilter(value)}
           >
-            {value === 'all' ? 'All' : STATUS_LABELS[value]}
+            {value === 'all' ? 'All' : PROJECT_STATUS_LABELS[value]}
           </button>
         ))}
       </div>
 
       {filtered.length === 0 ? (
         <div className="dash-empty">
-          <p className="dash-empty-title">No {filter === 'all' ? '' : STATUS_LABELS[filter].toLowerCase()} projects</p>
+          <p className="dash-empty-title">No {filter === 'all' ? '' : PROJECT_STATUS_LABELS[filter].toLowerCase()} projects</p>
         </div>
       ) : (
         <div className="ops-projects-table">
@@ -97,7 +95,7 @@ export function ProjectsList({ projects }: { projects: OpsProjectRecord[] }) {
                   </div>
                   <div className="ops-projects-cell ops-projects-cell-status" data-label="Status">
                     <span className={`ops-projects-status ops-projects-status--${project.status}`}>
-                      {STATUS_LABELS[project.status]}
+                      {PROJECT_STATUS_LABELS[project.status]}
                     </span>
                   </div>
                   <div className="ops-projects-cell ops-projects-cell-progress" data-label="Progress">

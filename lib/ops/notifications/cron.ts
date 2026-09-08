@@ -40,7 +40,7 @@ export async function processOpsNotificationCron(): Promise<{
   const { data: activeProjects, error: projectsError } = await supabase
     .from('ops_projects')
     .select('id, name')
-    .in('status', ['active', 'on_hold'])
+    .in('status', ['active', 'on_hold', 'pending_payment'])
     .is('deleted_at', null)
 
   if (projectsError) {

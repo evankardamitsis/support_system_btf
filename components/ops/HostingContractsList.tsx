@@ -154,19 +154,29 @@ export function HostingContractsList({ contracts }: { contracts: HostingContract
                     )}
                   </div>
                   <div className="ops-hosting-cell ops-hosting-cell-period tabular-nums" data-label="Period">
-                    <time dateTime={contract.periodStart}>{formatHostingDate(contract.periodStart)}</time>
-                    <span className="dash-meta mx-1">→</span>
-                    <time dateTime={contract.periodEnd}>{formatHostingDate(contract.periodEnd)}</time>
+                    <div className="ops-hosting-period-range">
+                      <time dateTime={contract.periodStart}>{formatHostingDate(contract.periodStart)}</time>
+                      <span className="ops-hosting-period-arrow dash-meta" aria-hidden>
+                        →
+                      </span>
+                      <time dateTime={contract.periodEnd}>{formatHostingDate(contract.periodEnd)}</time>
+                    </div>
                   </div>
                   <div className="ops-hosting-cell ops-hosting-cell-expires" data-label="Expires">
-                    <span className={expiring ? 'ops-hosting-expiry--soon' : days < 0 ? 'ops-hosting-expiry--past' : ''}>
-                      {formatHostingDate(contract.periodEnd)}
-                    </span>
-                    {contract.status === 'active' ? (
-                      <span className="dash-meta ml-2">
-                        {days < 0 ? `${Math.abs(days)}d ago` : `${days}d left`}
+                    <div className="ops-hosting-expires-stack">
+                      <span
+                        className={
+                          expiring ? 'ops-hosting-expiry--soon' : days < 0 ? 'ops-hosting-expiry--past' : ''
+                        }
+                      >
+                        {formatHostingDate(contract.periodEnd)}
                       </span>
-                    ) : null}
+                      {contract.status === 'active' ? (
+                        <span className="dash-meta">
+                          {days < 0 ? `${Math.abs(days)}d ago` : `${days}d left`}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
                   <div className="ops-hosting-cell ops-hosting-cell-status" data-label="Status">
                     <span className={`ops-hosting-status ops-hosting-status--${contract.status}`}>

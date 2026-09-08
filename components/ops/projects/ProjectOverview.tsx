@@ -10,18 +10,11 @@ import {
 import { phaseToneRowClass } from '@/lib/ops/projects/phase-tone'
 import { getProjectTemplate } from '@/lib/ops/projects/templates'
 import {
+  PROJECT_STATUS_LABELS,
   TASK_STATUSES,
   TASK_STATUS_LABELS,
   type OpsProjectDetail,
-  type ProjectStatus,
 } from '@/lib/ops/projects/types'
-
-const STATUS_LABELS: Record<ProjectStatus, string> = {
-  active: 'Active',
-  on_hold: 'On hold',
-  completed: 'Completed',
-  archived: 'Archived',
-}
 
 const PHASE_STATUS_LABELS = {
   pending: 'Pending',
@@ -65,7 +58,7 @@ export function ProjectOverview({ project }: { project: OpsProjectDetail }) {
               <dt>Status</dt>
               <dd>
                 <span className={`ops-project-status-pill ops-project-status-pill--${project.status}`}>
-                  {STATUS_LABELS[project.status]}
+                  {PROJECT_STATUS_LABELS[project.status]}
                 </span>
               </dd>
             </div>

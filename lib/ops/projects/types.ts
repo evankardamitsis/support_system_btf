@@ -1,6 +1,22 @@
 export type ProjectTemplateKey = 'blank' | 'e_shop' | 'digital_ads' | 'email_marketing'
 
-export type ProjectStatus = 'active' | 'on_hold' | 'completed' | 'archived'
+export type ProjectStatus = 'active' | 'on_hold' | 'pending_payment' | 'completed' | 'archived'
+
+export const PROJECT_STATUSES: ProjectStatus[] = [
+  'active',
+  'on_hold',
+  'pending_payment',
+  'completed',
+  'archived',
+]
+
+export const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
+  active: 'Active',
+  on_hold: 'On hold',
+  pending_payment: 'Pending payment',
+  completed: 'Completed',
+  archived: 'Archived',
+}
 
 export type PhaseStatus = 'pending' | 'in_progress' | 'done'
 

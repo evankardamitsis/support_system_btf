@@ -888,7 +888,7 @@ export interface Database {
           is_internal: boolean
           financial_offer_id: string | null
           template_key: 'blank' | 'e_shop' | 'digital_ads' | 'email_marketing' | null
-          status: 'active' | 'on_hold' | 'completed' | 'archived'
+          status: 'active' | 'on_hold' | 'pending_payment' | 'completed' | 'archived'
           lead_id: string | null
           description: string | null
           start_date: string | null
@@ -906,7 +906,7 @@ export interface Database {
           is_internal?: boolean
           financial_offer_id?: string | null
           template_key?: 'blank' | 'e_shop' | 'digital_ads' | 'email_marketing' | null
-          status?: 'active' | 'on_hold' | 'completed' | 'archived'
+          status?: 'active' | 'on_hold' | 'pending_payment' | 'completed' | 'archived'
           lead_id?: string | null
           description?: string | null
           start_date?: string | null
@@ -924,7 +924,7 @@ export interface Database {
           is_internal?: boolean
           financial_offer_id?: string | null
           template_key?: 'blank' | 'e_shop' | 'digital_ads' | 'email_marketing' | null
-          status?: 'active' | 'on_hold' | 'completed' | 'archived'
+          status?: 'active' | 'on_hold' | 'pending_payment' | 'completed' | 'archived'
           lead_id?: string | null
           description?: string | null
           start_date?: string | null

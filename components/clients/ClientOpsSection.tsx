@@ -9,15 +9,8 @@ import {
 import { formatOfferCurrency } from '@/lib/ops/financial-offer/calculate'
 import type { ClientOpsSummary } from '@/lib/ops/client-ops/service'
 import { formatProjectCost, formatProjectDate } from '@/lib/ops/projects/display'
-import type { ProjectStatus } from '@/lib/ops/projects/types'
+import { PROJECT_STATUS_LABELS } from '@/lib/ops/projects/types'
 import { formatDateTimeHuman } from '@/lib/tickets/display'
-
-const PROJECT_STATUS_LABELS: Record<ProjectStatus, string> = {
-  active: 'Active',
-  on_hold: 'On hold',
-  completed: 'Completed',
-  archived: 'Archived',
-}
 
 export function ClientOpsSection({
   ops,

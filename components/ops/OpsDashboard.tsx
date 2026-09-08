@@ -7,14 +7,8 @@ import { OpsQuickActions } from '@/components/ops/OpsQuickActions'
 import { formatOfferCurrency } from '@/lib/ops/financial-offer/calculate'
 import type { OpsDashboardData } from '@/lib/ops/dashboard/service'
 import { formatProjectDate } from '@/lib/ops/projects/display'
+import { PROJECT_STATUS_LABELS } from '@/lib/ops/projects/types'
 import { formatDateTimeHuman } from '@/lib/tickets/display'
-
-const PROJECT_STATUS_LABELS = {
-  active: 'Active',
-  on_hold: 'On hold',
-  completed: 'Completed',
-  archived: 'Archived',
-} as const
 
 export function OpsDashboard({
   data,

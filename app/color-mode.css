@@ -777,6 +777,13 @@ html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-status-pill-
   border-color: #fcd34d;
 }
 
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-projects-status--pending_payment,
+html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-status-pill--pending_payment {
+  color: #9d174d;
+  background: #fdf2f8;
+  border-color: #f9a8d4;
+}
+
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-projects-status--completed,
 html[data-color-mode='light'] [data-theme='dashboard'] .ops-project-status-pill--completed {
   color: #1d4ed8;

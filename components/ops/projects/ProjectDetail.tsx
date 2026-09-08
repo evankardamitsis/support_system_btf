@@ -27,17 +27,11 @@ import {
   parseProjectCostInput,
 } from '@/lib/ops/projects/display'
 import { filterProjectTasks, type AssigneeFilter } from '@/lib/ops/projects/filter-tasks'
-import type { OpsProjectDetail, ProjectStatus } from '@/lib/ops/projects/types'
+import type { OpsProjectDetail } from '@/lib/ops/projects/types'
+import { PROJECT_STATUSES, PROJECT_STATUS_LABELS, type ProjectStatus } from '@/lib/ops/projects/types'
 import { notifyError, runWithToast } from '@/lib/notify'
 
 type StaffOption = { id: string; name: string }
-
-const STATUS_LABELS: Record<ProjectStatus, string> = {
-  active: 'Active',
-  on_hold: 'On hold',
-  completed: 'Completed',
-  archived: 'Archived',
-}
 
 export function ProjectDetail({
   project,
@@ -64,7 +58,10 @@ export function ProjectDetail({
   const [showEditModal, setShowEditModal] = useState(false)
   const [actionsOpen, setActionsOpen] = useState(false)
   const actionsRef = useRef<HTMLDivElement>(null)
-  const canComplete = project.status === 'active' || project.status === 'on_hold'
+  const canComplete =
+    project.status === 'active' ||
+    project.status === 'on_hold' ||
+    project.status === 'pending_payment'
   const canArchive = project.status !== 'archived'
   const [costInput, setCostInput] = useState(
     project.costAmount != null ? String(project.costAmount) : ''
@@ -252,7 +249,7 @@ export function ProjectDetail({
               <h1 className="ops-project-title">{project.name}</h1>
               <p className="ops-project-eyebrow">
                 <span className={`ops-project-status-pill ops-project-status-pill--${project.status}`}>
-                  {STATUS_LABELS[project.status]}
+                  {PROJECT_STATUS_LABELS[project.status]}
                 </span>
                 {project.isInternal ? (
                   <span className="ops-projects-internal-badge">Internal</span>
@@ -360,9 +357,9 @@ export function ProjectDetail({
                 onChange={e => handleStatusChange(e.target.value as ProjectStatus)}
                 aria-label="Project status"
               >
-                {(Object.keys(STATUS_LABELS) as ProjectStatus[]).map(s => (
+                {PROJECT_STATUSES.map(s => (
                   <option key={s} value={s}>
-                    {STATUS_LABELS[s]}
+                    {PROJECT_STATUS_LABELS[s]}
                   </option>
                 ))}
               </select>
