@@ -15,9 +15,11 @@ import { retainerTracksHours } from '@/lib/retainers/billing-model'
 export async function ClientRetainerSection({
   clientId,
   canManageLifecycle = false,
+  canDeleteRetainer = false,
 }: {
   clientId: string
   canManageLifecycle?: boolean
+  canDeleteRetainer?: boolean
 }) {
   const supabase = await createClient()
   const { data: client } = await supabase
@@ -58,6 +60,7 @@ export async function ClientRetainerSection({
         clientId={clientId}
         status={retainerStatus}
         canManage={canManageLifecycle}
+        canDelete={canDeleteRetainer}
         hasRetainerPeriods={hasRetainerPeriods}
       />
 

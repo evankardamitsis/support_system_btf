@@ -21,6 +21,7 @@ import type {
   TaskPriority,
   TaskStatus,
 } from '@/lib/ops/projects/types'
+import { PROJECT_STATUSES } from '@/lib/ops/projects/types'
 import { tryCreateAdminClient } from '@/lib/supabase/admin'
 
 function projectNameFromRelation(
@@ -277,6 +278,10 @@ export async function updateProjectCost(projectId: string, costAmount: number | 
 }
 
 export async function updateProjectStatus(projectId: string, status: ProjectStatus) {
+  if (!PROJECT_STATUSES.includes(status)) {
+    throw new Error('Invalid project status')
+  }
+
   const { supabase } = await requireAdminPage()
   const { error } = await supabase
     .from('ops_projects')

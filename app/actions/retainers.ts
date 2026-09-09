@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { tryCreateAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/auth/require-admin'
+import { requireStaff } from '@/lib/auth/require-staff'
 import { insertRetainerPeriod } from '@/lib/retainers/insert-period'
 import { currentBillingPeriod } from '@/lib/retainers/period'
 import { isHoursBasedPackage } from '@/lib/retainers/billing-model'
@@ -30,17 +31,25 @@ function revalidateClientRetainerPaths(clientId: string) {
   revalidatePath('/portal/tickets/new')
 }
 
-async function requireAdminClient() {
-  const { isAdmin } = await requireAdmin()
-  if (!isAdmin) throw new Error('Only admins can manage retainer lifecycle')
+async function requireStaffClient() {
+  await requireStaff()
   return createClient()
+}
+
+function requireServiceClient() {
+  const adminResult = tryCreateAdminClient()
+  if ('error' in adminResult) {
+    throw new Error(adminResult.error)
+  }
+  return adminResult.client
 }
 
 async function setRetainerStatus(
   clientId: string,
   status: RetainerLifecycleStatus
 ): Promise<void> {
-  const supabase = await requireAdminClient()
+  await requireStaff()
+  const supabase = requireServiceClient()
   const now = new Date().toISOString()
 
   const patch: {
@@ -128,7 +137,7 @@ export async function freezeRetainer(clientId: string): Promise<void> {
 }
 
 export async function unfreezeRetainer(clientId: string): Promise<void> {
-  const supabase = await requireAdminClient()
+  const supabase = await requireStaffClient()
   const { data: client } = await supabase
     .from('clients')
     .select('retainer_status')
@@ -147,7 +156,7 @@ export async function cancelRetainer(clientId: string): Promise<void> {
 }
 
 export async function resumeRetainer(clientId: string): Promise<void> {
-  const supabase = await requireAdminClient()
+  const supabase = await requireStaffClient()
   const { data: client } = await supabase
     .from('clients')
     .select('retainer_status')

@@ -62,6 +62,8 @@ export function ProjectDetail({
     project.status === 'active' ||
     project.status === 'on_hold' ||
     project.status === 'pending_payment'
+  const canMarkPendingPayment =
+    project.status === 'active' || project.status === 'on_hold'
   const canArchive = project.status !== 'archived'
   const [costInput, setCostInput] = useState(
     project.costAmount != null ? String(project.costAmount) : ''
@@ -152,7 +154,10 @@ export function ProjectDetail({
     startTransition(async () => {
       await runWithToast(() => updateProjectStatus(project.id, status), {
         loading: 'Updating…',
-        success: 'Project updated',
+        success:
+          status === 'pending_payment'
+            ? 'Marked as pending payment'
+            : 'Project updated',
       })
       router.refresh()
     })
@@ -448,6 +453,20 @@ export function ProjectDetail({
                     >
                       Edit project
                     </button>
+                    {canMarkPendingPayment ? (
+                      <button
+                        type="button"
+                        role="menuitem"
+                        className="ops-project-actions-item"
+                        disabled={pending}
+                        onClick={() => {
+                          setActionsOpen(false)
+                          handleStatusChange('pending_payment')
+                        }}
+                      >
+                        Mark pending payment
+                      </button>
+                    ) : null}
                     {canComplete ? (
                       <button
                         type="button"

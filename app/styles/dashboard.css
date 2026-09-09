@@ -2068,13 +2068,13 @@
 }
 
 [data-theme="dashboard"] .ops-project-head--expanded .ops-project-status-select {
-  min-width: 9rem;
+  min-width: 11rem;
   font-size: 0.875rem;
   padding: 0.45rem 0.6rem;
 }
 
 [data-theme="dashboard"] .ops-project-head--collapsed .ops-project-status-select {
-  min-width: 6.5rem;
+  min-width: 8.5rem;
   font-size: 0.75rem;
   padding: 0.3rem 0.45rem;
 }

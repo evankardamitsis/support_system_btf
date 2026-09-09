@@ -77,11 +77,13 @@ export function RetainerStatusControls({
   clientId,
   status,
   canManage,
+  canDelete = false,
   hasRetainerPeriods = false,
 }: {
   clientId: string
   status: RetainerLifecycleStatus
   canManage: boolean
+  canDelete?: boolean
   hasRetainerPeriods?: boolean
 }) {
   const router = useRouter()
@@ -219,7 +221,7 @@ export function RetainerStatusControls({
             </button>
           ) : null}
 
-          {hasRetainerPeriods ? (
+          {canDelete && hasRetainerPeriods ? (
             <button
               type="button"
               className="dash-btn-danger cursor-pointer"

@@ -201,7 +201,11 @@ export default async function AdminClientDetailPage({
       <AdminClientTeamPanel clientId={id} directory={clientTeam} />
 
       {hasRetainer || client.plan_name?.trim() || isAdmin ? (
-        <ClientRetainerSection clientId={id} canManageLifecycle={isAdmin} />
+        <ClientRetainerSection
+          clientId={id}
+          canManageLifecycle
+          canDeleteRetainer={isAdmin}
+        />
       ) : clientOps.hosting.length > 0 ? (
         <ClientHostingLifecycleSection contracts={clientOps.hosting} />
       ) : null}
