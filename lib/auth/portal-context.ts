@@ -9,7 +9,7 @@ export async function requirePortalClient() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  let { data: profile } = await supabase
+  const { data: profile } = await supabase
     .from('users')
     .select('role, client_id, full_name, portal_onboarding_completed_at')
     .eq('id', user.id)
@@ -17,6 +17,16 @@ export async function requirePortalClient() {
 
   if (profile?.role === 'admin' || profile?.role === 'agent') {
     redirect('/admin/tickets')
+  }
+
+  const { data: accessProfile } = await supabase
+    .from('users')
+    .select('portal_access_scope')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (profile?.role === 'client' && accessProfile?.portal_access_scope === 'performance') {
+    redirect('/portal/performance')
   }
 
   if (profile?.role !== 'client' || !profile.client_id) {

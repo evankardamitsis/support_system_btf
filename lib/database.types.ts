@@ -254,6 +254,7 @@ export interface Database {
           client_id: string | null
           full_name: string | null
           portal_onboarding_completed_at: string | null
+          portal_access_scope: 'full' | 'performance'
           created_at: string
         }
         Insert: {
@@ -262,6 +263,7 @@ export interface Database {
           client_id?: string | null
           full_name?: string | null
           portal_onboarding_completed_at?: string | null
+          portal_access_scope?: 'full' | 'performance'
           created_at?: string
         }
         Update: {
@@ -270,6 +272,7 @@ export interface Database {
           client_id?: string | null
           full_name?: string | null
           portal_onboarding_completed_at?: string | null
+          portal_access_scope?: 'full' | 'performance'
           created_at?: string
         }
         Relationships: []
@@ -671,6 +674,8 @@ export interface Database {
           used: boolean
           expires_at: string
           invited_by: string | null
+          access_scope: 'full' | 'performance'
+          performance_account_id: string | null
           created_at: string
         }
         Insert: {
@@ -682,6 +687,8 @@ export interface Database {
           used?: boolean
           expires_at?: string
           invited_by?: string | null
+          access_scope?: 'full' | 'performance'
+          performance_account_id?: string | null
           created_at?: string
         }
         Update: {
@@ -693,6 +700,8 @@ export interface Database {
           used?: boolean
           expires_at?: string
           invited_by?: string | null
+          access_scope?: 'full' | 'performance'
+          performance_account_id?: string | null
           created_at?: string
         }
         Relationships: []

@@ -40,7 +40,13 @@ export default async function PortalLayout({ children }: { children: React.React
     }
   }
 
-  const hoursBilling = profile?.client_id
+  const { data: accessProfile } = await supabase
+    .from('users')
+    .select('portal_access_scope')
+    .eq('id', user.id)
+    .maybeSingle()
+  const performanceOnly = accessProfile?.portal_access_scope === 'performance'
+  const hoursBilling = profile?.client_id && !performanceOnly
     ? await clientUsesHourBilling(supabase, profile.client_id)
     : true
 
@@ -50,6 +56,7 @@ export default async function PortalLayout({ children }: { children: React.React
       userEmail={user.email}
       onboardingCompleted={!!profile?.portal_onboarding_completed_at}
       hoursBilling={hoursBilling}
+      performanceOnly={performanceOnly}
     >
       {children}
     </PortalDashboardShell>

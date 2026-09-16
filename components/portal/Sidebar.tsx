@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { SidebarBrand } from '@/components/dashboard/SidebarBrand'
 
-const nav = [
+const fullPortalNav = [
   { label: 'My Tickets', href: '/portal/tickets', onboarding: 'nav-tickets' },
   { label: 'My Plan', href: '/portal/retainer', onboarding: 'nav-plan' },
   { label: 'Team', href: '/portal/team', onboarding: 'nav-team' },
@@ -23,14 +23,19 @@ export function PortalSidebar({
   userEmail,
   onClose,
   onShowTour,
+  performanceOnly = false,
 }: {
   userName?: string
   userEmail?: string
   onClose?: () => void
   onShowTour?: () => void
+  performanceOnly?: boolean
 }) {
   const pathname = usePathname()
   const ini = initials(userName, userEmail)
+  const nav = performanceOnly
+    ? [{ label: 'Performance HQ', href: '/portal/performance', onboarding: undefined }]
+    : fullPortalNav
 
   return (
     <aside id="dash-sidebar" className="dash-sidebar flex flex-col h-full relative">
@@ -87,7 +92,7 @@ export function PortalSidebar({
             <p className="text-sm font-medium truncate leading-none" style={{ color: 'var(--text-1)' }}>
               {userName ?? userEmail}
             </p>
-            <p className="dash-meta mt-0.5">Client</p>
+            <p className="dash-meta mt-0.5">{performanceOnly ? 'Dashboard viewer' : 'Client'}</p>
           </div>
         </div>
       </div>

@@ -9,13 +9,14 @@ export async function requireStaff() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: profile } = await supabase
-    .from('users')
-    .select('id, role, full_name')
-    .eq('id', user.id)
-    .single()
+  const [{ data: profile }, { data: accessProfile }] = await Promise.all([
+    supabase.from('users').select('id, role, full_name').eq('id', user.id).single(),
+    supabase.from('users').select('portal_access_scope').eq('id', user.id).maybeSingle(),
+  ])
 
-  if (profile?.role === 'client') redirect('/portal/tickets')
+  if (profile?.role === 'client') {
+    redirect(accessProfile?.portal_access_scope === 'performance' ? '/portal/performance' : '/portal/tickets')
+  }
 
   if (!isBtfStaffRole(profile?.role)) {
     redirect(`/auth/login?error=${encodeURIComponent('BTF team access only.')}`)

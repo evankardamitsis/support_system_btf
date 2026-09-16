@@ -281,6 +281,7 @@ async function resendClientTeamInviteForClient(
     .select("id, email, full_name, token")
     .eq("id", inviteId)
     .eq("client_id", clientId)
+    .eq("access_scope", "full")
     .eq("used", false)
     .gt("expires_at", new Date().toISOString())
     .maybeSingle();
@@ -346,6 +347,7 @@ async function loadClientTeamDirectory(
       .select("id, full_name, created_at")
       .eq("client_id", clientId)
       .eq("role", "client")
+      .eq("portal_access_scope", "full")
       .order("created_at", { ascending: true }),
   ]);
 
@@ -385,6 +387,7 @@ async function loadClientTeamDirectory(
     .from("client_invite_tokens")
     .select("id, email, full_name, expires_at, created_at, token")
     .eq("client_id", clientId)
+    .eq("access_scope", "full")
     .eq("used", false)
     .gt("expires_at", new Date().toISOString())
     .order("created_at", { ascending: false });
@@ -480,6 +483,7 @@ async function revokeClientInviteForClient(
     .select("id, email")
     .eq("id", inviteId)
     .eq("client_id", clientId)
+    .eq("access_scope", "full")
     .eq("used", false)
     .maybeSingle();
 
@@ -495,6 +499,7 @@ async function revokeClientInviteForClient(
     .delete()
     .eq("id", inviteId)
     .eq("client_id", clientId)
+    .eq("access_scope", "full")
     .eq("used", false);
 
   if (deleteError) {

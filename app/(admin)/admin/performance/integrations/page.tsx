@@ -12,6 +12,8 @@ import { isMetaOAuthConfigured } from '@/lib/performance/meta-oauth'
 import { getPerformanceAccounts } from '@/lib/performance/service'
 import { isShopifyOAuthConfigured } from '@/lib/performance/shopify-oauth'
 import { createShopifyCustomPixelSnippet } from '@/lib/performance/pixel'
+import { getPerformanceAccessDirectory } from '@/lib/performance/access'
+import { PerformanceAccessPanel } from '@/components/performance/PerformanceAccessPanel'
 
 export default async function PerformanceIntegrationsPage({
   searchParams,
@@ -88,6 +90,7 @@ export default async function PerformanceIntegrationsPage({
     lastSyncedAt: row.last_synced_at,
     lastError: row.last_error,
   }))
+  const accessDirectory = await getPerformanceAccessDirectory(account.id, account.clientId)
 
   return (
     <div className="performance-layout">
@@ -134,6 +137,11 @@ export default async function PerformanceIntegrationsPage({
           meta: isMetaOAuthConfigured(),
           google: isGoogleOAuthConfigured(),
         }}
+      />
+      <PerformanceAccessPanel
+        accountId={account.id}
+        accountName={account.displayName}
+        directory={accessDirectory}
       />
       {availableClients.length ? <PerformanceWorkspaceSetup clients={availableClients} /> : null}
     </div>

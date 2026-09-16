@@ -14,6 +14,7 @@ interface PortalShellProps {
   userEmail?: string
   onboardingCompleted: boolean
   hoursBilling?: boolean
+  performanceOnly?: boolean
 }
 
 export function PortalDashboardShell({
@@ -22,6 +23,7 @@ export function PortalDashboardShell({
   userEmail,
   onboardingCompleted,
   hoursBilling = true,
+  performanceOnly = false,
 }: PortalShellProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -62,7 +64,8 @@ export function PortalDashboardShell({
             userName={userName}
             userEmail={userEmail}
             onClose={closeSidebar}
-            onShowTour={startTour}
+            onShowTour={performanceOnly ? undefined : startTour}
+            performanceOnly={performanceOnly}
           />
         </div>
         <main className="dash-main flex-1 min-h-0 min-w-0 overflow-y-auto">
@@ -73,11 +76,13 @@ export function PortalDashboardShell({
       </div>
 
       <AppFooter />
-      <PortalOnboarding
-        onboardingCompleted={onboardingCompleted}
-        runId={tourRunId}
-        hoursBilling={hoursBilling}
-      />
+      {!performanceOnly ? (
+        <PortalOnboarding
+          onboardingCompleted={onboardingCompleted}
+          runId={tourRunId}
+          hoursBilling={hoursBilling}
+        />
+      ) : null}
     </div>
   )
 }

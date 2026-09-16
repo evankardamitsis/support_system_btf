@@ -70,7 +70,7 @@ export async function loadClientTeamInviteByToken(
 ) {
   const { data } = await supabase
     .from('client_invite_tokens')
-    .select('id, client_id, email, full_name, used, expires_at')
+    .select('id, client_id, email, full_name, used, expires_at, access_scope, performance_account_id')
     .eq('token', token)
     .maybeSingle()
 

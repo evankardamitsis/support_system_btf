@@ -49,11 +49,13 @@ export async function loadClientPortalRegistrationStatus(
       .select('id, full_name, created_at')
       .eq('client_id', clientId)
       .eq('role', 'client')
+      .eq('portal_access_scope', 'full')
       .order('created_at', { ascending: true }),
     admin
       .from('client_invite_tokens')
       .select('email')
       .eq('client_id', clientId)
+      .eq('access_scope', 'full')
       .eq('used', false)
       .gt('expires_at', new Date().toISOString()),
     admin

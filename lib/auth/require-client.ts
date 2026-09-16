@@ -9,13 +9,13 @@ export async function requireClient() {
   } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const { data: profile } = await supabase
-    .from('users')
-    .select('role, client_id, full_name')
-    .eq('id', user.id)
-    .maybeSingle()
+  const [{ data: profile }, { data: accessProfile }] = await Promise.all([
+    supabase.from('users').select('role, client_id, full_name').eq('id', user.id).maybeSingle(),
+    supabase.from('users').select('portal_access_scope').eq('id', user.id).maybeSingle(),
+  ])
 
   if (profile?.role === 'client' && profile.client_id) {
+    if (accessProfile?.portal_access_scope === 'performance') redirect('/portal/performance')
     return {
       supabase,
       user,

@@ -78,6 +78,7 @@ export default async function RegisterClientPage({
         role: 'client',
         client_id: inv.client_id,
         full_name: inv.full_name,
+        portal_access_scope: inv.access_scope === 'performance' ? 'performance' : 'full',
       },
       { onConflict: 'id' }
     )
@@ -92,7 +93,7 @@ export default async function RegisterClientPage({
       // finalizeRegistration also clears on confirmed login.
     }
     await finalizeRegistration(supabase)
-    redirect('/portal/tickets')
+    redirect(inv.access_scope === 'performance' ? '/portal/performance' : '/portal/tickets')
   }
 
   const inputStyle = {
@@ -115,7 +116,9 @@ export default async function RegisterClientPage({
         ? 'Invalid invite'
         : landing.kind === 'check_email'
           ? 'Confirm your email'
-          : 'Join your team'
+          : invite?.access_scope === 'performance'
+            ? 'Open your Performance HQ'
+            : 'Join your team'
 
   const subtitle =
     landing.kind === 'sign_in'
@@ -169,7 +172,7 @@ export default async function RegisterClientPage({
                 className="text-base mt-1.5"
                 style={{ fontFamily: 'var(--font-geist)', color: 'var(--text-2)' }}
               >
-                Invited to join{' '}
+                {invite?.access_scope === 'performance' ? 'Dashboard access for ' : 'Invited to join '}
                 <span style={{ color: 'var(--accent)', fontWeight: 500 }}>{clientName}</span>.
               </p>
             ) : null}
@@ -303,7 +306,7 @@ export default async function RegisterClientPage({
                     borderRadius: 0,
                   }}
                 >
-                  Create account →
+                  {invite?.access_scope === 'performance' ? 'Create dashboard account →' : 'Create account →'}
                 </button>
               </form>
             )}
