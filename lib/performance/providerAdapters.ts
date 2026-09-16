@@ -155,7 +155,7 @@ async function googleRows(credentials: GoogleCredentials, start: string, end: st
 }
 
 async function klaviyoReport(headers: Record<string, string>, endpoint: 'campaign' | 'flow', metricId: string, start: string, end: string) {
-  const type = `${endpoint}-values-report`, attributes: JsonObject = { statistics: ['recipients', 'delivered', 'opens_unique', 'open_rate', 'clicks_unique', 'click_rate', 'conversions', 'conversion_rate', 'conversion_value', 'revenue_per_recipient', 'unsubscribe_uniques', 'unsubscribe_rate', 'bounce_rate'], timeframe: { key: 'custom', start: startOfDay(start), end: endOfDay(end) }, conversion_metric_id: metricId, group_by: endpoint === 'campaign' ? ['campaign_id', 'campaign_message_id', 'campaign_message_name', 'send_channel'] : ['flow_id', 'flow_name', 'flow_message_id', 'flow_message_name', 'send_channel'] }
+  const type = `${endpoint}-values-report`, attributes: JsonObject = { statistics: ['recipients', 'delivered', 'opens_unique', 'open_rate', 'clicks_unique', 'click_rate', 'conversions', 'conversion_rate', 'conversion_value', 'revenue_per_recipient', 'unsubscribe_uniques', 'unsubscribe_rate', 'bounce_rate'], timeframe: { start: startOfDay(start), end: endOfDay(end) }, conversion_metric_id: metricId, group_by: endpoint === 'campaign' ? ['campaign_id', 'campaign_message_id', 'campaign_message_name', 'send_channel'] : ['flow_id', 'flow_name', 'flow_message_id', 'flow_message_name', 'send_channel'] }
   if (endpoint === 'campaign') attributes.filter = 'equals(send_channel,"email")'
   return responseJson(await fetch(`https://a.klaviyo.com/api/${endpoint}-values-reports/`, { method: 'POST', headers, body: JSON.stringify({ data: { type, attributes } }), cache: 'no-store' }), `Klaviyo ${endpoint} reporting`)
 }
@@ -178,7 +178,10 @@ async function klaviyoRows(credentials: KlaviyoCredentials, start: string, end: 
   const daily = dates.map((date, index) => ({ ...emptyDaily(String(date).slice(0, 10), ''), revenue: n(values[index]), conversions: n(counts[index]), raw: { metricId: String(metric.id), attribution: 'klaviyo' } })), entities: ProviderEntitySyncRow[] = [], warnings: string[] = []
   for (const endpoint of ['campaign', 'flow'] as const) {
     try { entities.push(...reportEntities(await klaviyoReport(headers, endpoint, String(metric.id), start, end), endpoint, '', end)) }
-    catch { warnings.push(`${endpoint === 'campaign' ? 'Newsletter' : 'Flow'} reporting needs Klaviyo ${endpoint}s:read permission.`) }
+    catch (error) {
+      const message = error instanceof Error ? error.message : 'Reporting request failed'
+      warnings.push(`${endpoint === 'campaign' ? 'Newsletter' : 'Flow'} reporting: ${message}`)
+    }
   }
   return { daily, entities, warnings }
 }

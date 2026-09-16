@@ -145,6 +145,7 @@ export async function syncPerformanceAccountAction(
     const results = await syncPerformanceAccount(accountId)
     const succeeded = results.filter(result => result.ok).length
     const failed = results.filter(result => !result.ok)
+    const warnings = results.flatMap(result => result.warnings || [])
     performancePaths()
     if (!results.length) return { ok: false, message: 'Connect at least one provider before syncing.' }
     if (failed.length) {
@@ -153,7 +154,10 @@ export async function syncPerformanceAccountAction(
         message: `${succeeded} synced · ${failed.map(item => `${item.provider}: ${item.error}`).join(' · ')}`,
       }
     }
-    return { ok: true, message: `${succeeded} provider${succeeded === 1 ? '' : 's'} synced.` }
+    return {
+      ok: true,
+      message: `${succeeded} provider${succeeded === 1 ? '' : 's'} synced.${warnings.length ? ` · ${warnings.join(' · ')}` : ''}`,
+    }
   } catch (cause) {
     return { ok: false, message: cause instanceof Error ? cause.message : 'Sync failed' }
   }
