@@ -25,7 +25,7 @@ async function responseJson(response: Response, provider: string): Promise<JsonO
 }
 
 function emptyDaily(date: string, currency: string): ProviderSyncRow {
-  return { date, revenue: 0, spend: 0, orders: 0, conversions: 0, impressions: 0, clicks: 0, sessions: 0, newCustomers: 0, currency }
+  return { date, revenue: 0, spend: 0, orders: 0, conversions: 0, impressions: 0, clicks: 0, sessions: 0, newCustomers: 0, currency, raw: {} }
 }
 
 function emptyEntity(date: string, currency: string, entityType: ProviderEntitySyncRow['entityType'], entityId: string, entityName: string): ProviderEntitySyncRow {
@@ -47,6 +47,24 @@ async function shopifyGraphql(endpoint: string, token: string, query: string, va
   return payload.data as JsonObject
 }
 
+const SHOPIFYQL_QUERY = `query PerformanceShopifyQL($query: String!) { shopifyqlQuery(query: $query) { tableData { rows } parseErrors } }`
+
+async function shopifyQlRows(endpoint: string, token: string, query: string) {
+  const data = await shopifyGraphql(endpoint, token, SHOPIFYQL_QUERY, { query })
+  const result = (data.shopifyqlQuery as JsonObject | null) || {}
+  const parseErrors = (result.parseErrors as unknown[]) || []
+  if (parseErrors.length) {
+    throw new Error(parseErrors.map(error => typeof error === 'string' ? error : JSON.stringify(error)).join('; ') || 'ShopifyQL parse error')
+  }
+  const tableData = (result.tableData as JsonObject | null) || {}
+  return ((tableData.rows as JsonObject[]) || [])
+}
+
+function shopifyQlValue(row: JsonObject, ...names: string[]) {
+  for (const name of names) if (row[name] !== undefined && row[name] !== null) return row[name]
+  return null
+}
+
 const SHOPIFY_BASE_QUERY = `query PerformanceOrders($after: String, $query: String!) { shop { currencyCode } orders(first: 250, after: $after, sortKey: CREATED_AT, query: $query) { nodes { id createdAt currentTotalPriceSet { shopMoney { amount currencyCode } } customer { numberOfOrders } } pageInfo { hasNextPage endCursor } } }`
 const SHOPIFY_DETAIL_QUERY = `query PerformanceOrders($after: String, $query: String!) { shop { currencyCode } orders(first: 100, after: $after, sortKey: CREATED_AT, query: $query) { nodes { id createdAt currentTotalPriceSet { shopMoney { amount currencyCode } } customer { numberOfOrders } customerJourneySummary { firstVisit { landingPage referrerUrl source sourceDescription sourceType utmParameters { campaign content medium source term } } lastVisit { landingPage referrerUrl source sourceDescription sourceType utmParameters { campaign content medium source term } } } lineItems(first: 100) { nodes { id name currentQuantity discountedTotalSet { shopMoney { amount currencyCode } } product { id title handle } } } refunds { refundLineItems(first: 100) { nodes { subtotalSet { shopMoney { amount currencyCode } } lineItem { product { id title handle } } } } } } pageInfo { hasNextPage endCursor } } }`
 
@@ -63,7 +81,7 @@ async function shopifyRows(credentials: ShopifyCredentials, start: string, end: 
     catch (error) {
       if (pages || !detailed) throw error
       detailed = false; after = null
-      warnings.push('Product and landing-page detail needs Shopify read_products permission and app re-authorization.')
+      warnings.push('Product detail needs Shopify read_products permission and app re-authorization.')
       data = await shopifyGraphql(endpoint, credentials.accessToken, SHOPIFY_BASE_QUERY, { after, query: filter })
     }
     const shopData = data.shop as JsonObject, orders = data.orders as JsonObject, currency = String(shopData.currencyCode || 'EUR')
@@ -86,17 +104,74 @@ async function shopifyRows(credentials: ShopifyCredentials, start: string, end: 
         seenProducts.add(productId)
         mergeEntity(entityMap, entity); refunded.delete(productId)
       }
-      const journey = (order.customerJourneySummary as JsonObject | null) || {}, visit = (journey.lastVisit as JsonObject | null) || (journey.firstVisit as JsonObject | null), landing = typeof visit?.landingPage === 'string' ? visit.landingPage : ''
-      if (landing) {
-        let path = landing; try { path = new URL(landing, `https://${shop}`).pathname || '/' } catch {}
-        const entity = emptyEntity(date, currency, 'landing_page', path, path)
-        entity.revenue = n(money.amount); entity.orders = 1; entity.conversions = 1; entity.sessions = 1
-        entity.raw = { referrerUrl: visit?.referrerUrl || null, source: visit?.source || null, sourceDescription: visit?.sourceDescription || null, sourceType: visit?.sourceType || null, utm: visit?.utmParameters || null, basis: journey.lastVisit ? 'last_visit' : 'first_visit' }
-        mergeEntity(entityMap, entity)
-      }
     }
     const pageInfo = orders.pageInfo as JsonObject; after = pageInfo.hasNextPage ? String(pageInfo.endCursor) : null; pages += 1
   } while (after && pages < 40)
+
+  const currency = byDate.values().next().value?.currency || 'EUR'
+  if (credentials.scopes?.length && !credentials.scopes.includes('read_reports')) {
+    warnings.push('Traffic, funnel, and Shopify attribution need read_reports plus Shopify protected customer data Level 2. Reauthorize after approving both.')
+  } else {
+    try {
+      const [funnelRows, sourceRows, attributionRows] = await Promise.all([
+        shopifyQlRows(endpoint, credentials.accessToken, `FROM sessions SHOW sessions, online_store_visitors, pageviews, sessions_with_cart_additions, sessions_that_reached_checkout, sessions_that_completed_checkout, conversion_rate WHERE human_or_bot_session = 'human' TIMESERIES day SINCE ${start} UNTIL ${end} ORDER BY day ASC`),
+        shopifyQlRows(endpoint, credentials.accessToken, `FROM sessions SHOW sessions, sessions_with_cart_additions, sessions_that_reached_checkout, sessions_that_completed_checkout, conversion_rate WHERE human_or_bot_session = 'human' GROUP BY referrer_source TIMESERIES day SINCE ${start} UNTIL ${end} ORDER BY sessions DESC LIMIT 1000`),
+        shopifyQlRows(endpoint, credentials.accessToken, `FROM sales SHOW net_sales AS revenue, orders GROUP BY referring_channel TIMESERIES day WITH FIRST_CLICK_ATTRIBUTION, LAST_CLICK_ATTRIBUTION SINCE ${start} UNTIL ${end} ORDER BY revenue__last_click DESC LIMIT 1000`),
+      ])
+
+      for (const row of funnelRows) {
+        const date = String(shopifyQlValue(row, 'day') || '').slice(0, 10)
+        if (!date) continue
+        const daily = byDate.get(date) || emptyDaily(date, currency)
+        daily.sessions = n(shopifyQlValue(row, 'sessions'))
+        daily.raw = {
+          ...daily.raw,
+          analyticsSource: 'shopifyql_sessions',
+          visitors: n(shopifyQlValue(row, 'online_store_visitors')),
+          pageviews: n(shopifyQlValue(row, 'pageviews')),
+          cartSessions: n(shopifyQlValue(row, 'sessions_with_cart_additions')),
+          checkoutSessions: n(shopifyQlValue(row, 'sessions_that_reached_checkout')),
+          purchaseSessions: n(shopifyQlValue(row, 'sessions_that_completed_checkout')),
+          sessionConversionRate: n(shopifyQlValue(row, 'conversion_rate')),
+        }
+        byDate.set(date, daily)
+      }
+
+      for (const row of sourceRows) {
+        const date = String(shopifyQlValue(row, 'day') || '').slice(0, 10)
+        if (!date) continue
+        const source = String(shopifyQlValue(row, 'referrer_source') || 'Direct / unknown')
+        const entity = emptyEntity(date, currency, 'traffic_source', source.toLowerCase(), source)
+        entity.sessions = n(shopifyQlValue(row, 'sessions'))
+        entity.conversions = n(shopifyQlValue(row, 'sessions_that_completed_checkout'))
+        entity.raw = {
+          cartSessions: n(shopifyQlValue(row, 'sessions_with_cart_additions')),
+          checkoutSessions: n(shopifyQlValue(row, 'sessions_that_reached_checkout')),
+          conversionRate: n(shopifyQlValue(row, 'conversion_rate')),
+          attribution: 'session_source',
+        }
+        mergeEntity(entityMap, entity)
+      }
+
+      for (const row of attributionRows) {
+        const date = String(shopifyQlValue(row, 'day') || '').slice(0, 10)
+        if (!date) continue
+        const channel = String(shopifyQlValue(row, 'referring_channel') || 'Direct / unknown')
+        const entity = emptyEntity(date, currency, 'marketing_channel', channel.toLowerCase(), channel)
+        entity.revenue = n(shopifyQlValue(row, 'revenue__last_click', 'net_sales__last_click'))
+        entity.orders = n(shopifyQlValue(row, 'orders__last_click'))
+        entity.conversions = entity.orders
+        entity.raw = {
+          firstClickRevenue: n(shopifyQlValue(row, 'revenue__first_click', 'net_sales__first_click')),
+          firstClickOrders: n(shopifyQlValue(row, 'orders__first_click')),
+          attribution: 'shopify_last_click',
+        }
+        mergeEntity(entityMap, entity)
+      }
+    } catch (cause) {
+      warnings.push(`Shopify analytics unavailable: ${cause instanceof Error ? cause.message : 'ShopifyQL query failed'}`)
+    }
+  }
   return { daily: [...byDate.values()], entities: [...entityMap.values()], warnings }
 }
 

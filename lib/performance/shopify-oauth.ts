@@ -3,7 +3,7 @@ import 'server-only'
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 
 export const SHOPIFY_OAUTH_COOKIE = 'btf_shopify_oauth_nonce'
-export const DEFAULT_SHOPIFY_SCOPES = ['read_orders', 'read_customers', 'read_products'] as const
+export const DEFAULT_SHOPIFY_SCOPES = ['read_orders', 'read_customers', 'read_products', 'read_reports'] as const
 
 type ShopifyOAuthState = {
   accountId: string

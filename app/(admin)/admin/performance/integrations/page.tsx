@@ -11,6 +11,7 @@ import { isGoogleOAuthConfigured } from '@/lib/performance/google-oauth'
 import { isMetaOAuthConfigured } from '@/lib/performance/meta-oauth'
 import { getPerformanceAccounts } from '@/lib/performance/service'
 import { isShopifyOAuthConfigured } from '@/lib/performance/shopify-oauth'
+import { createShopifyCustomPixelSnippet } from '@/lib/performance/pixel'
 
 export default async function PerformanceIntegrationsPage({
   searchParams,
@@ -124,6 +125,10 @@ export default async function PerformanceIntegrationsPage({
       <PerformanceIntegrations
         account={account}
         connections={connections}
+        pixelSnippet={createShopifyCustomPixelSnippet(
+          account.id,
+          process.env.NEXT_PUBLIC_APP_URL?.trim() || 'http://localhost:3000'
+        )}
         oauthReadiness={{
           shopify: isShopifyOAuthConfigured(),
           meta: isMetaOAuthConfigured(),

@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useTransition } from 'react'
 import { useFormStatus } from 'react-dom'
-import { Check, CircleAlert, Link2, LockKeyhole, PlugZap, ShieldCheck, Trash2 } from 'lucide-react'
+import { Check, CircleAlert, Copy, Link2, LockKeyhole, PlugZap, ShieldCheck, Trash2 } from 'lucide-react'
 import {
   createPerformanceAccount,
   disconnectPerformanceConnection,
@@ -126,7 +126,7 @@ function ProviderConnectionCard({
             <ShieldCheck size={15} aria-hidden />
             <div>
               <strong>Secure Shopify authorization</strong>
-              <p>Approve read-only access to orders, customers, products, and order journeys. The offline token is encrypted for scheduled syncs.</p>
+              <p>Approve read-only access to orders, customers, products, and analytics reports. The offline token is encrypted for scheduled syncs.</p>
             </div>
           </div>
           <label>
@@ -310,22 +310,46 @@ export function PerformanceIntegrations({
   account,
   connections,
   oauthReadiness,
+  pixelSnippet,
 }: {
   account: PerformanceAccount
   connections: PerformanceConnection[]
   oauthReadiness: Partial<Record<PerformanceProvider, boolean>>
+  pixelSnippet: string
 }) {
+  const [copied, setCopied] = useState(false)
+
+  async function copyPixel() {
+    await navigator.clipboard.writeText(pixelSnippet)
+    setCopied(true)
+    window.setTimeout(() => setCopied(false), 1800)
+  }
+
   return (
-    <div className="performance-integrations-grid">
-      {PERFORMANCE_PROVIDER_CATALOG.map(provider => (
-        <ProviderConnectionCard
-          key={provider.id}
-          accountId={account.id}
-          provider={provider}
-          connection={connections.find(item => item.provider === provider.id)}
-          oauthReady={oauthReadiness[provider.id] || false}
-        />
-      ))}
-    </div>
+    <>
+      <div className="performance-integrations-grid">
+        {PERFORMANCE_PROVIDER_CATALOG.map(provider => (
+          <ProviderConnectionCard
+            key={provider.id}
+            accountId={account.id}
+            provider={provider}
+            connection={connections.find(item => item.provider === provider.id)}
+            oauthReady={oauthReadiness[provider.id] || false}
+          />
+        ))}
+      </div>
+      <section className="performance-pixel-setup">
+        <div className="performance-pixel-copy">
+          <span className="performance-eyebrow">First-party behavior</span>
+          <h2>Activate page views and the full store funnel</h2>
+          <p>In Shopify, open <strong>Settings → Customer events → Add custom pixel</strong>. Name it “BTF Performance,” paste this code, require Analytics and Preferences permission, then connect it. Preferences is needed for the browser storage that keeps funnel sessions together. It records consented page and commerce events without direct customer data.</p>
+          <ol><li>Add the custom pixel in Shopify.</li><li>Paste the generated code.</li><li>Set customer privacy to Required with Analytics and Preferences, save, and connect.</li><li>Visit the storefront once; the dashboard starts filling in real time.</li></ol>
+        </div>
+        <div className="performance-pixel-code">
+          <div><span>Generated for {account.displayName}</span><button type="button" onClick={copyPixel}><Copy size={13} /> {copied ? 'Copied' : 'Copy pixel'}</button></div>
+          <pre><code>{pixelSnippet}</code></pre>
+        </div>
+      </section>
+    </>
   )
 }

@@ -11,8 +11,11 @@ import type {
   PerformanceConnection,
   PerformanceDashboardData,
   PerformanceEntityMetric,
+  PerformancePageMetric,
   PerformanceProvider,
   PerformanceSummary,
+  PerformanceUtmCampaignMetric,
+  PerformanceWebDailyMetric,
 } from './types'
 
 type DbClient = SupabaseClient<Database>
@@ -142,6 +145,46 @@ function mapMetric(
     sessions: number(row.sessions),
     newCustomers: number(row.new_customers),
     currency: row.currency,
+    raw: (row.raw_payload || {}) as Record<string, unknown>,
+  }
+}
+
+function mapWebDaily(
+  row: Database['public']['Views']['performance_web_daily_rollup']['Row']
+): PerformanceWebDailyMetric {
+  return {
+    date: row.metric_date || '',
+    pageviews: number(row.pageviews),
+    sessions: number(row.sessions),
+    productViewSessions: number(row.product_view_sessions),
+    cartSessions: number(row.cart_sessions),
+    checkoutSessions: number(row.checkout_sessions),
+    purchaseSessions: number(row.purchase_sessions),
+  }
+}
+
+function mapPage(
+  row: Database['public']['Views']['performance_page_rollup']['Row']
+): PerformancePageMetric {
+  return {
+    date: row.metric_date || '',
+    path: row.page_path || '/',
+    title: row.page_title,
+    pageviews: number(row.pageviews),
+    sessions: number(row.sessions),
+  }
+}
+
+function mapUtmCampaign(
+  row: Database['public']['Views']['performance_utm_campaign_sales_rollup']['Row']
+): PerformanceUtmCampaignMetric {
+  return {
+    date: row.metric_date || '',
+    source: row.utm_source,
+    medium: row.utm_medium,
+    campaign: row.utm_campaign || '(untagged)',
+    purchases: number(row.purchases),
+    revenue: number(row.revenue),
   }
 }
 
@@ -201,6 +244,9 @@ export async function getPerformanceDashboard(
       connections: [],
       daily: [],
       entities: [],
+      webDaily: [],
+      pages: [],
+      utmCampaigns: [],
       summary: emptySummary(),
       previousSummary: emptySummary(),
       rangeDays,
@@ -211,7 +257,14 @@ export async function getPerformanceDashboard(
   const currentStart = daysAgo(rangeDays - 1)
   const previousStart = daysAgo(rangeDays * 2 - 1)
   const previousEnd = daysAgo(rangeDays)
-  const [{ data: connectionRows, error: connectionsError }, { data: metricRows, error: metricsError }, { data: entityRows, error: entitiesError }] =
+  const [
+    { data: connectionRows, error: connectionsError },
+    { data: metricRows, error: metricsError },
+    { data: entityRows, error: entitiesError },
+    { data: webDailyRows, error: webDailyError },
+    { data: pageRows, error: pagesError },
+    { data: utmCampaignRows, error: utmCampaignsError },
+  ] =
     await Promise.all([
       supabase.from('performance_connections').select('*').eq('account_id', account.id).order('provider'),
       supabase
@@ -226,6 +279,24 @@ export async function getPerformanceDashboard(
         .eq('account_id', account.id)
         .gte('metric_date', currentStart)
         .order('metric_date'),
+      supabase
+        .from('performance_web_daily_rollup')
+        .select('*')
+        .eq('account_id', account.id)
+        .gte('metric_date', currentStart)
+        .order('metric_date'),
+      supabase
+        .from('performance_page_rollup')
+        .select('*')
+        .eq('account_id', account.id)
+        .gte('metric_date', currentStart)
+        .order('metric_date'),
+      supabase
+        .from('performance_utm_campaign_sales_rollup')
+        .select('*')
+        .eq('account_id', account.id)
+        .gte('metric_date', currentStart)
+        .order('metric_date'),
     ])
   if (connectionsError) throw new Error(connectionsError.message)
   if (metricsError) throw new Error(metricsError.message)
@@ -234,11 +305,19 @@ export async function getPerformanceDashboard(
   if (entitiesError && entitiesError.code !== 'PGRST205' && !entitiesError.message.includes('schema cache')) {
     throw new Error(entitiesError.message)
   }
+  for (const analyticsError of [webDailyError, pagesError, utmCampaignsError]) {
+    if (analyticsError && analyticsError.code !== 'PGRST205' && !analyticsError.message.includes('schema cache')) {
+      throw new Error(analyticsError.message)
+    }
+  }
 
   const connections = (connectionRows || []).map(mapConnection)
   const allMetrics = (metricRows || []).map(mapMetric)
   const daily = allMetrics.filter(row => row.date >= currentStart)
   const entities = (entityRows || []).map(mapEntity)
+  const webDaily = (webDailyRows || []).map(mapWebDaily).filter(row => row.date)
+  const pages = (pageRows || []).map(mapPage).filter(row => row.date)
+  const utmCampaigns = (utmCampaignRows || []).map(mapUtmCampaign).filter(row => row.date)
   const previous = allMetrics.filter(row => row.date >= previousStart && row.date <= previousEnd)
   const lastSyncedAt = connections
     .map(connection => connection.lastSyncedAt)
@@ -252,6 +331,9 @@ export async function getPerformanceDashboard(
     connections,
     daily,
     entities,
+    webDaily,
+    pages,
+    utmCampaigns,
     summary: summarizePerformance(daily, entities),
     previousSummary: summarizePerformance(previous),
     rangeDays,

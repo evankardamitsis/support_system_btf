@@ -153,7 +153,7 @@ export interface Database {
           account_id: string
           provider: 'shopify' | 'meta' | 'google' | 'klaviyo'
           metric_date: string
-          entity_type: 'ad' | 'product' | 'landing_page' | 'klaviyo_campaign' | 'klaviyo_flow'
+          entity_type: 'ad' | 'product' | 'landing_page' | 'traffic_source' | 'marketing_channel' | 'klaviyo_campaign' | 'klaviyo_flow'
           entity_id: string
           entity_name: string
           parent_id: string | null
@@ -177,7 +177,7 @@ export interface Database {
           account_id: string
           provider: 'shopify' | 'meta' | 'google' | 'klaviyo'
           metric_date: string
-          entity_type: 'ad' | 'product' | 'landing_page' | 'klaviyo_campaign' | 'klaviyo_flow'
+          entity_type: 'ad' | 'product' | 'landing_page' | 'traffic_source' | 'marketing_channel' | 'klaviyo_campaign' | 'klaviyo_flow'
           entity_id: string
           entity_name: string
           parent_id?: string | null
@@ -197,6 +197,54 @@ export interface Database {
           synced_at?: string
         }
         Update: Partial<Database['public']['Tables']['performance_entity_metrics']['Insert']>
+        Relationships: []
+      }
+      performance_web_events: {
+        Row: {
+          id: string
+          account_id: string
+          event_id: string
+          event_name: 'page_viewed' | 'product_viewed' | 'product_added_to_cart' | 'checkout_started' | 'checkout_completed'
+          occurred_at: string
+          visitor_key: string
+          session_key: string
+          page_url: string | null
+          page_path: string | null
+          page_title: string | null
+          referrer_url: string | null
+          product_id: string | null
+          product_title: string | null
+          order_id: string | null
+          value: number | null
+          currency: string | null
+          utm_source: string | null
+          utm_medium: string | null
+          utm_campaign: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          account_id: string
+          event_id: string
+          event_name: 'page_viewed' | 'product_viewed' | 'product_added_to_cart' | 'checkout_started' | 'checkout_completed'
+          occurred_at: string
+          visitor_key: string
+          session_key: string
+          page_url?: string | null
+          page_path?: string | null
+          page_title?: string | null
+          referrer_url?: string | null
+          product_id?: string | null
+          product_title?: string | null
+          order_id?: string | null
+          value?: number | null
+          currency?: string | null
+          utm_source?: string | null
+          utm_medium?: string | null
+          utm_campaign?: string | null
+          created_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['performance_web_events']['Insert']>
         Relationships: []
       }
       users: {
@@ -1207,7 +1255,42 @@ export interface Database {
       }
     }
     Views: {
-      [_ in never]: never
+      performance_web_daily_rollup: {
+        Row: {
+          account_id: string | null
+          metric_date: string | null
+          pageviews: number | null
+          sessions: number | null
+          product_view_sessions: number | null
+          cart_sessions: number | null
+          checkout_sessions: number | null
+          purchase_sessions: number | null
+        }
+        Relationships: []
+      }
+      performance_page_rollup: {
+        Row: {
+          account_id: string | null
+          metric_date: string | null
+          page_path: string | null
+          page_title: string | null
+          pageviews: number | null
+          sessions: number | null
+        }
+        Relationships: []
+      }
+      performance_utm_campaign_sales_rollup: {
+        Row: {
+          account_id: string | null
+          metric_date: string | null
+          utm_source: string | null
+          utm_medium: string | null
+          utm_campaign: string | null
+          purchases: number | null
+          revenue: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never

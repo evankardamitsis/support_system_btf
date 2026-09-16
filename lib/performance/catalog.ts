@@ -33,7 +33,7 @@ export const PERFORMANCE_PROVIDER_CATALOG: ProviderDefinition[] = [
         type: 'password',
         placeholder: 'shpat_••••••••',
         required: true,
-        help: 'Requires read_orders, read_customers, and read_products. Tokens are encrypted before storage.',
+        help: 'Requires read_orders, read_customers, read_products, and read_reports. ShopifyQL also requires protected customer data Level 2. Tokens are encrypted before storage.',
       },
       { key: 'apiVersion', label: 'API version', placeholder: '2026-07' },
     ],

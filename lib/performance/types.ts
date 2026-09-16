@@ -38,6 +38,7 @@ export type DailyPerformanceMetric = {
   sessions: number
   newCustomers: number
   currency: string
+  raw: Record<string, unknown>
 }
 
 export type PerformanceSummary = {
@@ -60,7 +61,7 @@ export type PerformanceSummary = {
   emailConversions: number
 }
 
-export const PERFORMANCE_ENTITY_TYPES = ['ad', 'product', 'landing_page', 'klaviyo_campaign', 'klaviyo_flow'] as const
+export const PERFORMANCE_ENTITY_TYPES = ['ad', 'product', 'landing_page', 'traffic_source', 'marketing_channel', 'klaviyo_campaign', 'klaviyo_flow'] as const
 export type PerformanceEntityType = (typeof PERFORMANCE_ENTITY_TYPES)[number]
 
 export type PerformanceEntityMetric = {
@@ -91,6 +92,9 @@ export type PerformanceDashboardData = {
   connections: PerformanceConnection[]
   daily: DailyPerformanceMetric[]
   entities: PerformanceEntityMetric[]
+  webDaily: PerformanceWebDailyMetric[]
+  pages: PerformancePageMetric[]
+  utmCampaigns: PerformanceUtmCampaignMetric[]
   summary: PerformanceSummary
   previousSummary: PerformanceSummary
   rangeDays: number
@@ -98,9 +102,34 @@ export type PerformanceDashboardData = {
   isPreview?: boolean
 }
 
-export type ProviderSyncRow = Omit<DailyPerformanceMetric, 'provider'> & {
-  raw?: Record<string, unknown>
+export type PerformanceWebDailyMetric = {
+  date: string
+  pageviews: number
+  sessions: number
+  productViewSessions: number
+  cartSessions: number
+  checkoutSessions: number
+  purchaseSessions: number
 }
+
+export type PerformancePageMetric = {
+  date: string
+  path: string
+  title: string | null
+  pageviews: number
+  sessions: number
+}
+
+export type PerformanceUtmCampaignMetric = {
+  date: string
+  source: string | null
+  medium: string | null
+  campaign: string
+  purchases: number
+  revenue: number
+}
+
+export type ProviderSyncRow = Omit<DailyPerformanceMetric, 'provider'>
 
 export type ProviderEntitySyncRow = Omit<PerformanceEntityMetric, 'provider'>
 

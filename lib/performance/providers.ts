@@ -121,6 +121,7 @@ async function shopifyRows(credentials: ShopifyCredentials, start: string, end: 
         sessions: 0,
         newCustomers: 0,
         currency,
+        raw: {},
       }
       current.revenue += number(money.amount)
       current.orders += 1
