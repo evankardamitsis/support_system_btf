@@ -246,6 +246,12 @@
   border-color: color-mix(in srgb, #8b5cf6 28%, transparent);
 }
 
+[data-theme="dashboard"] .dash-product-option--performance:hover:not(.is-active) {
+  color: #7dd3fc;
+  background: color-mix(in srgb, #22d3ee 9%, transparent);
+  border-color: color-mix(in srgb, #22d3ee 26%, transparent);
+}
+
 [data-theme="dashboard"] .dash-product-option--support.is-active {
   color: var(--accent);
   background: transparent;
@@ -260,6 +266,14 @@
   border-color: transparent;
   box-shadow: none;
   animation: dash-product-glow-ops 2.8s ease-in-out infinite;
+}
+
+[data-theme="dashboard"] .dash-product-option--performance.is-active {
+  color: #7dd3fc;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  animation: dash-product-glow-performance 2.8s ease-in-out infinite;
 }
 
 [data-theme="dashboard"] .dash-product-only {
@@ -311,6 +325,21 @@
   }
 }
 
+@keyframes dash-product-glow-performance {
+  0%,
+  100% {
+    text-shadow:
+      0 0 6px color-mix(in srgb, #22d3ee 42%, transparent),
+      0 0 12px color-mix(in srgb, #0ea5e9 20%, transparent);
+  }
+
+  50% {
+    text-shadow:
+      0 0 10px color-mix(in srgb, #7dd3fc 65%, transparent),
+      0 0 22px color-mix(in srgb, #22d3ee 36%, transparent);
+  }
+}
+
 [data-theme="dashboard"] .dash-product-dropdown-trigger {
   display: inline-flex;
   align-items: center;
@@ -336,6 +365,11 @@
 [data-theme="dashboard"] .dash-product-dropdown-trigger--ops {
   color: #c4b5fd;
   animation: dash-product-glow-ops 2.8s ease-in-out infinite;
+}
+
+[data-theme="dashboard"] .dash-product-dropdown-trigger--performance {
+  color: #7dd3fc;
+  animation: dash-product-glow-performance 2.8s ease-in-out infinite;
 }
 
 [data-theme="dashboard"] .dash-product-dropdown-trigger:hover {
@@ -403,11 +437,19 @@
   background: color-mix(in srgb, #8b5cf6 12%, transparent);
 }
 
+[data-theme="dashboard"] .dash-product-dropdown-option--performance:hover,
+[data-theme="dashboard"] .dash-product-dropdown-option--performance.is-active {
+  color: #bae6fd;
+  background: color-mix(in srgb, #22d3ee 12%, transparent);
+}
+
 @media (prefers-reduced-motion: reduce) {
   [data-theme="dashboard"] .dash-product-dropdown-trigger--support,
   [data-theme="dashboard"] .dash-product-dropdown-trigger--ops,
+  [data-theme="dashboard"] .dash-product-dropdown-trigger--performance,
   [data-theme="dashboard"] .dash-product-option--support.is-active,
   [data-theme="dashboard"] .dash-product-option--ops.is-active,
+  [data-theme="dashboard"] .dash-product-option--performance.is-active,
   [data-theme="dashboard"] .dash-product-only--support {
     animation: none;
   }
@@ -7397,4 +7439,3 @@
 [data-theme="dashboard"] .notion-row:hover {
   background: var(--surface);
 }
-

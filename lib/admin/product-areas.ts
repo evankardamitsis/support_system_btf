@@ -1,6 +1,6 @@
 import { isBtfStaffRole } from '@/lib/auth/staff'
 
-export type AdminProductArea = 'support' | 'ops'
+export type AdminProductArea = 'support' | 'ops' | 'performance'
 
 export type AdminNavItem = {
   label: string
@@ -39,6 +39,15 @@ export const ADMIN_PRODUCT_AREAS: Record<AdminProductArea, AdminProductAreaConfi
       { label: 'Company', href: '/admin/ops/company' },
     ],
   },
+  performance: {
+    id: 'performance',
+    label: 'Performance',
+    homeHref: '/admin/performance',
+    nav: [
+      { label: 'Live dashboard', href: '/admin/performance' },
+      { label: 'Integrations', href: '/admin/performance/integrations', adminOnly: true },
+    ],
+  },
 }
 
 export const ADMIN_PRODUCT_AREA_LIST = Object.values(ADMIN_PRODUCT_AREAS)
@@ -54,6 +63,9 @@ export function getVisibleProductAreas(role: string | null | undefined): AdminPr
 }
 
 export function getAdminProductArea(pathname: string): AdminProductArea {
+  if (pathname === '/admin/performance' || pathname.startsWith('/admin/performance/')) {
+    return 'performance'
+  }
   if (pathname === '/admin/ops' || pathname.startsWith('/admin/ops/')) return 'ops'
   return 'support'
 }

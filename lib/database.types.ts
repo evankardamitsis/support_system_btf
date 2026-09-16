@@ -12,6 +12,193 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      performance_accounts: {
+        Row: {
+          id: string
+          client_id: string
+          display_name: string
+          currency: string
+          timezone: string
+          target_roas: number | null
+          target_cpa: number | null
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          display_name: string
+          currency?: string
+          timezone?: string
+          target_roas?: number | null
+          target_cpa?: number | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          display_name?: string
+          currency?: string
+          timezone?: string
+          target_roas?: number | null
+          target_cpa?: number | null
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      performance_connections: {
+        Row: {
+          id: string
+          account_id: string
+          provider: 'shopify' | 'meta' | 'google' | 'klaviyo'
+          status: 'disconnected' | 'connected' | 'error'
+          label: string | null
+          external_account_id: string | null
+          credentials_encrypted: string
+          last_synced_at: string | null
+          last_error: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          account_id: string
+          provider: 'shopify' | 'meta' | 'google' | 'klaviyo'
+          status?: 'disconnected' | 'connected' | 'error'
+          label?: string | null
+          external_account_id?: string | null
+          credentials_encrypted: string
+          last_synced_at?: string | null
+          last_error?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          account_id?: string
+          provider?: 'shopify' | 'meta' | 'google' | 'klaviyo'
+          status?: 'disconnected' | 'connected' | 'error'
+          label?: string | null
+          external_account_id?: string | null
+          credentials_encrypted?: string
+          last_synced_at?: string | null
+          last_error?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      performance_daily_metrics: {
+        Row: {
+          id: string
+          account_id: string
+          provider: 'shopify' | 'meta' | 'google' | 'klaviyo'
+          metric_date: string
+          revenue: number
+          spend: number
+          orders: number
+          conversions: number
+          impressions: number
+          clicks: number
+          sessions: number
+          new_customers: number
+          currency: string
+          raw_payload: Json
+          synced_at: string
+        }
+        Insert: {
+          id?: string
+          account_id: string
+          provider: 'shopify' | 'meta' | 'google' | 'klaviyo'
+          metric_date: string
+          revenue?: number
+          spend?: number
+          orders?: number
+          conversions?: number
+          impressions?: number
+          clicks?: number
+          sessions?: number
+          new_customers?: number
+          currency?: string
+          raw_payload?: Json
+          synced_at?: string
+        }
+        Update: {
+          id?: string
+          account_id?: string
+          provider?: 'shopify' | 'meta' | 'google' | 'klaviyo'
+          metric_date?: string
+          revenue?: number
+          spend?: number
+          orders?: number
+          conversions?: number
+          impressions?: number
+          clicks?: number
+          sessions?: number
+          new_customers?: number
+          currency?: string
+          raw_payload?: Json
+          synced_at?: string
+        }
+        Relationships: []
+      }
+      performance_entity_metrics: {
+        Row: {
+          id: string
+          account_id: string
+          provider: 'shopify' | 'meta' | 'google' | 'klaviyo'
+          metric_date: string
+          entity_type: 'ad' | 'product' | 'landing_page' | 'klaviyo_campaign' | 'klaviyo_flow'
+          entity_id: string
+          entity_name: string
+          parent_id: string | null
+          parent_name: string | null
+          revenue: number
+          spend: number
+          orders: number
+          conversions: number
+          impressions: number
+          clicks: number
+          sessions: number
+          delivered: number
+          opens: number
+          unsubscribes: number
+          currency: string
+          raw_payload: Json
+          synced_at: string
+        }
+        Insert: {
+          id?: string
+          account_id: string
+          provider: 'shopify' | 'meta' | 'google' | 'klaviyo'
+          metric_date: string
+          entity_type: 'ad' | 'product' | 'landing_page' | 'klaviyo_campaign' | 'klaviyo_flow'
+          entity_id: string
+          entity_name: string
+          parent_id?: string | null
+          parent_name?: string | null
+          revenue?: number
+          spend?: number
+          orders?: number
+          conversions?: number
+          impressions?: number
+          clicks?: number
+          sessions?: number
+          delivered?: number
+          opens?: number
+          unsubscribes?: number
+          currency?: string
+          raw_payload?: Json
+          synced_at?: string
+        }
+        Update: Partial<Database['public']['Tables']['performance_entity_metrics']['Insert']>
+        Relationships: []
+      }
       users: {
         Row: {
           id: string
