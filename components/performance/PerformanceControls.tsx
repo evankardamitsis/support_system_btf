@@ -3,7 +3,7 @@
 import { useActionState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { RefreshCw } from 'lucide-react'
+import { DatabaseZap, RefreshCw } from 'lucide-react'
 import {
   syncPerformanceAccountAction,
   type PerformanceActionState,
@@ -11,23 +11,47 @@ import {
 
 const initialState: PerformanceActionState = { ok: false, message: '' }
 
-function SyncSubmit() {
+function SyncSubmit({ sources }: { sources: string[] }) {
   const { pending } = useFormStatus()
   return (
-    <button type="submit" className="performance-sync-button" disabled={pending}>
-      <RefreshCw size={14} className={pending ? 'is-spinning' : ''} aria-hidden />
-      {pending ? 'Syncing' : 'Sync now'}
-    </button>
+    <>
+      <button type="submit" className="performance-sync-button" disabled={pending}>
+        <RefreshCw size={14} className={pending ? 'is-spinning' : ''} aria-hidden />
+        {pending ? 'Syncing' : 'Sync now'}
+      </button>
+      {pending ? (
+        <div className="performance-sync-screen" role="status" aria-live="polite" aria-busy="true">
+          <div className="performance-sync-screen-grid" aria-hidden />
+          <section className="performance-sync-dialog">
+            <div className="performance-sync-orbit" aria-hidden>
+              <span /><span /><DatabaseZap size={22} />
+            </div>
+            <span className="performance-eyebrow">Live data refresh</span>
+            <h2>Syncing Performance HQ</h2>
+            <p>Fetching the latest provider reports, reconciling store truth, and rebuilding the dashboard. This screen will close when the data is ready.</p>
+            <div className="performance-sync-progress" aria-hidden><span /></div>
+            <div className="performance-sync-sources">
+              {(sources.length ? sources : ['Connected sources']).map((source, index) => (
+                <span key={source} style={{ '--sync-delay': `${index * 130}ms` } as React.CSSProperties}>
+                  <i aria-hidden />{source}
+                </span>
+              ))}
+            </div>
+            <small>Keep this page open · provider response times can vary</small>
+          </section>
+        </div>
+      ) : null}
+    </>
   )
 }
 
-export function PerformanceSyncControl({ accountId }: { accountId: string }) {
+export function PerformanceSyncControl({ accountId, sources = [] }: { accountId: string; sources?: string[] }) {
   const [state, action] = useActionState(syncPerformanceAccountAction, initialState)
   return (
     <div className="performance-sync-control">
       <form action={action}>
         <input type="hidden" name="accountId" value={accountId} />
-        <SyncSubmit />
+        <SyncSubmit sources={sources} />
       </form>
       {state.message ? (
         <p className={`performance-action-message ${state.ok ? 'is-success' : 'is-error'}`} role="status">
@@ -68,4 +92,3 @@ export function PerformanceAccountPicker({
     </label>
   )
 }
-

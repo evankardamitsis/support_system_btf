@@ -126,6 +126,160 @@
 .is-spinning { animation: performance-spin 850ms linear infinite; }
 @keyframes performance-spin { to { transform: rotate(360deg); } }
 
+.performance-sync-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  overflow: hidden;
+  background: rgba(7, 11, 14, 0.86);
+  backdrop-filter: blur(14px) saturate(0.8);
+}
+
+.performance-sync-screen-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 0.2;
+  background-image:
+    linear-gradient(rgba(103, 223, 242, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(103, 223, 242, 0.12) 1px, transparent 1px);
+  background-size: 3rem 3rem;
+  mask-image: radial-gradient(circle at center, black, transparent 72%);
+  animation: performance-sync-grid 4s linear infinite;
+}
+
+.performance-sync-dialog {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  width: min(34rem, 100%);
+  padding: clamp(2rem, 5vw, 3.4rem);
+  overflow: hidden;
+  border: 1px solid rgba(103, 223, 242, 0.34);
+  border-top: 2px solid var(--performance-cyan);
+  background: linear-gradient(145deg, rgba(27, 35, 41, 0.98), rgba(12, 18, 22, 0.98));
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.48), 0 0 45px rgba(103, 223, 242, 0.08);
+  text-align: center;
+}
+
+.performance-sync-dialog::after {
+  content: '';
+  position: absolute;
+  inset: auto -15% -52% 15%;
+  height: 70%;
+  background: radial-gradient(circle, rgba(232, 255, 71, 0.09), transparent 65%);
+  pointer-events: none;
+}
+
+.performance-sync-orbit {
+  position: relative;
+  display: grid;
+  width: 5.2rem;
+  height: 5.2rem;
+  margin-bottom: 1.25rem;
+  place-items: center;
+  border: 1px solid rgba(103, 223, 242, 0.18);
+  border-radius: 50%;
+  color: var(--performance-cyan);
+  box-shadow: inset 0 0 24px rgba(103, 223, 242, 0.06);
+}
+
+.performance-sync-orbit span {
+  position: absolute;
+  inset: 0.35rem;
+  border: 1px solid transparent;
+  border-top-color: var(--performance-cyan);
+  border-radius: 50%;
+  animation: performance-spin 1.1s linear infinite;
+}
+
+.performance-sync-orbit span:nth-child(2) {
+  inset: -0.35rem;
+  border-top-color: transparent;
+  border-right-color: var(--performance-lime);
+  animation-duration: 1.8s;
+  animation-direction: reverse;
+}
+
+.performance-sync-dialog h2 {
+  margin: 0.55rem 0 0;
+  color: var(--text-1);
+  font: 500 clamp(1.55rem, 4vw, 2.15rem)/1.12 var(--font-dm-mono);
+  letter-spacing: -0.055em;
+}
+
+.performance-sync-dialog p {
+  max-width: 27rem;
+  margin: 0.9rem 0 1.4rem;
+  color: var(--text-2);
+  font-size: 0.78rem;
+  line-height: 1.65;
+}
+
+.performance-sync-progress {
+  width: 100%;
+  height: 2px;
+  overflow: hidden;
+  background: rgba(103, 223, 242, 0.12);
+}
+
+.performance-sync-progress span {
+  display: block;
+  width: 42%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, var(--performance-cyan), var(--performance-lime), transparent);
+  animation: performance-sync-progress 1.5s ease-in-out infinite;
+}
+
+.performance-sync-sources {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: 1.15rem;
+}
+
+.performance-sync-sources span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  min-height: 1.8rem;
+  padding: 0.35rem 0.58rem;
+  border: 1px solid var(--performance-border);
+  color: var(--text-2);
+  font: 0.56rem var(--font-dm-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  animation: performance-sync-source 1.6s ease-in-out var(--sync-delay) infinite;
+}
+
+.performance-sync-sources i {
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 50%;
+  background: var(--performance-cyan);
+  box-shadow: 0 0 8px rgba(103, 223, 242, 0.55);
+}
+
+.performance-sync-dialog small {
+  margin-top: 1.25rem;
+  color: var(--text-3);
+  font: 0.54rem/1.4 var(--font-dm-mono);
+  letter-spacing: 0.05em;
+}
+
+@keyframes performance-sync-grid { to { background-position: 3rem 3rem; } }
+@keyframes performance-sync-progress {
+  from { transform: translateX(-115%); }
+  to { transform: translateX(245%); }
+}
+@keyframes performance-sync-source {
+  0%, 100% { border-color: var(--performance-border); opacity: 0.62; }
+  45% { border-color: rgba(103, 223, 242, 0.48); opacity: 1; }
+}
+
 .performance-action-message,
 .performance-form-message {
   margin: 0;
@@ -244,7 +398,13 @@
 .performance-delta em { font-style: normal; font-weight: 400; color: var(--text-3); }
 .performance-delta.is-positive { color: #86efac; }
 .performance-delta.is-negative { color: #fca5a5; }
-.performance-metric small { margin-top: auto; color: var(--text-3); font: 0.54rem/1.35 var(--font-dm-mono); }
+.performance-metric small {
+  max-width: 24rem;
+  margin-top: auto;
+  color: color-mix(in srgb, var(--text-1) 74%, var(--text-2));
+  font: 0.78rem/1.5 var(--font-dm-mono);
+  letter-spacing: -0.02em;
+}
 
 .performance-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .performance-truth-key { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.9rem; color: var(--text-3); font: 0.56rem var(--font-dm-mono); }
@@ -484,6 +644,17 @@ html[data-color-mode='light'] .performance-primary-link {
   color: #ffffff;
 }
 
+html[data-color-mode='light'] .performance-sync-screen {
+  background: rgba(230, 232, 226, 0.84);
+}
+html[data-color-mode='light'] .performance-sync-dialog {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.99), rgba(241, 242, 236, 0.99));
+  box-shadow: 0 28px 80px rgba(31, 44, 47, 0.2), 0 0 40px rgba(0, 127, 145, 0.08);
+}
+html[data-color-mode='light'] .performance-sync-dialog h2 { color: #111513; }
+html[data-color-mode='light'] .performance-sync-dialog p,
+html[data-color-mode='light'] .performance-sync-sources span { color: #59635f; }
+
 html[data-color-mode='light'] .performance-command-bar,
 html[data-color-mode='light'] .performance-panel,
 html[data-color-mode='light'] .performance-channel-card,
@@ -591,9 +762,16 @@ html[data-color-mode='light'] .performance-pixel-copy p { color: #4f5955; }
   .performance-workspace-setup label:first-child { grid-column: auto; }
   .performance-form-actions { align-items: stretch; flex-direction: column; }
   .performance-primary-button { width: 100%; }
+  .performance-sync-screen { padding: 0.8rem; }
+  .performance-sync-dialog { padding: 2rem 1.25rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .performance-live-dot,
-  .is-spinning { animation: none; }
+  .is-spinning,
+  .performance-sync-screen-grid,
+  .performance-sync-orbit span,
+  .performance-sync-progress span,
+  .performance-sync-sources span { animation: none; }
+  .performance-sync-progress span { width: 100%; background: var(--performance-cyan); }
 }

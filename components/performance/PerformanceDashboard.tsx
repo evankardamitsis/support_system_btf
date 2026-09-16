@@ -121,7 +121,10 @@ export function PerformanceDashboard({ data }: { data: PerformanceDashboardData 
             accounts={data.accounts.map(item => ({ id: item.id, displayName: item.displayName }))}
             value={account.id}
           />
-          <PerformanceSyncControl accountId={account.id} />
+          <PerformanceSyncControl
+            accountId={account.id}
+            sources={data.connections.map(connection => PERFORMANCE_PROVIDER_CATALOG.find(provider => provider.id === connection.provider)?.name || connection.provider)}
+          />
         </div>
       </div>
 
