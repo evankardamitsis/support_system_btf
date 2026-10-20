@@ -1,3 +1,4 @@
+import { emailLayout } from '@/lib/email/email-shell'
 import { getCompanyProfile } from '@/lib/ops/company-profile'
 import { formatHostingContractCost, formatHostingDate } from '@/lib/ops/hosting-maintenance/display'
 import { renewalDateFromPeriodEnd } from '@/lib/ops/hosting-maintenance/period'
@@ -12,16 +13,13 @@ function appOrigin(): string {
 }
 
 function emailShell(title: string, body: string, ctaLabel: string, ctaUrl: string): string {
-  return `
-    <div style="font-family:system-ui,sans-serif;max-width:520px;color:#111">
-      <p style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#666">BTF</p>
-      <h1 style="font-size:20px;font-weight:600;margin:16px 0 8px">${title}</h1>
+  return emailLayout(`
+      <h1 style="font-size:20px;font-weight:600;margin:0 0 8px">${title}</h1>
       <p style="font-size:15px;line-height:1.6;color:#333">${body}</p>
       <p style="margin:24px 0">
         <a href="${ctaUrl}" style="display:inline-block;background:#0e0e0e;color:#e8ff47;padding:12px 20px;text-decoration:none;font-size:13px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase">${ctaLabel}</a>
       </p>
-    </div>
-  `
+  `)
 }
 
 export async function sendHostingRenewalReminder(

@@ -1,16 +1,14 @@
+import { emailLayout } from '@/lib/email/email-shell'
 import { isValidEmailAddress, normalizeEmailAddress } from '@/lib/email/addresses'
 import { sendEmail } from '@/lib/email/send'
 import { offerFilename } from '@/lib/ops/financial-offer/calculate'
 import type { CompanyProfileData } from '@/lib/ops/financial-offer/types'
 
 function emailShell(title: string, body: string): string {
-  return `
-    <div style="font-family:system-ui,sans-serif;max-width:520px;color:#111">
-      <p style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#666">Below The Fold</p>
-      <h1 style="font-size:20px;font-weight:600;margin:16px 0 8px">${title}</h1>
+  return emailLayout(`
+      <h1 style="font-size:20px;font-weight:600;margin:0 0 8px">${title}</h1>
       <p style="font-size:15px;line-height:1.6;color:#333">${body}</p>
-    </div>
-  `
+  `)
 }
 
 export async function sendFinancialOfferEmail(input: {
