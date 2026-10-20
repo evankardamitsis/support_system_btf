@@ -62,9 +62,17 @@ export async function sendHostingRenewalReminder(
   return { sent: true }
 }
 
+function daysLabel(days: number): string {
+  if (days <= 0) return 'today'
+  if (days === 1) return 'tomorrow'
+  return `in ${days} days`
+}
+
 export async function sendHostingRenewalAdminAlert(
-  contract: HostingContractRecord
+  contract: HostingContractRecord,
+  daysLeft: number
 ): Promise<NotifyResult> {
+  const when = daysLabel(daysLeft)
   const costLabel = formatHostingContractCost(
     contract.costAmount,
     contract.periodType,
@@ -74,7 +82,7 @@ export async function sendHostingRenewalAdminAlert(
   const adminUrl = `${appOrigin()}/admin/ops/hosting`
 
   const body = [
-    `<strong>${contract.name}</strong> (${contract.clientName}) renews <strong>tomorrow</strong>.`,
+    `<strong>${contract.name}</strong> (${contract.clientName}) renews <strong>${when}</strong>.`,
     `Period ends: <strong>${formatHostingDate(contract.periodEnd)}</strong>.`,
     `Fee: <strong>${costLabel}</strong>.`,
     `Action needed: confirm payment has been received or follow up with the client.`,
@@ -82,9 +90,9 @@ export async function sendHostingRenewalAdminAlert(
 
   const result = await sendEmail({
     to: HOSTING_ADMIN_ALERT_EMAIL,
-    subject: `[Action needed] Hosting renewal tomorrow — ${contract.name}`,
+    subject: `[Action needed] Hosting renewal ${when} — ${contract.name}`,
     html: emailShell(
-      'Hosting renewal — 1 day away',
+      `Hosting renewal ${when}`,
       body,
       'Open hosting contracts',
       adminUrl

@@ -67,12 +67,12 @@ export async function processHostingRenewalReminders(): Promise<{
       }
     }
 
-    // Admin alert at 1 day
+    // Admin alert at 3 days
     if (days <= HOSTING_ADMIN_REMINDER_DAYS && !row.admin_renewal_notified_at) {
       const contract = await getHostingContract(supabase, row.id)
       if (!contract) continue
 
-      const result = await sendHostingRenewalAdminAlert(contract)
+      const result = await sendHostingRenewalAdminAlert(contract, days)
       if (!result.sent) {
         errors.push(`admin-alert ${row.id}: ${result.error}`)
       } else {
