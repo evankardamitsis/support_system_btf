@@ -10,7 +10,7 @@ import { resendClientTeamSignupConfirmation } from '@/app/actions/register-clien
 import { finalizeRegistration } from '@/lib/auth/finalize-registration'
 import { registerInvitedAuthUser } from '@/lib/auth/signup-confirmation'
 import { clearPendingClientTeamInvites } from '@/lib/client-team/invite-cleanup'
-import { notifyAdminsPerformanceViewerJoined } from '@/lib/email/performance-viewer-joined'
+import { notifyAdminsPerformanceViewerJoinedOnce } from '@/lib/email/performance-viewer-joined'
 import { notifyAdminsClientRegistered } from '@/lib/auth/notify-admins-client-registered'
 import { ResendConfirmationButton } from '@/components/auth/ResendConfirmationButton'
 import {
@@ -95,26 +95,28 @@ export default async function RegisterClientPage({
       // finalizeRegistration also clears on confirmed login.
     }
     // Notify here: the invite is already cleared, so finalizeRegistration won't find it.
-    // dedupe_key prevents a second in-app notification if it does.
-    try {
-      await notifyAdminsClientRegistered({
+    // Dedupe keys prevent a second notification if it does.
+    if (inv.access_scope === 'performance') {
+      await notifyAdminsPerformanceViewerJoinedOnce(admin, {
         userId: authResult.userId,
         clientId: inv.client_id,
-        registrantName: inv.full_name?.trim() || inv.email,
-        clientName: clientName || 'Client',
-        kind: inv.access_scope === 'performance' ? 'performance' : 'team',
+        email: inv.email,
+        fullName: inv.full_name?.trim() || inv.email,
       })
-    } catch (error) {
-      console.error('[notifications] Client registered notification failed:', error)
+    } else {
+      try {
+        await notifyAdminsClientRegistered({
+          userId: authResult.userId,
+          clientId: inv.client_id,
+          registrantName: inv.full_name?.trim() || inv.email,
+          clientName: clientName || 'Client',
+          kind: 'team',
+        })
+      } catch (error) {
+        console.error('[notifications] Client registered notification failed:', error)
+      }
     }
     await finalizeRegistration(supabase)
-    if (inv.access_scope === 'performance') {
-      await notifyAdminsPerformanceViewerJoined(admin, {
-        email: inv.email,
-        fullName: inv.full_name,
-        performanceAccountId: inv.performance_account_id,
-      })
-    }
     redirect(inv.access_scope === 'performance' ? '/portal/performance' : '/portal/tickets')
   }
 
