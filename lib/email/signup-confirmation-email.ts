@@ -5,7 +5,7 @@ import { emailShell, type PortalEmailResult } from '@/lib/email/email-shell'
 import { sendEmail } from '@/lib/email/send'
 
 /** Legacy resend for accounts stuck awaiting Supabase confirmation before auto-confirm shipped. */
-export async function sendSignupConfirmationEmailViaZepto(
+export async function sendSignupConfirmationEmail(
   admin: SupabaseClient,
   email: string
 ): Promise<PortalEmailResult> {

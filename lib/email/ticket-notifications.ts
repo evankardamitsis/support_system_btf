@@ -134,7 +134,7 @@ export async function notifyClientEstimatePending(input: {
     return {
       sent: false,
       error:
-        'Estimate is waiting on the client, but the notification email could not be sent. Check ZEPTOMAIL_API_KEY (Send Mail Token), ZEPTOMAIL_API_URL (.eu for EU accounts), and EMAIL_FROM.',
+        'Estimate is waiting on the client, but the notification email could not be sent. Check RESEND_API_KEY and EMAIL_FROM.',
     }
   }
 
@@ -205,7 +205,7 @@ export async function notifyClientTicketResolved(input: {
     return {
       sent: false,
       error:
-        'Ticket was resolved but the client notification email could not be sent. Check ZEPTOMAIL_API_KEY, ZEPTOMAIL_API_URL, and EMAIL_FROM.',
+        'Ticket was resolved but the client notification email could not be sent. Check RESEND_API_KEY and EMAIL_FROM.',
     }
   }
 
@@ -251,7 +251,7 @@ export async function notifyClientNewRetainer(input: {
     return {
       sent: false,
       error:
-        'Retainer was saved but the client notification email could not be sent. Check ZEPTOMAIL_API_KEY, ZEPTOMAIL_API_URL, and EMAIL_FROM.',
+        'Retainer was saved but the client notification email could not be sent. Check RESEND_API_KEY and EMAIL_FROM.',
     }
   }
 
@@ -302,7 +302,7 @@ export async function notifyStaffNewTicket(input: {
     return {
       sent: false,
       error:
-        'Ticket was created but the team notification email could not be sent. Check ZEPTOMAIL_API_KEY, ZEPTOMAIL_API_URL, and EMAIL_FROM.',
+        'Ticket was created but the team notification email could not be sent. Check RESEND_API_KEY and EMAIL_FROM.',
     }
   }
 
@@ -340,7 +340,7 @@ export async function notifyClientWorkReviewPending(input: {
     return {
       sent: false,
       error:
-        'Work is waiting on the client, but the notification email could not be sent. Check ZEPTOMAIL_API_KEY, ZEPTOMAIL_API_URL, and EMAIL_FROM.',
+        'Work is waiting on the client, but the notification email could not be sent. Check RESEND_API_KEY and EMAIL_FROM.',
     }
   }
 
@@ -377,7 +377,7 @@ export async function notifyStaffWorkApproved(input: {
     return {
       sent: false,
       error:
-        'Work was approved but the team notification email could not be sent. Check ZEPTOMAIL_API_KEY and EMAIL_FROM.',
+        'Work was approved but the team notification email could not be sent. Check RESEND_API_KEY and EMAIL_FROM.',
     }
   }
 
@@ -419,7 +419,7 @@ export async function notifyStaffWorkDisputed(input: {
     return {
       sent: false,
       error:
-        'Work was disputed but the team notification email could not be sent. Check ZEPTOMAIL_API_KEY and EMAIL_FROM.',
+        'Work was disputed but the team notification email could not be sent. Check RESEND_API_KEY and EMAIL_FROM.',
     }
   }
 
@@ -462,7 +462,7 @@ export async function notifyStaffTicketAssigned(input: {
     return {
       sent: false,
       error:
-        'Assignment was saved but the notification email could not be sent. Check ZEPTOMAIL_API_KEY and EMAIL_FROM.',
+        'Assignment was saved but the notification email could not be sent. Check RESEND_API_KEY and EMAIL_FROM.',
     }
   }
 
@@ -515,7 +515,7 @@ export async function notifyStaffInternalMention(input: {
     return {
       sent: false,
       error:
-        'Mention was saved but notification email could not be sent. Check ZEPTOMAIL_API_KEY and EMAIL_FROM.',
+        'Mention was saved but notification email could not be sent. Check RESEND_API_KEY and EMAIL_FROM.',
     }
   }
 
@@ -555,7 +555,7 @@ export async function notifyClientExtraHoursPending(input: {
     return {
       sent: false,
       error:
-        'Extra hours are waiting on the client, but the notification email could not be sent. Check ZEPTOMAIL_API_KEY, ZEPTOMAIL_API_URL, and EMAIL_FROM.',
+        'Extra hours are waiting on the client, but the notification email could not be sent. Check RESEND_API_KEY and EMAIL_FROM.',
     }
   }
 
@@ -594,7 +594,7 @@ export async function notifyStaffExtraHoursApproved(input: {
     return {
       sent: false,
       error:
-        'Extra hours were approved but the team notification email could not be sent. Check ZEPTOMAIL_API_KEY and EMAIL_FROM.',
+        'Extra hours were approved but the team notification email could not be sent. Check RESEND_API_KEY and EMAIL_FROM.',
     }
   }
 
@@ -635,7 +635,7 @@ export async function notifyStaffEstimateApproved(input: {
     return {
       sent: false,
       error:
-        'Estimate was approved but the team notification email could not be sent. Check ZEPTOMAIL_API_KEY and EMAIL_FROM.',
+        'Estimate was approved but the team notification email could not be sent. Check RESEND_API_KEY and EMAIL_FROM.',
     }
   }
 
@@ -726,7 +726,7 @@ export async function notifyClientApprovalReminder(input: {
     return {
       sent: false,
       error:
-        'Reminder could not be sent. Check ZEPTOMAIL_API_KEY, ZEPTOMAIL_API_URL, and EMAIL_FROM.',
+        'Reminder could not be sent. Check RESEND_API_KEY and EMAIL_FROM.',
     }
   }
 
@@ -766,7 +766,7 @@ export async function notifyStaffTicketOnHold(input: {
     return {
       sent: false,
       error:
-        'Ticket was placed on hold but the team notification email could not be sent. Check ZEPTOMAIL_API_KEY and EMAIL_FROM.',
+        'Ticket was placed on hold but the team notification email could not be sent. Check RESEND_API_KEY and EMAIL_FROM.',
     }
   }
 

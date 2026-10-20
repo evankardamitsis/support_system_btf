@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { tryCreateAdminClient } from '@/lib/supabase/admin'
-import { sendSignupConfirmationEmailViaZepto } from '@/lib/email/signup-confirmation-email'
+import { sendSignupConfirmationEmail } from '@/lib/email/signup-confirmation-email'
 
 export type ResendClientTeamConfirmationResult =
   | { ok: true }
@@ -36,7 +36,7 @@ export async function resendClientTeamSignupConfirmation(
     return { ok: false, error: adminResult.error }
   }
 
-  const emailResult = await sendSignupConfirmationEmailViaZepto(adminResult.client, invite.email)
+  const emailResult = await sendSignupConfirmationEmail(adminResult.client, invite.email)
   if (!emailResult.sent) {
     return { ok: false, error: emailResult.error }
   }

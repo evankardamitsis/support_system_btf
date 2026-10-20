@@ -1,22 +1,22 @@
 # Supabase Auth email (custom SMTP)
 
-Portal **signup**, **password reset**, and **email confirmation** emails are sent by **Supabase Auth**, not the app’s ZeptoMail API (`lib/email/send.ts`). Ticket/invite emails already use ZeptoMail; auth emails need **custom SMTP in Supabase** or you hit the built-in limit (very low per hour) and see errors like `email rate limit exceeded`.
+Portal **signup**, **password reset**, and **email confirmation** emails are sent by **Supabase Auth**, not the app’s Resend API (`lib/email/send.ts`). Ticket/invite emails already use Resend; auth emails need **custom SMTP in Supabase** or you hit the built-in limit (very low per hour) and see errors like `email rate limit exceeded`.
 
 Official guide: [Supabase — Send emails with custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp)
 
-## Use ZeptoMail (same provider as the app)
+## Use Resend (same provider as the app)
 
-You already send transactional mail via ZeptoMail API. For Auth, use the **SMTP password** from the same Mail Agent — **not** `ZEPTOMAIL_API_KEY` (that is API-only).
+Resend SMTP uses your **API key as the password** — the same `RESEND_API_KEY` the app uses works, or create a separate sending-only key for Supabase.
 
-### 1. ZeptoMail — SMTP credentials
+### 1. Resend — SMTP credentials
 
-1. [ZeptoMail](https://www.zoho.com/zeptomail/) → your **Mail Agent** → **SMTP / API** → **SMTP** tab  
-2. Note:
-   - **Server:** `smtp.zeptomail.com` (EU: `smtp.zeptomail.eu`)
-   - **Port:** `587` (TLS) or `465` (SSL)
-   - **Username:** `emailapikey`
-   - **Password:** SMTP password from that tab ([ZeptoMail SMTP help](https://www.zoho.com/zeptomail/help/smtp-home.html))
-3. Sender must be on a **verified domain** (same as `EMAIL_FROM` for the app).
+1. [Resend](https://resend.com) → **Domains** → verify `belowthefold.gr` (same domain as `EMAIL_FROM`)
+2. **API Keys** → create a key (Sending access is enough)
+3. SMTP settings ([Resend SMTP docs](https://resend.com/docs/send-with-smtp)):
+   - **Server:** `smtp.resend.com`
+   - **Port:** `465` (SSL) — or `587` (STARTTLS)
+   - **Username:** `resend`
+   - **Password:** your Resend API key (`re_…`)
 
 ### 2. Supabase Dashboard
 
@@ -25,12 +25,12 @@ Project `wlqrfbczvtumfqctykem` → **Authentication** → **SMTP Settings**:
 | Field | Value |
 |--------|--------|
 | Enable custom SMTP | On |
-| Sender email | e.g. `support@belowthefold.gr` (verified in ZeptoMail) |
+| Sender email | e.g. `hello@belowthefold.gr` (on a domain verified in Resend) |
 | Sender name | `BTF Support` |
-| Host | `smtp.zeptomail.com` or `smtp.zeptomail.eu` |
-| Port | `587` |
-| Username | `emailapikey` |
-| Password | ZeptoMail **SMTP** password |
+| Host | `smtp.resend.com` |
+| Port | `465` |
+| Username | `resend` |
+| Password | Resend API key |
 
 **Authentication** → **URL configuration** (production):
 
@@ -43,15 +43,14 @@ After custom SMTP is enabled:
 
 **Authentication** → **Rate limits** → increase **Emails sent** (`rate_limit_email_sent`).
 
-Built-in SMTP cannot be raised; custom SMTP starts around 30/hour until you increase it. ZeptoMail’s own limits are much higher ([rate limits](https://supabase.com/docs/guides/auth/rate-limits)).
+Built-in SMTP cannot be raised; custom SMTP starts around 30/hour until you increase it. Resend’s own limits depend on your plan ([rate limits](https://supabase.com/docs/guides/auth/rate-limits)).
 
 ### 4. Optional — apply via script
 
 ```bash
 # Personal access token: https://supabase.com/dashboard/account/tokens
 export SUPABASE_ACCESS_TOKEN="..."
-export ZEPTOMAIL_SMTP_PASSWORD="..."   # SMTP tab password, NOT the API key
-# Uses EMAIL_FROM and ZEPTOMAIL_API_URL from .env.local if present
+# Uses RESEND_API_KEY and EMAIL_FROM from .env.local
 
 node --env-file=.env.local scripts/configure-supabase-auth-smtp.mjs
 ```
@@ -102,11 +101,11 @@ After saving, **request a new reset email** — links from before the change sti
 
 ## Password reset (app-owned)
 
-Forgot-password emails are sent by the **app** (ZeptoMail API), not Supabase Auth SMTP.
+Forgot-password emails are sent by the **app** (Resend API), not Supabase Auth SMTP.
 
 ## Portal invite emails (app-owned)
 
-All invite emails use **ZeptoMail API** (`ZEPTOMAIL_API_KEY`, `EMAIL_FROM`):
+All invite emails use the **Resend API** (`RESEND_API_KEY`, `EMAIL_FROM`):
 
 | Flow | When it sends |
 |------|----------------|
@@ -116,7 +115,7 @@ All invite emails use **ZeptoMail API** (`ZEPTOMAIL_API_KEY`, `EMAIL_FROM`):
 
 After they accept an invite and set a password, the account is **auto-confirmed** (no second Supabase confirmation email).
 
-Legacy “resend confirmation” on the register page uses ZeptoMail with a direct `token_hash` link.
+Legacy “resend confirmation” on the register page uses Resend with a direct `token_hash` link.
 
 Requires `SUPABASE_SECRET_KEY` for admin user creation on signup.
 
@@ -124,15 +123,13 @@ Requires `SUPABASE_SECRET_KEY` for admin user creation on signup.
 
 | Variable | Used for |
 |----------|-----------|
-| `ZEPTOMAIL_API_KEY` | App emails (tickets, invites) via API |
-| `ZEPTOMAIL_SMTP_PASSWORD` | Supabase Auth only — configure in dashboard or script |
+| `RESEND_API_KEY` | App emails (tickets, invites) via API; also the Supabase SMTP password |
 | `EMAIL_FROM` | App sender; should match Supabase SMTP sender |
-| `ZEPTOMAIL_API_URL` | If `*.zeptomail.eu`, script picks EU SMTP host |
 
 ## Troubleshooting
 
 - **email rate limit exceeded** — Enable custom SMTP, then raise **Emails sent** rate limit.
 - **Email address not authorized** — Built-in SMTP only sends to Supabase org team emails; custom SMTP fixes this for real clients.
-- **Error sending recovery email** — Wrong SMTP password (use SMTP tab password, not `ZEPTOMAIL_API_KEY`), wrong host (`smtp.zeptomail.eu` for EU), sender not verified, or ZeptoMail **IP restriction** enabled for SMTP (disable or Supabase cannot connect). Try port **465** if 587 fails.
+- **Error sending recovery email** — Wrong or revoked API key, username not exactly `resend`, or sender domain not verified in Resend. Try port **587** if 465 fails.
 - **Reset link → “Link expired or invalid”** — Update the **Reset password** email template to use `token_hash` (section 5 above), not `{{ .ConfirmationURL }}`. Then request a fresh reset email. Check **Site URL** is `https://support.belowthefold.gr`.
-- **ZeptoMail link tracking** — Disable click/open tracking on auth emails; it can rewrite links and break verification.
+- **Resend link tracking** — Keep click/open tracking off for the sending domain (Resend → Domains → Configuration); it can rewrite links and break verification.

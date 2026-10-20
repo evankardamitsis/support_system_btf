@@ -1,12 +1,12 @@
 /**
- * Configure Supabase Auth to send via ZeptoMail SMTP (signup, reset, confirm).
+ * Configure Supabase Auth to send via Resend SMTP (signup, reset, confirm).
  *
  * Requires:
  *   SUPABASE_ACCESS_TOKEN — https://supabase.com/dashboard/account/tokens
- *   ZEPTOMAIL_SMTP_PASSWORD — Mail Agent → SMTP tab (NOT ZEPTOMAIL_API_KEY)
+ *   RESEND_API_KEY — Resend → API Keys (used as the SMTP password)
  *
  * Optional (from .env.local):
- *   EMAIL_FROM, ZEPTOMAIL_API_URL, SUPABASE_PROJECT_REF, AUTH_EMAIL_RATE_LIMIT
+ *   EMAIL_FROM, SUPABASE_PROJECT_REF, AUTH_EMAIL_RATE_LIMIT
  *
  * Usage:
  *   node --env-file=.env.local scripts/configure-supabase-auth-smtp.mjs
@@ -28,14 +28,12 @@ function parseSenderName(from) {
   return match ? match[1].trim() : 'BTF Support'
 }
 
-function smtpHost() {
-  const apiUrl = process.env.ZEPTOMAIL_API_URL?.toLowerCase() ?? ''
-  return apiUrl.includes('.eu') ? 'smtp.zeptomail.eu' : 'smtp.zeptomail.com'
-}
+const SMTP_HOST = 'smtp.resend.com'
+const SMTP_PORT = 465
 
 const accessToken = process.env.SUPABASE_ACCESS_TOKEN?.trim()
 const projectRef = process.env.SUPABASE_PROJECT_REF?.trim() || 'wlqrfbczvtumfqctykem'
-const smtpPassword = process.env.ZEPTOMAIL_SMTP_PASSWORD?.trim()
+const smtpPassword = process.env.RESEND_API_KEY?.trim()
 const senderEmail = parseSenderEmail(process.env.EMAIL_FROM)
 const senderName = parseSenderName(process.env.EMAIL_FROM)
 const emailRateLimit = Number(process.env.AUTH_EMAIL_RATE_LIMIT ?? '100')
@@ -46,7 +44,7 @@ if (!accessToken) {
 }
 
 if (!smtpPassword) {
-  console.error('Missing ZEPTOMAIL_SMTP_PASSWORD (ZeptoMail Agent → SMTP tab, not the API key)')
+  console.error('Missing RESEND_API_KEY (Resend → API Keys)')
   process.exit(1)
 }
 
@@ -55,15 +53,14 @@ if (!Number.isFinite(emailRateLimit) || emailRateLimit < 1) {
   process.exit(1)
 }
 
-const host = smtpHost()
 const payload = {
   external_email_enabled: true,
   mailer_secure_email_change_enabled: true,
   mailer_autoconfirm: false,
   smtp_admin_email: senderEmail,
-  smtp_host: host,
-  smtp_port: 587,
-  smtp_user: 'emailapikey',
+  smtp_host: SMTP_HOST,
+  smtp_port: SMTP_PORT,
+  smtp_user: 'resend',
   smtp_pass: smtpPassword,
   smtp_sender_name: senderName,
   rate_limit_email_sent: emailRateLimit,
@@ -72,7 +69,7 @@ const payload = {
 const url = `https://api.supabase.com/v1/projects/${projectRef}/config/auth`
 
 console.log(`Configuring Auth SMTP for project ${projectRef}…`)
-console.log(`  Host: ${host}:587`)
+console.log(`  Host: ${SMTP_HOST}:${SMTP_PORT}`)
 console.log(`  From: ${senderName} <${senderEmail}>`)
 console.log(`  Email rate limit: ${emailRateLimit}/hour`)
 
@@ -91,5 +88,5 @@ if (!res.ok) {
   process.exit(1)
 }
 
-console.log('Done. Auth emails (signup, reset, confirm) now use ZeptoMail SMTP.')
+console.log('Done. Auth emails (signup, reset, confirm) now use Resend SMTP.')
 console.log('See supabase/auth-smtp.md for dashboard checks and troubleshooting.')

@@ -1,6 +1,6 @@
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-/** Trim and lowercase for ZeptoMail / SMTP delivery. */
+/** Trim and lowercase for Resend / SMTP delivery. */
 export function normalizeEmailAddress(raw: string): string | null {
   const email = raw.trim().toLowerCase()
   return email || null

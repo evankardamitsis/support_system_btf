@@ -26,7 +26,7 @@ export async function sendStaffInviteEmail(input: {
       sent: false,
       error:
         sent.error ||
-        'Invite was created but the email could not be sent. Check ZEPTOMAIL_API_KEY, ZEPTOMAIL_API_URL, and EMAIL_FROM.',
+        'Invite was created but the email could not be sent. Check RESEND_API_KEY and EMAIL_FROM.',
     }
   }
 

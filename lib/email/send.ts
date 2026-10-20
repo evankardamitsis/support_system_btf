@@ -21,7 +21,7 @@ export type SendEmailResult = { ok: true } | { ok: false; error: string }
 
 type Sender = { name: string; email: string }
 
-const ZEPTO_PREFIX = /^zoho-enczapikey\s+/i
+const RESEND_ENDPOINT = 'https://api.resend.com/emails'
 
 function parseSender(from: string): Sender {
   const match = from.match(/^(.+?)\s*<([^>]+)>$/)
@@ -29,95 +29,52 @@ function parseSender(from: string): Sender {
   return { name: 'BTF Support', email: from.trim() }
 }
 
-/** Strip wrapper quotes / duplicate Zoho-enczapikey prefix — env should hold token only or full header value */
-function normalizeZeptoToken(raw: string): string {
-  let token = raw.trim().replace(/^['"]|['"]$/g, '')
-  while (ZEPTO_PREFIX.test(token)) {
-    token = token.replace(ZEPTO_PREFIX, '').trim()
-  }
-  return token
-}
-
-function zeptoAuthHeader(apiKey: string): string {
-  return `Zoho-enczapikey ${normalizeZeptoToken(apiKey)}`
-}
-
-function zeptoApiBase(): string {
-  const base = process.env.ZEPTOMAIL_API_URL?.trim().replace(/\/$/, '')
-  return base || 'https://api.zeptomail.com'
-}
-
-function parseZeptoFailure(status: number, bodyText: string): string {
+function parseResendFailure(status: number, bodyText: string): string {
+  let name = ''
+  let message = ''
   try {
-    const data = JSON.parse(bodyText) as {
-      error?: {
-        message?: string
-        details?: Array<{ code?: string; message?: string; target?: string }>
-      }
-    }
-    const details = data.error?.details ?? []
-
-    for (const detail of details) {
-      if (detail.code === 'SERR_157') {
-        return (
-          'Invalid ZeptoMail Send Mail Token. Copy the API token from Agent → SMTP/API (API tab), ' +
-          'not the SMTP password.'
-        )
-      }
-      if (detail.code === 'SM_111') {
-        return (
-          'EMAIL_FROM uses a domain that is not verified in ZeptoMail. Verify the domain in your Agent ' +
-          'or use a sender address on a verified domain.'
-        )
-      }
-      if (detail.code === 'SM_128') {
-        return 'ZeptoMail account is pending review. Complete account approval in ZeptoMail before sending.'
-      }
-      if (detail.code === 'SM_113' && detail.target?.includes('from')) {
-        return (
-          'EMAIL_FROM is invalid for ZeptoMail. Use Name <you@verified-domain.com> on a verified domain.'
-        )
-      }
-    }
-
-    const recipientTarget = details.some(
-      detail =>
-        (detail.code === 'SM_113' || detail.code === 'SMI_116') &&
-        (detail.target?.includes('to') || detail.target?.includes('cc') || detail.target?.includes('bcc'))
-    )
-    if (recipientTarget) {
-      return (
-        'ZeptoMail rejected the recipient field. A valid Gmail address is usually fine — check ' +
-        'ZEPTOMAIL_API_KEY and EMAIL_FROM (verified sender domain).'
-      )
-    }
+    const data = JSON.parse(bodyText) as { name?: string; message?: string }
+    name = data.name ?? ''
+    message = data.message ?? ''
   } catch {
     // fall through to status-based message
   }
 
-  if (status === 401) {
+  if (status === 401 || name === 'missing_api_key' || name === 'invalid_api_key') {
+    return 'Resend rejected the API key. Check RESEND_API_KEY.'
+  }
+  if (status === 403 && /domain/i.test(message)) {
     return (
-      'Email provider rejected the request (401). Use the Send Mail Token from Agent → SMTP/API ' +
-      '(not the SMTP password). EU accounts need ZEPTOMAIL_API_URL=https://api.zeptomail.eu.'
+      'EMAIL_FROM uses a domain that is not verified in Resend. Verify the domain under ' +
+      'Resend → Domains or use a sender on a verified domain.'
     )
   }
+  if (name === 'daily_quota_exceeded' || name === 'monthly_quota_exceeded') {
+    return `Resend sending quota reached (${name.replace(/_/g, ' ')}). Upgrade the plan or wait for the quota to reset.`
+  }
+  if (status === 429) {
+    return 'Resend is rate-limiting requests (429). Wait a moment and retry.'
+  }
+  if (name === 'validation_error' && message) {
+    return `Resend rejected the email: ${message}`
+  }
 
-  return `Email could not be sent (ZeptoMail ${status}).`
+  return `Email could not be sent (Resend ${status}${message ? `: ${message}` : ''}).`
 }
 
-/** ZeptoMail (Zoho) — free tier: 10,000 emails/month */
+/** Resend — transactional email via REST API */
 export async function sendEmail({
   to,
   subject,
   html,
   attachments,
 }: SendEmailInput): Promise<SendEmailResult> {
-  const apiKey = process.env.ZEPTOMAIL_API_KEY
+  const apiKey = process.env.RESEND_API_KEY?.trim()
   const from = process.env.EMAIL_FROM
 
   if (!apiKey) {
-    console.warn('[email] ZEPTOMAIL_API_KEY not set — skipping:', subject)
-    return { ok: false, error: 'ZEPTOMAIL_API_KEY is not configured.' }
+    console.warn('[email] RESEND_API_KEY not set — skipping:', subject)
+    return { ok: false, error: 'RESEND_API_KEY is not configured.' }
   }
   if (!from) {
     console.warn('[email] EMAIL_FROM not set — skipping:', subject)
@@ -143,30 +100,24 @@ export async function sendEmail({
     }
   }
 
-  const recipients = addresses.map(email => ({
-    email_address: { address: email },
-  }))
-
-  const url = `${zeptoApiBase()}/v1.1/email`
-
-  const res = await fetch(url, {
+  const res = await fetch(RESEND_ENDPOINT, {
     method: 'POST',
     headers: {
-      Authorization: zeptoAuthHeader(apiKey),
+      Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
     body: JSON.stringify({
-      from: { address: senderEmail, name: sender.name },
-      to: recipients,
+      from: `${sender.name} <${senderEmail}>`,
+      to: addresses,
       subject,
-      htmlbody: html,
+      html,
       ...(attachments?.length
         ? {
             attachments: attachments.map(file => ({
-              name: file.name,
+              filename: file.name,
               content: Buffer.from(file.content).toString('base64'),
-              mime_type: file.mimeType,
+              content_type: file.mimeType,
             })),
           }
         : {}),
@@ -176,16 +127,16 @@ export async function sendEmail({
   const bodyText = await res.text().catch(() => '')
 
   if (!res.ok) {
-    const error = parseZeptoFailure(res.status, bodyText)
-    console.error('[email] ZeptoMail send failed:', res.status, bodyText, { endpoint: url })
+    const error = parseResendFailure(res.status, bodyText)
+    console.error('[email] Resend send failed:', res.status, bodyText)
     return { ok: false, error }
   }
 
   try {
-    const data = JSON.parse(bodyText) as { request_id?: string }
-    console.info('[email] ZeptoMail sent:', subject, data.request_id ?? 'ok')
+    const data = JSON.parse(bodyText) as { id?: string }
+    console.info('[email] Resend sent:', subject, data.id ?? 'ok')
   } catch {
-    console.info('[email] ZeptoMail sent:', subject)
+    console.info('[email] Resend sent:', subject)
   }
 
   return { ok: true }

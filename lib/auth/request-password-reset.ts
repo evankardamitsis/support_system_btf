@@ -10,7 +10,7 @@ function isUnknownUserError(message: string): boolean {
   return /user not found|no such user|not found/i.test(message)
 }
 
-/** Send a password reset link via ZeptoMail (token_hash, works in any browser). */
+/** Send a password reset link via Resend (token_hash, works in any browser). */
 export async function requestPasswordReset(email: string): Promise<RequestPasswordResetResult> {
   const normalized = email.trim().toLowerCase()
   if (!normalized || !normalized.includes('@')) {
@@ -51,7 +51,7 @@ export async function requestPasswordReset(email: string): Promise<RequestPasswo
       ok: false,
       error:
         emailResult.error ||
-        'Reset link could not be sent. Check ZEPTOMAIL_API_KEY and EMAIL_FROM.',
+        'Reset link could not be sent. Check RESEND_API_KEY and EMAIL_FROM.',
     }
   }
 
