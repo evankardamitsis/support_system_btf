@@ -90,7 +90,7 @@ Do the same for **Confirm signup** (optional but recommended):
 <p><a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=signup">Confirm email</a></p>
 ```
 
-Or apply both via script:
+Or apply both via script — it renders them with the same logo + footer layout as app emails (`lib/email/email-shell.ts`). Use `--print` to write the HTML to `.preview/` for pasting into the dashboard instead:
 
 ```bash
 export SUPABASE_ACCESS_TOKEN="..."
