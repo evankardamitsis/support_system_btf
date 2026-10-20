@@ -231,7 +231,7 @@ export async function notifyClientRegistered(
     clientId: string
     registrantName: string
     clientName: string
-    kind: 'primary' | 'team'
+    kind: 'primary' | 'team' | 'performance'
   },
   adminIds: string[]
 ) {
@@ -240,7 +240,9 @@ export async function notifyClientRegistered(
   const title =
     input.kind === 'primary'
       ? `Client registered — ${input.clientName}`
-      : `Team member joined — ${input.clientName}`
+      : input.kind === 'performance'
+        ? `Dashboard viewer joined — ${input.clientName}`
+        : `Team member joined — ${input.clientName}`
 
   await insertOpsNotificationForUsers(supabase, adminIds, {
     type: 'client_registered',

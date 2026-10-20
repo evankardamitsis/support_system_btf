@@ -9,7 +9,7 @@ type NotifyAdminsClientRegisteredInput = {
   clientId: string
   registrantName: string
   clientName: string
-  kind: 'primary' | 'team'
+  kind: 'primary' | 'team' | 'performance'
 }
 
 export async function notifyAdminsClientRegistered(
