@@ -5,6 +5,8 @@ import { StatusFlag } from '@/components/dashboard/StatusFlag'
 import { PackageChip } from '@/components/retainers/PackageChip'
 import { formatPeriodCost } from '@/lib/retainers/packages'
 import { retainerTracksHours } from '@/lib/retainers/billing-model'
+import { RetainerRowActions } from '@/components/retainers/RetainerRowActions'
+import type { RetainerLifecycleStatus } from '@/lib/retainers/status'
 
 export type RetainerListItem = {
   id: string
@@ -17,6 +19,7 @@ export type RetainerListItem = {
   hours_used: number
   period_cost: number
   isActive: boolean
+  status: RetainerLifecycleStatus
 }
 
 function retainerTone(pct: number, isOver: boolean): 'ok' | 'warn' | 'danger' | 'over' {
@@ -26,18 +29,40 @@ function retainerTone(pct: number, isOver: boolean): 'ok' | 'warn' | 'danger' | 
   return 'ok'
 }
 
-export function RetainersList({ retainers }: { retainers: RetainerListItem[] }) {
-  if (retainers.length === 0) {
-    return (
-      <div className="retainers-table dash-empty">
-        <p className="dash-empty-title">No retainers yet</p>
-        <p className="dash-empty-hint">
-          Use the form above to create a retainer period for a client.
-        </p>
-      </div>
-    )
-  }
+export function RetainersList({
+  retainers,
+  canceled,
+}: {
+  retainers: RetainerListItem[]
+  canceled: RetainerListItem[]
+}) {
+  return (
+    <div className="space-y-4">
+      {retainers.length === 0 ? (
+        <div className="retainers-table dash-empty">
+          <p className="dash-empty-title">No active retainers</p>
+          <p className="dash-empty-hint">
+            Use “New retainer” to create a retainer period for a client.
+          </p>
+        </div>
+      ) : (
+        <RetainersTable retainers={retainers} />
+      )}
 
+      {canceled.length > 0 ? (
+        <details className="retainers-canceled">
+          <summary className="retainers-canceled-summary">
+            <span>Canceled</span>
+            <span className="retainers-canceled-count tabular-nums">{canceled.length}</span>
+          </summary>
+          <RetainersTable retainers={canceled} />
+        </details>
+      ) : null}
+    </div>
+  )
+}
+
+function RetainersTable({ retainers }: { retainers: RetainerListItem[] }) {
   return (
     <div className="retainers-table">
       <div className="retainers-col-grid retainers-grid-head">
@@ -63,14 +88,16 @@ export function RetainersList({ retainers }: { retainers: RetainerListItem[] }) 
           const tone = hoursBilling ? retainerTone(pct, isOver) : 'ok'
 
           return (
-            <Link
+            <div
               key={r.id}
-              href={`/admin/clients/${r.client_id}`}
               className="retainers-col-grid retainers-row anim-fade-up"
               data-tone={tone}
+              data-status={r.status}
             >
               <div className="retainers-cell retainers-cell-client min-w-0">
-                <p className="retainers-client-name">{r.clientName ?? 'Unknown client'}</p>
+                <Link href={`/admin/clients/${r.client_id}`} className="retainers-row-link">
+                  <p className="retainers-client-name">{r.clientName ?? 'Unknown client'}</p>
+                </Link>
                 <p className="retainers-client-meta tabular-nums">
                   {formatDateRange(r.period_start, r.period_end)}
                 </p>
@@ -79,9 +106,15 @@ export function RetainersList({ retainers }: { retainers: RetainerListItem[] }) 
                     label={isOver ? 'Over capacity' : `${Math.round(pct)}% used`}
                     tone={isOver ? 'danger' : 'warn'}
                   />
+                ) : r.status === 'frozen' ? (
+                  <StatusFlag label="Frozen" tone="warn" />
+                ) : r.status === 'canceled' ? (
+                  <StatusFlag label="Canceled" tone="danger" />
                 ) : r.isActive ? (
                   <span className="retainers-active-badge">Active</span>
-                ) : null}
+                ) : (
+                  <StatusFlag label="Awaiting renewal" tone="warn" />
+                )}
               </div>
 
               <div className="retainers-cell" data-label="Package">
@@ -135,10 +168,14 @@ export function RetainersList({ retainers }: { retainers: RetainerListItem[] }) 
                 )}
               </div>
 
-              <div className="retainers-cell retainers-cell-arrow" aria-hidden>
-                <span className="entity-card-arrow">→</span>
+              <div className="retainers-cell retainers-cell-actions">
+                <RetainerRowActions
+                  clientId={r.client_id}
+                  clientName={r.clientName}
+                  status={r.status}
+                />
               </div>
-            </Link>
+            </div>
           )
         })}
       </div>
