@@ -20,6 +20,8 @@ const account: PerformanceAccount = {
   targetRoas: 3.5,
   targetCpa: 24,
   isActive: true,
+  hideStoreSales: false,
+  hasShopifyApp: false,
 }
 
 function isoDate(daysAgo: number) {

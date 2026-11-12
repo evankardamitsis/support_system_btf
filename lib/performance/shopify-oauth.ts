@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
+import { decryptPerformanceSecret } from './crypto'
 
 export const SHOPIFY_OAUTH_COOKIE = 'btf_shopify_oauth_nonce'
 export const DEFAULT_SHOPIFY_SCOPES = ['read_orders', 'read_customers', 'read_products', 'read_reports'] as const
@@ -12,14 +13,23 @@ type ShopifyOAuthState = {
   expiresAt: number
 }
 
+export type ShopifyAppCredentials = { clientId: string; clientSecret: string }
+
 function shopifyClientSecret() {
   const secret = process.env.SHOPIFY_CLIENT_SECRET?.trim()
   if (!secret) throw new Error('SHOPIFY_CLIENT_SECRET is not configured')
   return secret
 }
 
+/** Signs the OAuth state. Independent of which Shopify app is used for the store. */
+function stateKey() {
+  const key = process.env.SHOPIFY_CLIENT_SECRET?.trim() || process.env.PERFORMANCE_CREDENTIALS_KEY?.trim()
+  if (!key) throw new Error('SHOPIFY_CLIENT_SECRET or PERFORMANCE_CREDENTIALS_KEY must be configured')
+  return key
+}
+
 function signature(value: string) {
-  return createHmac('sha256', shopifyClientSecret()).update(value).digest('base64url')
+  return createHmac('sha256', stateKey()).update(value).digest('base64url')
 }
 
 function equal(left: string, right: string) {
@@ -36,8 +46,12 @@ export function normalizeShopifyDomain(value: string) {
   return shop
 }
 
-export function getShopifyOAuthConfig() {
-  const clientId = process.env.SHOPIFY_CLIENT_ID?.trim()
+/**
+ * OAuth settings for a store. A workspace's own Shopify app (custom distribution,
+ * installable on that client's store) takes precedence over the shared env app.
+ */
+export function getShopifyOAuthConfig(app?: ShopifyAppCredentials | null) {
+  const clientId = app?.clientId || process.env.SHOPIFY_CLIENT_ID?.trim()
   if (!clientId) throw new Error('SHOPIFY_CLIENT_ID is not configured')
 
   const scopes = (process.env.SHOPIFY_SCOPES || DEFAULT_SHOPIFY_SCOPES.join(','))
@@ -47,7 +61,7 @@ export function getShopifyOAuthConfig() {
 
   return {
     clientId,
-    clientSecret: shopifyClientSecret(),
+    clientSecret: app?.clientSecret || shopifyClientSecret(),
     scopes: [...new Set(scopes)],
     apiVersion: process.env.SHOPIFY_API_VERSION?.trim() || '2026-07',
   }
@@ -81,7 +95,7 @@ export function verifyShopifyOAuthState(state: string): ShopifyOAuthState {
   return payload
 }
 
-export function verifyShopifyCallbackHmac(searchParams: URLSearchParams) {
+export function verifyShopifyCallbackHmac(searchParams: URLSearchParams, clientSecret: string) {
   const receivedHmac = searchParams.get('hmac') || ''
   const message = [...searchParams.entries()]
     .filter(([key]) => key !== 'hmac' && key !== 'signature')
@@ -90,7 +104,7 @@ export function verifyShopifyCallbackHmac(searchParams: URLSearchParams) {
     )
     .map(([key, value]) => `${key}=${value}`)
     .join('&')
-  const expectedHmac = createHmac('sha256', shopifyClientSecret()).update(message).digest('hex')
+  const expectedHmac = createHmac('sha256', clientSecret).update(message).digest('hex')
   if (!receivedHmac || !equal(expectedHmac, receivedHmac)) {
     throw new Error('Shopify callback verification failed.')
   }
@@ -101,4 +115,13 @@ export function shopifyCallbackUrl(origin: string) {
     ? origin
     : process.env.NEXT_PUBLIC_APP_URL?.trim() || origin
   return new URL('/api/performance/shopify/callback', configuredOrigin).toString()
+}
+
+type AccountAppRow = { shopify_app_client_id: string | null; shopify_app_secret_encrypted: string | null }
+
+/** Decrypts the workspace's own Shopify app, if one is configured. */
+export function shopifyAppFromAccount(row: AccountAppRow | null | undefined): ShopifyAppCredentials | null {
+  if (!row?.shopify_app_client_id || !row.shopify_app_secret_encrypted) return null
+  const { clientSecret } = decryptPerformanceSecret<{ clientSecret: string }>(row.shopify_app_secret_encrypted)
+  return { clientId: row.shopify_app_client_id, clientSecret }
 }

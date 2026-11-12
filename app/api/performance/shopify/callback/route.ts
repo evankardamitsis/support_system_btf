@@ -7,6 +7,7 @@ import { syncPerformanceAccount } from '@/lib/performance/service'
 import {
   SHOPIFY_OAUTH_COOKIE,
   getShopifyOAuthConfig,
+  shopifyAppFromAccount,
   normalizeShopifyDomain,
   verifyShopifyCallbackHmac,
   verifyShopifyOAuthState,
@@ -50,9 +51,16 @@ export async function GET(request: NextRequest) {
 
   let accountId = ''
   try {
-    verifyShopifyCallbackHmac(request.nextUrl.searchParams)
     const state = verifyShopifyOAuthState(request.nextUrl.searchParams.get('state') || '')
     accountId = state.accountId
+    const { data: account, error: accountError } = await supabase
+      .from('performance_accounts')
+      .select('id, shopify_app_client_id, shopify_app_secret_encrypted')
+      .eq('id', accountId)
+      .single()
+    if (accountError || !account) throw new Error('Performance workspace not found')
+    const { clientId, clientSecret, apiVersion } = getShopifyOAuthConfig(shopifyAppFromAccount(account))
+    verifyShopifyCallbackHmac(request.nextUrl.searchParams, clientSecret)
     const shop = normalizeShopifyDomain(request.nextUrl.searchParams.get('shop') || '')
     if (shop !== state.shop || request.cookies.get(SHOPIFY_OAUTH_COOKIE)?.value !== state.nonce) {
       throw new Error('The Shopify authorization session could not be verified. Please try again.')
@@ -60,7 +68,6 @@ export async function GET(request: NextRequest) {
 
     const code = request.nextUrl.searchParams.get('code')
     if (!code) throw new Error('Shopify did not return an authorization code')
-    const { clientId, clientSecret, apiVersion } = getShopifyOAuthConfig()
     const tokenResponse = await fetch(`https://${shop}/admin/oauth/access_token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

@@ -13,6 +13,10 @@ export type PerformanceAccount = {
   targetRoas: number | null
   targetCpa: number | null
   isActive: boolean
+  /** Report Shopify as traffic only: no revenue, orders or store conversion rate. */
+  hideStoreSales: boolean
+  /** A client-specific Shopify app is configured for this workspace. */
+  hasShopifyApp: boolean
 }
 
 export type PerformanceConnection = {

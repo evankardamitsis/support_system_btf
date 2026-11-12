@@ -39,3 +39,12 @@ export function decryptPerformanceCredentials(value: string): ProviderCredential
   return JSON.parse(decrypted.toString('utf8')) as ProviderCredentials
 }
 
+
+/** Encrypt any small JSON secret (for example a client-specific Shopify app). */
+export function encryptPerformanceSecret<T>(value: T): string {
+  return encryptPerformanceCredentials(value as unknown as ProviderCredentials)
+}
+
+export function decryptPerformanceSecret<T>(value: string): T {
+  return decryptPerformanceCredentials(value) as unknown as T
+}

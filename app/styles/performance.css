@@ -117,6 +117,24 @@
   box-shadow: 0 0 24px color-mix(in srgb, var(--performance-cyan) 20%, transparent);
 }
 
+.performance-export-link {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.68rem 0.9rem;
+  border: 1px solid var(--performance-cyan);
+  background: transparent;
+  color: var(--performance-cyan);
+  font: 600 0.68rem var(--font-dm-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 140ms ease, color 140ms ease;
+}
+.performance-export-link:hover { background: var(--performance-cyan); color: #071114; }
+
 .performance-sync-button:active:not(:disabled),
 .performance-primary-button:active:not(:disabled) { transform: scale(0.98) translateY(1px); }
 
@@ -784,7 +802,7 @@ html[data-color-mode='light'] .performance-access-person small { color: #59635f;
   .performance-heading-actions { flex-direction: column; align-items: stretch; }
   .performance-account-picker select { width: 100%; }
   .performance-sync-control { justify-items: stretch; }
-  .performance-sync-button { width: 100%; }
+  .performance-sync-button, .performance-export-link { width: 100%; }
   .performance-command-bar { align-items: flex-start; flex-direction: column; }
   .performance-command-meta { flex-wrap: wrap; }
   .performance-toolbar { align-items: flex-start; flex-direction: column; }
@@ -848,3 +866,16 @@ html[data-color-mode='light'] .performance-access-person small { color: #59635f;
   .performance-sync-sources span { animation: none; }
   .performance-sync-progress span { width: 100%; background: var(--performance-cyan); }
 }
+
+.performance-report-settings {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--performance-line, rgba(255,255,255,0.12));
+}
+.performance-report-settings label { display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.8rem; }
+.performance-report-settings strong { display: block; margin-bottom: 0.15rem; }
+@media (max-width: 720px) { .performance-report-settings { flex-direction: column; align-items: stretch; } }

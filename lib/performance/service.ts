@@ -112,6 +112,8 @@ function mapAccount(
     targetRoas: row.target_roas === null ? null : number(row.target_roas),
     targetCpa: row.target_cpa === null ? null : number(row.target_cpa),
     isActive: row.is_active,
+    hideStoreSales: Boolean(row.hide_store_sales),
+    hasShopifyApp: Boolean(row.shopify_app_client_id && row.shopify_app_secret_encrypted),
   }
 }
 

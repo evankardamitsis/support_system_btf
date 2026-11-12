@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireStaff } from '@/lib/auth/require-staff'
 import { PERFORMANCE_PROVIDER_CATALOG } from '@/lib/performance/catalog'
-import { encryptPerformanceCredentials } from '@/lib/performance/crypto'
+import { encryptPerformanceCredentials, encryptPerformanceSecret } from '@/lib/performance/crypto'
 import { syncPerformanceAccount } from '@/lib/performance/service'
 import { testProviderConnection } from '@/lib/performance/providerAdapters'
 import { PERFORMANCE_PROVIDERS, type PerformanceProvider, type ProviderCredentials } from '@/lib/performance/types'
@@ -161,4 +161,45 @@ export async function syncPerformanceAccountAction(
   } catch (cause) {
     return { ok: false, message: cause instanceof Error ? cause.message : 'Sync failed' }
   }
+}
+
+export async function saveShopifyApp(
+  _state: PerformanceActionState = INITIAL_STATE,
+  formData: FormData
+): Promise<PerformanceActionState> {
+  void _state
+  try {
+    const { supabase, role } = await requireStaff()
+    assertAdmin(role)
+    const accountId = String(formData.get('accountId') || '')
+    const clientId = String(formData.get('clientId') || '').trim()
+    const clientSecret = String(formData.get('clientSecret') || '').trim()
+    if (!clientId || !clientSecret) throw new Error('Client ID and client secret are both required')
+    const { error } = await supabase
+      .from('performance_accounts')
+      .update({
+        shopify_app_client_id: clientId,
+        shopify_app_secret_encrypted: encryptPerformanceSecret({ clientSecret }),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', accountId)
+    if (error) throw new Error(error.message)
+    performancePaths()
+    return { ok: true, message: 'Client Shopify app saved. Authorize Shopify to install it on the store.' }
+  } catch (cause) {
+    return { ok: false, message: cause instanceof Error ? cause.message : 'Could not save the Shopify app' }
+  }
+}
+
+export async function setHideStoreSales(formData: FormData) {
+  const { supabase, role } = await requireStaff()
+  assertAdmin(role)
+  const accountId = String(formData.get('accountId') || '')
+  const hide = formData.get('hideStoreSales') === 'on'
+  const { error } = await supabase
+    .from('performance_accounts')
+    .update({ hide_store_sales: hide, updated_at: new Date().toISOString() })
+    .eq('id', accountId)
+  if (error) throw new Error(error.message)
+  performancePaths()
 }

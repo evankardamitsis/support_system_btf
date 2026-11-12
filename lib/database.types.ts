@@ -22,6 +22,9 @@ export interface Database {
           target_roas: number | null
           target_cpa: number | null
           is_active: boolean
+          hide_store_sales: boolean
+          shopify_app_client_id: string | null
+          shopify_app_secret_encrypted: string | null
           created_at: string
           updated_at: string
         }
@@ -34,6 +37,9 @@ export interface Database {
           target_roas?: number | null
           target_cpa?: number | null
           is_active?: boolean
+          hide_store_sales?: boolean
+          shopify_app_client_id?: string | null
+          shopify_app_secret_encrypted?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -46,6 +52,9 @@ export interface Database {
           target_roas?: number | null
           target_cpa?: number | null
           is_active?: boolean
+          hide_store_sales?: boolean
+          shopify_app_client_id?: string | null
+          shopify_app_secret_encrypted?: string | null
           created_at?: string
           updated_at?: string
         }

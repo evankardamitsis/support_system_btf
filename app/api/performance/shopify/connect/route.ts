@@ -4,6 +4,7 @@ import {
   SHOPIFY_OAUTH_COOKIE,
   createShopifyOAuthState,
   getShopifyOAuthConfig,
+  shopifyAppFromAccount,
   normalizeShopifyDomain,
   shopifyCallbackUrl,
 } from '@/lib/performance/shopify-oauth'
@@ -23,13 +24,13 @@ export async function GET(request: NextRequest) {
 
   try {
     const shop = normalizeShopifyDomain(request.nextUrl.searchParams.get('shop') || '')
-    const { clientId, scopes } = getShopifyOAuthConfig()
     const { data: account, error } = await supabase
       .from('performance_accounts')
-      .select('id')
+      .select('id, shopify_app_client_id, shopify_app_secret_encrypted')
       .eq('id', accountId)
       .single()
     if (error || !account) throw new Error('Performance workspace not found')
+    const { clientId, scopes } = getShopifyOAuthConfig(shopifyAppFromAccount(account))
 
     const { state, nonce } = createShopifyOAuthState(account.id, shop)
     const authorizationUrl = new URL(`https://${shop}/admin/oauth/authorize`)

@@ -7,6 +7,8 @@ import {
   createPerformanceAccount,
   disconnectPerformanceConnection,
   savePerformanceConnection,
+  saveShopifyApp,
+  setHideStoreSales,
   type PerformanceActionState,
 } from '@/app/actions/performance'
 import { PERFORMANCE_PROVIDER_CATALOG, type ProviderDefinition } from '@/lib/performance/catalog'
@@ -77,16 +79,35 @@ function RemoveConnectionButton({ connection }: { connection: PerformanceConnect
   )
 }
 
+function ShopifyAppForm({ accountId, hasShopifyApp }: { accountId: string; hasShopifyApp: boolean }) {
+  const [state, action] = useActionState(saveShopifyApp, initialState)
+  return (
+    <details className="performance-connect-details">
+      <summary><LockKeyhole size={13} /> {hasShopifyApp ? 'Client Shopify app configured · replace' : 'Client Shopify app (one per store)'}</summary>
+      <form action={action} className="performance-field-grid">
+        <input type="hidden" name="accountId" value={accountId} />
+        <p className="performance-oauth-config-note">Create a custom-distribution app for this client&apos;s store in the Shopify Dev Dashboard, with redirect URL https://support.belowthefold.gr/api/performance/shopify/callback, then paste its credentials here. The secret is encrypted.</p>
+        <label><span>Client ID</span><input name="clientId" type="text" autoComplete="off" required /></label>
+        <label><span>Client secret</span><input name="clientSecret" type="password" autoComplete="off" required /></label>
+        <SubmitButton idle="Save client app" pending="Saving" />
+        <ActionMessage state={state} />
+      </form>
+    </details>
+  )
+}
+
 function ProviderConnectionCard({
   accountId,
   provider,
   connection,
   oauthReady,
+  hasShopifyApp = false,
 }: {
   accountId: string
   provider: ProviderDefinition
   connection?: PerformanceConnection
   oauthReady: boolean
+  hasShopifyApp?: boolean
 }) {
   const [state, action] = useActionState(savePerformanceConnection, initialState)
   const connected = connection?.status === 'connected'
@@ -149,6 +170,7 @@ function ProviderConnectionCard({
           ) : null}
         </form>
       ) : null}
+      {provider.id === 'shopify' ? <ShopifyAppForm accountId={accountId} hasShopifyApp={hasShopifyApp} /> : null}
 
       {provider.id === 'meta' ? (
         <form action="/api/performance/meta/connect" method="get" className="performance-oauth-form">
@@ -327,6 +349,14 @@ export function PerformanceIntegrations({
 
   return (
     <>
+      <form action={setHideStoreSales} className="performance-report-settings">
+        <input type="hidden" name="accountId" value={account.id} />
+        <label>
+          <input type="checkbox" name="hideStoreSales" defaultChecked={account.hideStoreSales} />
+          <span><strong>Traffic-only Shopify reporting</strong> Hide store revenue, orders and store conversion rate in {account.displayName}&apos;s PDF report.</span>
+        </label>
+        <button type="submit" className="performance-export-link">Save report setting</button>
+      </form>
       <div className="performance-integrations-grid">
         {PERFORMANCE_PROVIDER_CATALOG.map(provider => (
           <ProviderConnectionCard
@@ -334,7 +364,8 @@ export function PerformanceIntegrations({
             accountId={account.id}
             provider={provider}
             connection={connections.find(item => item.provider === provider.id)}
-            oauthReady={oauthReadiness[provider.id] || false}
+            oauthReady={oauthReadiness[provider.id] || (provider.id === 'shopify' && account.hasShopifyApp) || false}
+            hasShopifyApp={account.hasShopifyApp}
           />
         ))}
       </div>
