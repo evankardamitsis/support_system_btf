@@ -133,6 +133,15 @@ function topPages(data: PerformanceDashboardData, limit = 5) {
   return [...map.values()].sort((a, b) => b.views - a.views).slice(0, limit)
 }
 
+/** Deltas only mean something when the comparison window is (nearly) fully synced. */
+function hasComparablePeriod(data: PerformanceDashboardData, providers: readonly string[]) {
+  if (!data.previousDaily || !providers.length) return false
+  const needed = Math.ceil(data.rangeDays * 0.8)
+  return providers.every(p => new Set(data.previousDaily!.filter(r => r.provider === p).map(r => r.date)).size >= needed)
+}
+
+const titleCase = (text: string) => (text ? text.charAt(0).toUpperCase() + text.slice(1) : text)
+
 const pct = (a: number, b: number) => (b > 0 ? (a / b) * 100 : null)
 const div = (a: number, b: number) => (b > 0 ? a / b : null)
 const trim = (text: string, max = 42) => (text.length > max ? `${text.slice(0, max - 1)}…` : text)
@@ -172,6 +181,8 @@ function AdsCard({ data, provider }: { data: PerformanceDashboardData; provider:
   const currency = data.account!.currency
   const t = totalsFor(data, provider)
   const campaigns = topCampaigns(data.entities, provider)
+  const campaignCount = topCampaigns(data.entities, provider, 1000).length
+  const activeDays = data.daily.filter(row => row.provider === provider && row.spend > 0).length
   const hasRevenue = t.revenue > 0
   return (
     <View style={s.card}>
@@ -185,16 +196,25 @@ function AdsCard({ data, provider }: { data: PerformanceDashboardData; provider:
         <Stat label="CTR" value={formatPerformancePercent(pct(t.clicks, t.impressions), 2)} />
         <Stat label="CPC" value={div(t.spend, t.clicks) === null ? '—' : formatPerformanceCurrency(t.spend / t.clicks, currency)} />
       </View>
-      <View style={s.statRow}>
-        <Stat label="CPM" value={div(t.spend, t.impressions) === null ? '—' : formatPerformanceCurrency((t.spend / t.impressions) * 1000, currency)} />
-        <Stat label="Conversions*" value={formatPerformanceNumber(t.conversions)} />
-        <Stat label="Cost / conv.*" value={div(t.spend, t.conversions) === null ? '—' : formatPerformanceCurrency(t.spend / t.conversions, currency)} />
-        <Stat label={hasRevenue ? 'ROAS*' : 'Conv. rate*'} value={hasRevenue ? formatPerformanceRatio(div(t.revenue, t.spend)) : formatPerformancePercent(pct(t.conversions, t.clicks))} />
-      </View>
+      {t.conversions > 0 ? (
+        <View style={s.statRow}>
+          <Stat label="CPM" value={div(t.spend, t.impressions) === null ? '—' : formatPerformanceCurrency((t.spend / t.impressions) * 1000, currency)} />
+          <Stat label="Conversions*" value={formatPerformanceNumber(t.conversions)} />
+          <Stat label="Cost / conv.*" value={formatPerformanceCurrency(t.spend / t.conversions, currency)} />
+          <Stat label={hasRevenue ? 'ROAS*' : 'Conv. rate*'} value={hasRevenue ? formatPerformanceRatio(div(t.revenue, t.spend)) : formatPerformancePercent(pct(t.conversions, t.clicks))} />
+        </View>
+      ) : (
+        <View style={s.statRow}>
+          <Stat label="CPM" value={div(t.spend, t.impressions) === null ? '—' : formatPerformanceCurrency((t.spend / t.impressions) * 1000, currency)} />
+          <Stat label="Avg. daily spend" value={activeDays ? formatPerformanceCurrency(t.spend / activeDays, currency) : '—'} />
+          <Stat label="Days delivering" value={formatPerformanceNumber(activeDays)} />
+          <Stat label="Campaigns" value={formatPerformanceNumber(campaignCount)} />
+        </View>
+      )}
       {campaigns.length ? (
         <Table
-          head={['Top campaigns', 'Spend', 'Clicks', 'CTR', 'Conv.*']}
-          rows={campaigns.map(c => [trim(c.name), formatPerformanceCurrency(c.spend, currency, true), formatPerformanceNumber(c.clicks), formatPerformancePercent(pct(c.clicks, c.impressions), 2), formatPerformanceNumber(c.conversions)])}
+          head={['Top campaigns', 'Spend', 'Clicks', 'CTR', t.conversions > 0 ? 'Conv.*' : 'CPC']}
+          rows={campaigns.map(c => [trim(c.name), formatPerformanceCurrency(c.spend, currency, true), formatPerformanceNumber(c.clicks), formatPerformancePercent(pct(c.clicks, c.impressions), 2), t.conversions > 0 ? formatPerformanceNumber(c.conversions) : (c.clicks ? formatPerformanceCurrency(c.spend / c.clicks, currency) : '—')])}
         />
       ) : <Text style={s.empty}>No campaign delivery in this period.</Text>}
     </View>
@@ -221,7 +241,7 @@ function WebsiteCard({ data }: { data: PerformanceDashboardData }) {
           <Stat label="Sessions" value={formatPerformanceNumber(sessions)} />
           <Stat label="Page views" value={pageviews ? formatPerformanceNumber(pageviews) : '—'} />
           <Stat label="Views / session" value={sessions && pageviews ? (pageviews / sessions).toFixed(2) : '—'} />
-          <Stat label="Top source" value={sources[0] ? trim(sources[0].name, 16) : '—'} />
+          <Stat label="Top source" value={sources[0] ? trim(titleCase(sources[0].name), 16) : '—'} />
         </View>
       ) : (
         <View style={s.statRow}>
@@ -234,14 +254,14 @@ function WebsiteCard({ data }: { data: PerformanceDashboardData }) {
       <View style={{ flexDirection: 'row', gap: 10 }}>
         <View style={{ flex: 1 }}>
           {sources.length ? (
-            <Table head={['Traffic sources', 'Sessions', 'Share']} rows={sources.map(r => [trim(r.name, 30), formatPerformanceNumber(r.sessions), formatPerformancePercent(pct(r.sessions, sessions))])} />
+            <Table head={['Traffic sources', 'Sessions', 'Share']} rows={sources.map(r => [trim(titleCase(r.name), 30), formatPerformanceNumber(r.sessions), formatPerformancePercent(pct(r.sessions, sessions))])} />
           ) : <Text style={s.empty}>Traffic sources appear after the next Shopify sync.</Text>}
         </View>
-        <View style={{ flex: 1 }}>
-          {pages.length ? (
+        {pages.length ? (
+          <View style={{ flex: 1 }}>
             <Table head={['Most visited pages', 'Views', 'Sessions']} rows={pages.map(r => [trim(r.name, 30), formatPerformanceNumber(r.views), formatPerformanceNumber(r.sessions)])} />
-          ) : <Text style={s.empty}>Page rankings appear once the BTF pixel collects page views.</Text>}
-        </View>
+          </View>
+        ) : null}
       </View>
     </View>
   )
@@ -280,22 +300,23 @@ function buildInsights(data: PerformanceDashboardData, providers: ReportProvider
   const currency = data.account!.currency
   const out: string[] = []
   const { summary, previousSummary } = data
+  const comparable = hasComparablePeriod(data, providers)
   if (providers.some(p => p !== 'shopify')) {
-    const spendDelta = metricDelta(summary.spend, previousSummary.spend)
+    const spendDelta = comparable ? metricDelta(summary.spend, previousSummary.spend) : null
     if (summary.spend > 0) out.push(`Paid media spent ${formatPerformanceCurrency(summary.spend, currency)}${spendDelta !== null ? ` (${spendDelta >= 0 ? '+' : ''}${spendDelta.toFixed(0)}% vs previous period)` : ''}, reaching ${formatPerformanceNumber(summary.impressions)} impressions at ${formatPerformancePercent(pct(summary.clicks, summary.impressions), 2)} CTR.`)
     else out.push('No paid media spend was recorded in this period. Check campaign delivery and budgets.')
     for (const p of providers.filter((x): x is 'meta' | 'google' => x !== 'shopify')) {
       const best = topCampaigns(data.entities, p, 10).filter(c => c.clicks > 0).sort((a, b) => (b.clicks / Math.max(b.impressions, 1)) - (a.clicks / Math.max(a.impressions, 1)))[0]
       if (best) out.push(`${PROVIDER_LABEL[p]}: "${trim(best.name, 50)}" had the strongest engagement at ${formatPerformancePercent(pct(best.clicks, best.impressions), 2)} CTR.`)
     }
-    if (summary.cpa !== null && previousSummary.cpa !== null) {
+    if (comparable && summary.cpa !== null && previousSummary.cpa !== null) {
       const d = metricDelta(summary.cpa, previousSummary.cpa)
       if (d !== null) out.push(`Cost per conversion ${d <= 0 ? 'improved' : 'rose'} ${Math.abs(d).toFixed(0)}% to ${formatPerformanceCurrency(summary.cpa, currency)}.`)
     }
   }
   if (providers.includes('shopify')) {
     const src = topEntities(data.entities, 'traffic_source', 1)[0]
-    if (src) out.push(`Top traffic source was ${src.name} with ${formatPerformanceNumber(src.sessions)} sessions.`)
+    if (src) out.push(`Top traffic source was ${titleCase(src.name)} with ${formatPerformanceNumber(src.sessions)} sessions.`)
   }
   return out.slice(0, 4)
 }
@@ -322,16 +343,20 @@ export function PerformanceReportDocument({ data, logoSrc, generatedAt = new Dat
   const shopSessions = shopTotals.sessions || data.webDaily.reduce((sum, row) => sum + row.sessions, 0)
   const insights = buildInsights(data, providers)
 
+  const paidComparable = hasComparablePeriod(data, paid)
+  const shopComparable = hasComparablePeriod(data, ['shopify'])
+  const paidDelta = (now: number, before: number) => (paidComparable ? metricDelta(now, before) : undefined)
   const kpis: Array<{ label: string; value: string; delta?: number | null; inverse?: boolean; sub?: string }> = []
   if (paid.length) {
-    kpis.push({ label: 'Ad spend', value: formatPerformanceCurrency(summary.spend, currency), delta: metricDelta(summary.spend, previousSummary.spend), inverse: true })
-    kpis.push({ label: 'Impressions', value: formatPerformanceNumber(summary.impressions), delta: metricDelta(summary.impressions, previousSummary.impressions) })
-    kpis.push({ label: 'Clicks', value: formatPerformanceNumber(summary.clicks), delta: metricDelta(summary.clicks, previousSummary.clicks) })
-    kpis.push({ label: 'Conversions*', value: formatPerformanceNumber(summary.conversions), delta: metricDelta(summary.conversions, previousSummary.conversions) })
+    kpis.push({ label: 'Ad spend', value: formatPerformanceCurrency(summary.spend, currency), delta: paidDelta(summary.spend, previousSummary.spend), inverse: true, sub: `${data.rangeDays}-day total` })
+    kpis.push({ label: 'Impressions', value: formatPerformanceNumber(summary.impressions), delta: paidDelta(summary.impressions, previousSummary.impressions), sub: 'Paid media' })
+    kpis.push({ label: 'Clicks', value: formatPerformanceNumber(summary.clicks), delta: paidDelta(summary.clicks, previousSummary.clicks), sub: 'Paid media' })
+    if (summary.conversions > 0) kpis.push({ label: 'Conversions*', value: formatPerformanceNumber(summary.conversions), delta: paidDelta(summary.conversions, previousSummary.conversions), sub: 'Platform-attributed' })
+    else kpis.push({ label: 'CTR', value: formatPerformancePercent(pct(summary.clicks, summary.impressions), 2), sub: 'Clicks ÷ impressions' })
   }
   if (hasShop) {
     kpis.push({ label: 'Website sessions', value: formatPerformanceNumber(shopSessions), sub: 'Shopify · human sessions' })
-    if (kpis.length < 5 && !account.hideStoreSales) kpis.push({ label: 'Store revenue', value: formatPerformanceCurrency(summary.revenue, currency, true), delta: metricDelta(summary.revenue, previousSummary.revenue) })
+    if (kpis.length < 5 && !account.hideStoreSales) kpis.push({ label: 'Store revenue', value: formatPerformanceCurrency(summary.revenue, currency, true), delta: shopComparable ? metricDelta(summary.revenue, previousSummary.revenue) : undefined, sub: 'Shopify' })
   }
 
   return (

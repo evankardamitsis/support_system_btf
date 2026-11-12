@@ -104,6 +104,8 @@ export type PerformanceDashboardData = {
   rangeDays: number
   lastSyncedAt: string | null
   isPreview?: boolean
+  /** Daily rows for the comparison window, used to judge whether deltas are meaningful. */
+  previousDaily?: DailyPerformanceMetric[]
 }
 
 export type PerformanceWebDailyMetric = {

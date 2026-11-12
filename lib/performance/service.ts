@@ -338,6 +338,7 @@ export async function getPerformanceDashboard(
     utmCampaigns,
     summary: summarizePerformance(daily, entities),
     previousSummary: summarizePerformance(previous),
+    previousDaily: previous,
     rangeDays,
     lastSyncedAt,
   }
@@ -369,7 +370,8 @@ export async function syncPerformanceAccount(accountId: string): Promise<SyncRes
   if (error) throw new Error(error.message)
 
   const end = isoDate(new Date())
-  const start = daysAgo(30)
+  // 60 days so a 30-day view always has a complete previous period to compare against.
+  const start = daysAgo(60)
   const results = await Promise.all(
     (connections || []).map(async connection => {
       try {
